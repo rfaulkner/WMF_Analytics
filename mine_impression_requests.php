@@ -16,24 +16,23 @@ $counts = array();
 
 while(( $row = fgetcsv( $handle,'',' ') ) !== FALSE) {
 
-	$tracked_url = $row[8];
-	$parsed_url = parse_url( $tracked_url );
+	$loader_url = $row[8];
+	$parsed_url = parse_url( $loader_url );
 	parse_str( $parsed_url['query'], $parsed_query );
 
-	if ( $parsed_query['hidden'] == 'false' ) {
-		$project = $parsed_query['db'];
-		$banner = $parsed_query['utm_source'];
-		if ( $banner == 'test' ) {
-			continue;
-		}
-		$lang = $parsed_query['userLang'];
+	$project = $parsed_query['sitename'];
+	$banner = $parsed_query['banner'];
 
-		if ( $project == '' ) {
-			// print "Missing DB: $target_url\n";
-			$counts[$banner]['NONE']++;
-		} else {
-			$counts[$banner][$project]++;
-		}
+	if ( $banner == 'test' || preg_match( '/google_ads/', $banner) )  {
+		continue;
+	}
+	$lang = $parsed_query['userlang'];
+
+	if ( $project == '' ) {
+		// print "Missing DB: $target_url\n";
+		$counts[$banner]['NONE']++;
+	} else {
+		$counts[$banner][$project]++;
 	}
 }
 
