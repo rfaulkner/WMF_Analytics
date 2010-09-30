@@ -20,7 +20,7 @@ while(( $row = fgetcsv( $handle,'',' ') ) !== FALSE) {
 	$parsed_url = parse_url( $loader_url );
 	parse_str( $parsed_url['query'], $parsed_query );
 
-	$project = $parsed_query['sitename'];
+	$project = $parsed_query['db'];
 	$banner = $parsed_query['banner'];
 
 	if ( $banner == 'test' || preg_match( '/google_ads/', $banner) )  {
