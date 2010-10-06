@@ -29,8 +29,13 @@ while(( $row = fgetcsv( $handle,'',' ') ) !== FALSE) {
 	$lang = $parsed_query['userlang'];
 
 	if ( $project == '' ) {
-		// print "Missing DB: $target_url\n";
-		$counts[$banner]['NONE']++;
+		// Try to lookup a sitename if the client is using v1 of the loader
+		$sitename = $parsed_query['sitename'];
+		if ( $sitename ) {
+			$counts[$banner][$sitename]++;
+		} else {
+			$counts[$banner]['NONE']++;
+		}
 	} else {
 		$counts[$banner][$project]++;
 	}
