@@ -45,14 +45,20 @@ while(( $row = fgetcsv($handle,'',' ') ) !== FALSE) {
 	parse_str( $parsed_landing_url['query'], $tracking );
 	$utm_source = $tracking['utm_source'];
 
+	// Check the referrer to find out what language we came from
+	$referrer_url = $row[11];
+	$parsed_referrer_url = parse_url( $referrer_url );
+	$referrer_parts = explode( '.', $parsed_referrer_url['host'] );
+	$lang = $referrer_parts[0];
+
 	if ( preg_match( '/^2010/', $utm_source) && ! preg_match( '/utm_campaign/', $utm_source  ) ) { // Second part removes some noise
-		//$counts[$source_lang][$project][$lang][$utm_source][$landing_page]++;
+		//$counts[$utm_source][$project][$landing_page]++;
 		//$counts[$project][$utm_source][$landing_page]++;
-		$counts[$utm_source][$project][$landing_page]++;
+		$counts[$utm_source][$lang][$project][$landing_page]++;
 	}	
 }
 
-print_r($counts);
+//print_r($counts);
 
 //Quick hack to get it in
 
@@ -60,10 +66,12 @@ $stdout = fopen("php://stdout", "a");
 
 $csv_yes = 1;
 if ( $csv_yes ) {	
-	foreach( $counts as $utm_source => $project ) { 
-		foreach( $project as $project_p => $landing_page ) {
-			foreach( $landing_page as $landing_page_p => $amount ) { 
-				fputcsv( $stdout, array($utm_source,  $project_p,  $landing_page_p ,  $amount ));
+	foreach( $counts as $utm_source => $langs ) { 
+		foreach( $langs as $lang => $project ) {
+			foreach( $project as $project_p => $landing_page ) {
+				foreach( $landing_page as $landing_page_p => $amount ) { 
+					fputcsv( $stdout, array($utm_source, $lang,  $project_p,  $landing_page_p ,  $amount ));
+				}
 			}
 		}
 	}
