@@ -1,18 +1,18 @@
 <?php error_reporting (E_NOTICE && E_ALL);
 
-/* 
+/*
 * mine_impression_requests.php <input_file>
 */
 
-
-
-if ( preg_match( "/gz/", $argv[1] ) ) { 
-	$handle = gzopen($argv[1], 'r' ) or die ("Could not open file $argv[1]");	
+if ( preg_match( "/gz/", $argv[1] ) ) {
+	$handle = gzopen($argv[1], 'r' ) or die ("Could not open file $argv[1]");
 } else {
 	$handle = fopen($argv[1], 'r') or die ("Could not open file $argv[1]");
-}	
+}
 
 $counts = array();
+$countsNOGEO = array();
+
 
 while(( $row = fgetcsv( $handle,'',' ') ) !== FALSE) {
 
@@ -27,29 +27,51 @@ while(( $row = fgetcsv( $handle,'',' ') ) !== FALSE) {
 		continue;
 	}
 	$lang = $parsed_query['userlang'];
+	$country = $parsed_query['country']; // label each record according to country of origin
+
+	// boolean variable which indicates whether the request is non-geo
+	isNonGeo = ($lang == 'pt');
 
 	if ( $project == '' ) {
 		// Try to lookup a sitename if the client is using v1 of the loader
 		$sitename = $parsed_query['sitename'];
 		if ( $sitename ) {
-			$counts[$banner][$sitename]++;
+
+			// Processes NON-GEO banner requests
+			if (isNonGeo)
+				$counts[$banner][$sitename]++;
+			else
+				$counts[$banner][$country][$sitename]++;
+
 		} else {
-			$counts[$banner]['NONE']++;
+
+			// Processes NON-GEO banner requests
+			if(isNonGeo)
+				$counts[$banner]['NONE']++;
+			else
+				$counts[$banner]['NONE'][$country]++;
 		}
 	} else {
-		$counts[$banner][$project]++;
+
+		// Processes NON-GEO banner requests
+		if(isNonGeo)
+			$counts[$banner][$project]++;
+		else
+			$counts[$banner][$project][$country]++;
 	}
 }
 
 $stdout = fopen("php://stdout", "a");
-fputcsv($stdout, array ( 
-	"banner", "project", "counts",	
+fputcsv($stdout, array (
+	"banner", "project", "counts",
 	)
 );
 
 foreach($counts as $bannername => $project_array){
-	foreach ($project_array as $project => $count){
-		fputcsv($stdout, array( $bannername, $project, $count));
+	foreach ($project_array as $project => $country_array){
+		foreach ($country_array as $country => $count){
+			fputcsv($stdout, array( $bannername, $project, $country, $count));
+		}
 	}
 }
 
