@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 from django.core.management import execute_manager
+
 import sys
-sys.path.append('/home/rfaulkner/trunk/projects/')
 
 try:
     import settings # Assumed to be in the same directory.
