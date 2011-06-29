@@ -428,9 +428,14 @@ class IntervalReportingLoader(DataLoader):
                     except KeyError as e:
                         data_dict[key][self._col_names_[i]] = float(field)
         
-        """ !! MODIFY / FIXME --- this could cause issues in the case of missing data """
-        num_rows = len(self._results_) / len(data_dict.keys())
-        
+        """ If the dataset is empty flag an error and set the summary data to empty """
+        try :
+            num_rows = len(self._results_) / len(data_dict.keys())
+        except ZeroDivisionError as e:
+            print >> sys.stderr, 'Empty dataset.  Either no keys were found or the the queried dat was empty'
+            self._summary_data_ = dict()
+            return
+            
         """ 
             POST PROCESSING
             
@@ -542,6 +547,11 @@ class HypothesisTestLoader(DataLoader):
        
     """
     def run_query(self, query_name, metric_name, campaign, item_1, item_2, start_time, end_time, interval, num_samples):
+        
+        """ Verify that the query name is valid """
+        if not(query_name == 'report_banner_confidence' or query_name == 'report_LP_confidence' or query_name == 'report_bannerLP_confidence'):
+            print >> sys.stderr, 'Invalid query name for confidence data sourcing.\n\nUse on of:\n\treport_banner_confidence\n\treport_LP_confidence\n\treport_bannerLP_confidence'
+            return [[],[],[]]
         
         print >> sys.stdout, 'Using query: ' + query_name
         
