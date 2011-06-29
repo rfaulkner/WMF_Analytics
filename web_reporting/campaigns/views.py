@@ -52,8 +52,8 @@ def index(request):
     """ Parse the filter fields """
     filter_data = True
     try:
-        min_donations_var = request.POST['min_donations']
-        earliest_utc_ts_var = request.POST['utc_ts']
+        min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'])
 
     except KeyError as e:
         filter_data = False

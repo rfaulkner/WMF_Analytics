@@ -29,9 +29,11 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
+from django.db import backend
+
 
 """ Import python base modules """
-import sys, math, os, getopt, re, datetime, operator
+import sys, math, os, getopt, re, datetime, operator, MySQLdb
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -48,6 +50,8 @@ import Fundraiser_Tools.settings as projSet
     Index page for tests ... lists all existing tests and allows a new test to be run
 """
 def index(request):
+    
+    backend.quote_name('')
     
     ttl = DL.TestTableLoader()
     test_rows = ttl.get_all_test_rows()
@@ -73,12 +77,17 @@ def test(request):
     """ redirect based on origin if there is an error """
     """ check post data """
     
+    """ 
+        Process user POST data 
+        
+        Escape all user input that can be entered in text fields 
+    """
     try:
         
-        test_name_var = request.POST['test_name']
-        utm_campaign_var = request.POST['utm_campaign']
-        start_time_var = request.POST['start_time']
-        end_time_var = request.POST['end_time']
+        test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'])
+        utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
+        start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'])
+        end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'])
         test_type_override = request.POST['test_type_override']
         
         try: 
@@ -326,7 +335,7 @@ def auto_gen(test_name, start_time, end_time, campaign, labels, sample_interval,
 def add_comment(request, utm_campaign):
     
     try:
-        comments = request.POST['comments']
+        comments = MySQLdb._mysql.escape_string(request.POST['comments'])
         
     except:
         return HttpResponseRedirect(reverse('tests.views.index'))

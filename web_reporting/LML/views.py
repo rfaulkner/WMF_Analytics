@@ -79,10 +79,10 @@ def copy_logs_process(request):
 
     try:
         
-        year_var = request.POST['year']
-        month_var = request.POST['month']
-        day_var = request.POST['day']
-        hour_var = request.POST['hour']
+        year_var = MySQLdb._mysql.escape_string(request.POST['year'])
+        month_var = MySQLdb._mysql.escape_string(request.POST['month'])
+        day_var = MySQLdb._mysql.escape_string(request.POST['day'])
+        hour_var = MySQLdb._mysql.escape_string(request.POST['hour'])
                 
     except KeyError as e:
         """ flag an error here for the user """
@@ -118,10 +118,10 @@ def mine_logs_process(request):
 
     try:
         
-        year_var = request.POST['year']
-        month_var = request.POST['month']
-        day_var = request.POST['day']
-        hour_var = request.POST['hour']
+        year_var = MySQLdb._mysql.escape_string(request.POST['year'])
+        month_var = MySQLdb._mysql.escape_string(request.POST['month'])
+        day_var = MySQLdb._mysql.escape_string(request.POST['day'])
+        hour_var = MySQLdb._mysql.escape_string(request.POST['hour'])
                 
     except KeyError as e:
         """ flag an error here for the user """
