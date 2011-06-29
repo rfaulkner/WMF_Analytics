@@ -11,7 +11,7 @@
 
 {% for lf in log_file_list %}
 	<tr>
-	<td><a href="/LML/mine_logs_process/{{ lf }}">{{ lf }}</a></td> <!-- filename -->
+	<td><a href="/LML/mine_logs_process/{{ lf|escape }}">{{ lf|escape }}</a></td> <!-- filename -->
 	</tr>    
 {% endfor %}
 </table>

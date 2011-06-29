@@ -61,13 +61,14 @@
 <form action="/tests" method="post">
 {% csrf_token %}
 <label for="min_donations"> 
-<h5>Minimum Donations:	</h5>
+<pre>Minimum Donations:	</pre>
 </label>
-<input type="text" name="min_donations" value="{{min_donations}}" />
+<input type="text" name="min_donations" value="{{min_donations|escape}}" />
 <label for="min_donations"> 
-<h5>Start UTC Timestamp:	</h5>
+<pre>Start UTC Timestamp:	</pre>
 </label>
-<input type="text" name="utc_ts" value="{{earliest_utc}}"/>
+<input type="text" name="utc_ts" value="{{earliest_utc|escape}}"/>
+<br>
 <input type="submit" value="Filter" />
 </form>
 

@@ -11,22 +11,22 @@
 <label for="year"> 
 <pre>YEAR:		</pre>
 </label>
-<input type="text" name="year" value="{{ year }}" />
+<input type="text" name="year" value="{{ year|escape }}" />
 <br/>
 <label for="month"> 
 <pre>MONTH:		</pre>
 </label>
-<input type="text" name="month" value="{{ month }}" />
+<input type="text" name="month" value="{{ month|escape }}" />
 <br/>
 <label for="day"> 
 <pre>DAY:		</pre>
 </label>
-<input type="text" name="day" value="{{ day }}" />
+<input type="text" name="day" value="{{ day|escape }}" />
 <br/>
 <label for="hour"> 
 <pre>HOUR (24HR Format):		</pre>
 </label>
-<input type="text" name="hour" value="{{ hour }}" />
+<input type="text" name="hour" value="{{ hour|escape }}" />
 <br/>
 <br/>
 <input type="submit" value="Mine" />
