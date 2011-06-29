@@ -13,25 +13,16 @@ __revision__ = "$Rev$"
 __date__ = "April 25th, 2011"
 
 
-import sys
-import urlparse as up
-import httpagentparser
-import math
-import commands
+""" Import python base modules """
+import sys, urlparse as up, httpagentparser, math, commands, cgi, re, gzip, os, MySQLdb, datetime
 
-import cgi    
-import re        
-import gzip   
-import os
-
-import MySQLdb 
-
-import datetime
+""" Import Analytics modules """
 import Fundraiser_Tools.classes.DataLoader as DL
 import Fundraiser_Tools.classes.Helper as Hlp
 import Fundraiser_Tools.settings as projSet
 import Fundraiser_Tools.classes.TimestampProcessor as TP
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
+
 
 """
 
