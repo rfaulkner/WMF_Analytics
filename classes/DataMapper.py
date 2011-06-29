@@ -165,7 +165,7 @@ class FundraiserDataMapper(DataMapper):
     
     """ !! MODIFY -- use dataloaders! """ 
     def _init_db(self):     
-        self._db_ = MySQLdb.connect(host='127.0.0.1', user='rfaulk', db='faulkner', port=3307)
+        self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
         self._cur_ = self._db_.cursor()
         
     """ !! MODIFY -- use dataloaders! """ 
