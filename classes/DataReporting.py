@@ -12,12 +12,12 @@ The DataLoader class decouples the data access of the reports using the Adapter 
 """
 
 __author__ = "Ryan Faulkner"
-__revision__ = "$Rev$"
+__revision__ = "$Revision$"
 __date__ = "December 16th, 2010"
 
 
 """ Import python base modules """
-import sys, matplotlib, datetime, MySQLdb, pylab, HTML, math
+import sys, pylab, math
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.QueryData as QD
@@ -58,7 +58,8 @@ class DataReporting(object):
     _fig_file_format_ = 'png'
     _plot_type_ = 'line'
     _item_keys_ = list()
-    _file_path_ = './tests/'
+    _file_path_ = '.'
+    _generate_plot_ = True
     
     _data_loader_ = None
     _table_html_ = ''       # Stores the table html
@@ -86,6 +87,8 @@ class DataReporting(object):
                 self._item_keys_ = kwargs[key]
             elif key == 'file_path':                
                 self._file_path_ = kwargs[key]
+            elif key == 'generate_plot':                
+                self._generate_plot_ = kwargs[key]
             
         
         # print self._data_loader_.__str__
@@ -355,6 +358,7 @@ class IntervalReporting(DataReporting):
         pylab.ylabel(ylabel)
 
         pylab.title(title)
+        
         _data_plot_ = pylab.savefig(self._file_path_ + fname + '.' + self._fig_file_format_, format=self._fig_file_format_)
 
         
@@ -413,7 +417,7 @@ class IntervalReporting(DataReporting):
         <generate state> -> <post processing of state data> -> <generate plot>
         
         INPUT:
-                The inputs serve as query arguments
+                The inputs serve as query arguments to generate the data
          
     """        
     def run(self, start_time, end_time, interval, metric_name, campaign, labels):
@@ -440,40 +444,40 @@ class IntervalReporting(DataReporting):
                 self._times_[label] = self._times_[self._times_.keys()[0]]
                 self._counts_[label] = [0.0] * len(self._times_[label])
 
-        min_time = min(self._times_)
-        ranges = [min_time, 0]
-        
-        xlabel = 'MINUTES'
-        subplot_index = 111
-        fname = campaign + '_' + self._data_loader_._query_type_ + '_' + metric_name
-        
-        metric_full_name = QD.get_metric_full_name(metric_name)
-        title = campaign + ':  ' + metric_full_name + ' -- ' + TP.timestamp_convert_format(start_time,1,2) + ' - ' + TP.timestamp_convert_format(end_time,1,2)
-        ylabel = metric_full_name
-        
-        """ Determine List maximums -- Pre-processing for plotting """
-        times_max = 0
-        metrics_max = 0
-        
-        for key in self._counts_.keys():
-            list_max = max(self._counts_[key])
-            if list_max > metrics_max:
-                metrics_max = list_max 
-        
-        for key in self._times_.keys():
-            list_max = max(self._times_[key])
-            if list_max > times_max:
-                times_max = list_max
-        
-        ranges = list()
-        ranges.append(0.0)
-        ranges.append(times_max * 1.1)
-        ranges.append(0.0)
-        ranges.append(metrics_max * 1.5)
-        
-        """ Generate plots given data """
-        self._gen_plot(self._counts_, self._times_, title, xlabel, ylabel, ranges, subplot_index, fname, labels)
-        
+        """ COMPOSE a plot of the data """
+        if self._generate_plot_:
+            
+            xlabel = 'MINUTES'
+            subplot_index = 111
+            fname = campaign + '_' + self._data_loader_._query_type_ + '_' + metric_name
+            
+            metric_full_name = QD.get_metric_full_name(metric_name)
+            title = campaign + ':  ' + metric_full_name + ' -- ' + TP.timestamp_convert_format(start_time,1,2) + ' - ' + TP.timestamp_convert_format(end_time,1,2)
+            ylabel = metric_full_name
+            
+            """ Determine List maximums -- Pre-processing for plotting """
+            times_max = 0
+            metrics_max = 0
+            
+            for key in self._counts_.keys():
+                list_max = max(self._counts_[key])
+                if list_max > metrics_max:
+                    metrics_max = list_max 
+            
+            for key in self._times_.keys():
+                list_max = max(self._times_[key])
+                if list_max > times_max:
+                    times_max = list_max
+            
+            ranges = list()
+            ranges.append(0.0)
+            ranges.append(times_max * 1.1)
+            ranges.append(0.0)
+            ranges.append(metrics_max * 1.5)
+            
+            """ Generate plots given data """
+            self._gen_plot(self._counts_, self._times_, title, xlabel, ylabel, ranges, subplot_index, fname, labels)
+            
         """ Generate table html """
         # self._write_html_table()
 

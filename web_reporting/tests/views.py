@@ -18,22 +18,19 @@
 """
 
 __author__ = "Ryan Faulkner"
-__revision__ = "$Rev$"
+__revision__ = "$Revision$"
 __date__ = "June 20th, 2011"
 
 
 """ Import django modules """
-from django.shortcuts import render_to_response, redirect
-from django.http import Http404
-from django.shortcuts import render_to_response, get_object_or_404
+from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-from django.db import backend
 
 
 """ Import python base modules """
-import sys, math, os, getopt, re, datetime, operator, MySQLdb
+import math, os, datetime, MySQLdb
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -93,7 +90,7 @@ def test(request):
             labels = request.POST['artifacts']
             
                 
-        except KeyError as e:
+        except KeyError:
                         
             os.chdir(projSet.__project_home__ + 'classes')
             test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type

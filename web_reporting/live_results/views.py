@@ -18,19 +18,16 @@
 """
 
 __author__ = "Ryan Faulkner"
-__revision__ = "$Rev$"
+__revision__ = "$Revision$"
 __date__ = "June 20th, 2011"
 
 """ Import django modules """
 from django.shortcuts import render_to_response
-from django.http import Http404
-from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
-from django.http import HttpResponseRedirect, HttpResponse
-from django.core.urlresolvers import reverse
+
 
 """ Import python base modules """
-import sys, os, types, re, datetime, operator, MySQLdb
+import sys, os, datetime
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -54,9 +51,9 @@ def index(request):
     start_time = '20110623160000'
     
     """ Create a interval loader objects """
-    ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_)
-    ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_)
-    ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_)
+    ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
+    ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False)
+    ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False)
     
     sampling_interval = 10
     

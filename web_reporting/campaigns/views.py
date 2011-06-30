@@ -15,14 +15,12 @@
 """
 
 __author__ = "Ryan Faulkner"
-__revision__ = "$Rev$"
+__revision__ = "$Revision$"
 __date__ = "June 20th, 2011"
 
 
 """ Import django modules """
 from django.shortcuts import render_to_response
-from django.http import Http404
-from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
@@ -55,7 +53,7 @@ def index(request):
         min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
         earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'])
 
-    except KeyError as e:
+    except KeyError:
         filter_data = False
     
     
@@ -156,15 +154,16 @@ def show_campaigns(request, utm_campaign):
         print >> sys.stderr, inst.args      # arguments stored in .args
         print >> sys.stderr, inst           # __str__ allows args to printed directly
         
-        err_msg = 'There is insufficient data to analyze this campaign %s.' % utm_campaign
+        """ !! FIXME / TODO - when reversing POST an error message also !! """
+        # err_msg = 'There is insufficient data to analyze this campaign %s.' % utm_campaign
         return HttpResponseRedirect(reverse('campaigns.views.index'))
     
     """ search for start_time and end_time """
-    top_view_interval = max(ir._counts_[utm_campaign])
+    # top_view_interval = max(ir._counts_[utm_campaign])
 
     start_count = 0
     end_count = len(ir._counts_[utm_campaign]) 
-    begin_count = False
+
     count = 0
     
     """ 
