@@ -51,8 +51,6 @@ import Fundraiser_Tools.settings as projSet
 """
 def index(request):
     
-    backend.quote_name('')
-    
     ttl = DL.TestTableLoader()
     test_rows = ttl.get_all_test_rows()
 

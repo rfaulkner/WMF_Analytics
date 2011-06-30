@@ -21,7 +21,7 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "June 20th, 2011"
 
-
+""" Import django modules """
 from django.shortcuts import render_to_response
 from django.http import Http404
 from django.shortcuts import render_to_response, get_object_or_404
@@ -29,14 +29,10 @@ from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 
-import sys
-import os
-import types
-import re
-import datetime
-import json
-from django.utils import simplejson
+""" Import python base modules """
+import sys, os, types, re, datetime, operator, MySQLdb
 
+""" Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
 import Fundraiser_Tools.classes.DataReporting as DR
 import Fundraiser_Tools.classes.DataLoader as DL
@@ -45,7 +41,6 @@ import Fundraiser_Tools.classes.FundraiserDataThreading as FDT
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 import Fundraiser_Tools.classes.TimestampProcessor as TP
 import Fundraiser_Tools.settings as projSet
-import operator
 
 
 """
@@ -72,6 +67,7 @@ def index(request):
     ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',[])
     ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',[])
     ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',[])
+    
     os.chdir(projSet.__home__)
     
     """ Extract data from interval reporting objects """

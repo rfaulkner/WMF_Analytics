@@ -28,7 +28,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 
 """ Import python base modules """
-import sys, os, datetime, operator
+import sys, os, datetime, operator, MySQLdb
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
