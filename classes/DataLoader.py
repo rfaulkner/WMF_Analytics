@@ -16,7 +16,7 @@ __date__ = "April 8th, 2011"
 
 
 """ Import python base modules """
-import sys, MySQLdb, math, datetime, re
+import sys, MySQLdb, math, datetime, re, logging
 
 """ Import Analytics modules """
 import Fundraiser_Tools.settings as projSet
@@ -24,7 +24,12 @@ import Fundraiser_Tools.classes.QueryData as QD
 import Fundraiser_Tools.classes.TimestampProcessor as TP
 import Fundraiser_Tools.classes.Helper as Hlp
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
-        
+
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
+
+
 """
 
     BASE CLASS :: DataLoader
@@ -71,6 +76,7 @@ class DataLoader(object):
     """
     def __init__(self):
         
+        """ State for all new dataloader objects is set to indicate that the associated SQL has yet to be run """
         self._was_run_ = False
         
         
@@ -120,7 +126,7 @@ class DataLoader(object):
                                 for i in range(len(new_list)):
                                     new_list[i] = new_list[i] + data_dict[key][i]
                             except IndexError as e:
-                                print >> sys.stderr, e.msg
+                                logging.error(e.msg)
                                 break;
                 
                 new_data_dict[key] = data_dict[key]
@@ -194,7 +200,7 @@ class DataLoader(object):
         try:
             return self._query_names_[self._query_type_]
         except KeyError:
-            print >> sys.stderr, 'Could not find a query for type: ' + self._query_type_  
+            logging.error('Could not find a query for type: ' + self._query_type_)  
             sys.exit(2)
 
 
@@ -207,8 +213,10 @@ class DataLoader(object):
 """
 class IntervalReportingLoader(DataLoader):
     
-    _summary_data_ = None
-    
+    """
+        Setup query list
+        
+    """
     def __init__(self, query_type):
         
         self._query_names_[FDH._QTYPE_BANNER_] = 'report_banner_metrics_minutely'
@@ -229,7 +237,9 @@ class IntervalReportingLoader(DataLoader):
         """ Call constructor of parent """
         DataLoader.__init__(self)
         
-    
+        self._summary_data_ = None
+        
+        
     """
         Executes the query which generates interval metrics and sets _results_ and _col_names_
         
@@ -252,7 +262,7 @@ class IntervalReportingLoader(DataLoader):
         self.init_db()
         
         query_name = self.get_sql_filename_for_query()
-        print >> sys.stdout, 'Using query: ' + query_name
+        logging.info('Using query: ' + query_name)
         
         metrics = Hlp.AutoVivification()
         times = Hlp.AutoVivification()        
@@ -284,7 +294,7 @@ class IntervalReportingLoader(DataLoader):
         try:
             """ ONLY EXECUTE THE QUERY IF IT HASN'T BEEN BEFORE """
             if not(self._was_run_):
-                print >> sys.stdout, 'Running query ...'
+                logging.info('Running query ...')
                 
                 self._cur_.execute(sql_stmnt)
                 
@@ -334,9 +344,10 @@ class IntervalReportingLoader(DataLoader):
             
             
         except Exception as inst:
-            print type(inst)     # the exception instance
-            print inst.args      # arguments stored in .args
-            print inst           # __str__ allows args to printed directly
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
             
             self._db_.rollback()
             # sys.exit(0)
@@ -359,7 +370,7 @@ class IntervalReportingLoader(DataLoader):
                 
                 """ Change null values to 0 """
                 if metrics[key][i] == None or metrics[key][i] == 'NULL':
-                     metrics[key][i] = 0
+                    metrics[key][i] = 0
                 
                 metrics_new.append(float(metrics[key][i]))
             metrics[key] = metrics_new
@@ -375,7 +386,7 @@ class IntervalReportingLoader(DataLoader):
     def combine_rows(self):
         
         query_name = self.get_sql_filename_for_query()
-        print >> sys.stdout, 'Using query: ' + query_name
+        logging.info('Using query: ' + query_name)
         
         col_types = self._data_handler_.get_col_types(self._query_type_)
         key_index = QD.get_key_index(query_name)
@@ -385,7 +396,7 @@ class IntervalReportingLoader(DataLoader):
         
         """ Check that there are columns defined for the query type """
         if len(col_types) == 0:
-            print >> sys.stderr, 'No metric columns defined for this query type\n'
+            logging.info('No metric columns defined for this query type')
             return 0
             
         """ Combine the rows of data according to the column type definition for the given query """
@@ -395,7 +406,7 @@ class IntervalReportingLoader(DataLoader):
             
             try:
                 data_dict[key] == None  # check for a Index Error
-            except KeyError as e:
+            except KeyError:
                 data_dict[key] = dict()
                 
             for i in range(len(row)):
@@ -418,22 +429,24 @@ class IntervalReportingLoader(DataLoader):
                     
                     try:
                         data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] + float(field)
-                    except KeyError as e:
+                    except KeyError:
                         data_dict[key][self._col_names_[i]] = float(field)
                         
                 elif col_type == self._data_handler_._COLTYPE_AMOUNT_:
                     
                     try:
                         data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] + float(field)
-                    except KeyError as e:
+                    except KeyError:
                         data_dict[key][self._col_names_[i]] = float(field)
         
         """ If the dataset is empty flag an error and set the summary data to empty """
         try :
             num_rows = len(self._results_) / len(data_dict.keys())
-        except ZeroDivisionError as e:
-            print >> sys.stderr, 'Empty dataset.  Either no keys were found or the the queried dat was empty'
+            
+        except ZeroDivisionError:
+            logging.error('Empty dataset.  Either no keys were found or the the queried data was empty')
             self._summary_data_ = dict()
+            
             return
             
         """ 
@@ -550,10 +563,10 @@ class HypothesisTestLoader(DataLoader):
         
         """ Verify that the query name is valid """
         if not(query_name == 'report_banner_confidence' or query_name == 'report_LP_confidence' or query_name == 'report_bannerLP_confidence'):
-            print >> sys.stderr, 'Invalid query name for confidence data sourcing.\n\nUse on of:\n\treport_banner_confidence\n\treport_LP_confidence\n\treport_bannerLP_confidence'
+            logging.error('Invalid query name for confidence data sourcing.\n\nUse on of:\n\treport_banner_confidence\n\treport_LP_confidence\n\treport_bannerLP_confidence')
             return [[],[],[]]
         
-        print >> sys.stdout, 'Using query: ' + query_name
+        logging.info('Using query: ' + query_name)
         
         """ 
             Retrieve time lists with timestamp format 1 (yyyyMMddhhmmss) 
@@ -596,23 +609,24 @@ class HypothesisTestLoader(DataLoader):
                 """ ONLY EXECUTE THE QUERY IF IT HASN'T BEEN BEFORE """
                 if not(self._was_run_):
                 
-                    print >> sys.stdout, 'Running confidence queries ...'
-                    err_msg = formatted_sql_stmnt_1
+                    logging.info('Running confidence queries ...')
+                    #err_msg = formatted_sql_stmnt_1
                     
                     self._cur_.execute(formatted_sql_stmnt_1)
                     results_1 = self._cur_.fetchone()  # there should only be a single row
                     self._results_[0].append(results_1)
                     
-                    err_msg = formatted_sql_stmnt_2
+                    #err_msg = formatted_sql_stmnt_2
                     
                     self._cur_.execute(formatted_sql_stmnt_2)
                     results_2 = self._cur_.fetchone()  # there should only be a single row
                     self._results_[1].append(results_2)
                 
             except Exception as inst:
-                print type(inst)     # the exception instance
-                print inst.args      # arguments stored in .args
-                print inst           # __str__ allows args to printed directly
+                
+                logging.error(type(inst))     # the exception instance
+                logging.error(inst.args)     # arguments stored in .args
+                logging.error(inst)           # __str__ allows args to printed directly
                     
                 self._db_.rollback()
                 #sys.exit("Database Interface Exception:\n" + err_msg)
@@ -702,7 +716,7 @@ class CampaignReportingLoader(DataLoader):
         end_time = params['end_time']
         
         query_name = self.get_sql_filename_for_query()
-        print >> sys.stdout, 'Using query: ' + query_name
+        logging.info('Using query: ' + query_name)
         
         """ Load the SQL File & Format """
         filename = self._sql_path_+ query_name + '.sql'
@@ -730,9 +744,10 @@ class CampaignReportingLoader(DataLoader):
                 raw_data[key_name] = row
          
         except Exception as inst:
-            print type(inst)     # the exception instance
-            print inst.args      # arguments stored in .args
-            print inst           # __str__ allows args to printed directly
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)    # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
             
             self._db_.rollback()
             sys.exit(0)
@@ -755,7 +770,7 @@ class CampaignReportingLoader(DataLoader):
         end_time = params['end_time']
         
         query_name = self.get_sql_filename_for_query()
-        print >> sys.stdout, 'Using query: ' + query_name
+        logging.info('Using query: ' + query_name)
         
         """ Load the SQL File & Format """
         filename = self._sql_path_+ query_name + '.sql'
@@ -779,9 +794,9 @@ class CampaignReportingLoader(DataLoader):
                 # key_name = row[key_index]
                 
         except Exception as inst:
-            print type(inst)     # the exception instance
-            print inst.args      # arguments stored in .args
-            print inst           # __str__ allows args to printed directly
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)    # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
             
             self._db_.rollback()
             sys.exit(0)
@@ -968,7 +983,8 @@ class TestTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + insert_stmnt
+            
+            logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
@@ -995,7 +1011,8 @@ class TestTableLoader(TableLoader):
                 results = None
                 self._db_.rollback()
                 self.close_db()
-                print >> sys.stderr, 'Could not execute: ' + select_stmnt
+                
+                logging.error('Could not execute: ' + select_stmnt)
                 # sys.exit('Could not execute: ' + select_stmnt)
             else:
                 self.close_db()
@@ -1006,7 +1023,7 @@ class TestTableLoader(TableLoader):
                 return True
             
         else:
-            print "A utm_campaign must be specified (e.g. record_exists(utm_campaign='smthg'))"
+            logging.error("A utm_campaign must be specified (e.g. record_exists(utm_campaign='smthg'))")
             return -1
     
     
@@ -1024,7 +1041,7 @@ class TestTableLoader(TableLoader):
             results = None
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + select_stmnt
+            logging.error('Could not execute: ' + select_stmnt)
         else:
             self.close_db()
         
@@ -1045,7 +1062,7 @@ class TestTableLoader(TableLoader):
             results = None
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + select_stmnt
+            logging.error('Could not execute: ' + select_stmnt)
             # sys.exit('Could not execute: ' + select_stmnt)
         else:
             self.close_db()
@@ -1078,9 +1095,9 @@ class TestTableLoader(TableLoader):
         
         except Exception as inst:
             
-            print type(inst)     # the exception instance
-            print inst.args      # arguments stored in .args
-            print inst           # __str__ allows args to printed directly
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
             
             return ''
 
@@ -1151,7 +1168,7 @@ class SquidLogTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + insert_stmnt
+            logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
@@ -1175,7 +1192,7 @@ class SquidLogTableLoader(TableLoader):
             results = None
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + select_stmnt
+            logging.error('Could not execute: ' + select_stmnt)
         else:
             self.close_db()
         
@@ -1196,7 +1213,7 @@ class SquidLogTableLoader(TableLoader):
             results = None
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + select_stmnt
+            logging.error('Could not execute: ' + select_stmnt)
             # sys.exit('Could not execute: ' + select_stmnt)
         else:
             self.close_db()
@@ -1219,7 +1236,7 @@ class SquidLogTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + update_stmnt
+            logging.error('Could not execute: ' + update_stmnt)
             return -1
         else:
             self.close_db()
@@ -1241,7 +1258,7 @@ class SquidLogTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + select_stmnt
+            logging.error('Could not execute: ' + select_stmnt)
             return -1
         else:
             self.close_db()
@@ -1260,7 +1277,7 @@ class SquidLogTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + update_stmnt
+            logging.error('Could not execute: ' + select_stmnt)
             return -1
         else:
             self.close_db()
@@ -1329,7 +1346,7 @@ class ImpressionTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + insert_stmnt
+            logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
@@ -1422,7 +1439,7 @@ class LandingPageTableLoader(TableLoader):
         except:
             self._db_.rollback()
             self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + insert_stmnt
+            logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
