@@ -2,12 +2,23 @@
 
 """
 
-This module is used to define the reporting methodologies on different types of data.  The base class
-DataReporting is defined to outline the general functionality of the reporting architecture and 
-functionality which includes generating the data via a dataloader object and transforming the data
-among different reporting mediums including matlab plots (primary medium) and html tables.
-
-The DataLoader class decouples the data access of the reports using the Adapter structural pattern.
+    This module is used to define the reporting methodologies on different types of data.  The base class
+    DataReporting is defined to outline the general functionality of the reporting architecture and 
+    functionality which includes generating the data via a dataloader object and transforming the data
+    among different reporting mediums including matlab plots (primary medium) and html tables.
+    
+    The DataLoader class decouples the data access of the reports using the Adapter structural pattern.
+    
+    The DataReporter functions under the following assumptions about the data format:
+       
+       -> each set of data points has a label
+       -> labels in counts and times match
+       -> all time labels match
+       -> time data is sequential and relative (typically denoting minutes from a reference time)
+       
+        e.g.
+        _counts_ = {'artifact_1' : [d1, d2, d3], 'artifact_2' : [d4, d5, d6]}
+        _times_ = {'artifact_1' : [t1, t2, t3], 'artifact_2' : [t1, t2, t3]}
 
 """
 
@@ -17,7 +28,7 @@ __date__ = "December 16th, 2010"
 
 
 """ Import python base modules """
-import sys, pylab, math
+import sys, pylab, math, logging
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.QueryData as QD
@@ -26,16 +37,22 @@ import Fundraiser_Tools.classes.TimestampProcessor as TP
 import Fundraiser_Tools.classes.DataLoader as DL
 import Fundraiser_Tools.classes.HypothesisTest as HT
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
+import Fundraiser_Tools.classes.DataFilters as DF
 
 
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
-        
         
 """
 
     BASE CLASS :: DataReporting
     
-    Base class for reporting fundraiser analytics.  Methods that are intended to be extended in derived classes include:
+    Base class for reporting fundraiser analytics.  The DataReporting classes are meant to handle DataLoader objects that pull data from MySQL
+    and format the dictionaries for reporting in the form of plotting and tables.
+    
+    Methods that are intended to be extended in derived classes include:
     
     METHODS:
     
@@ -48,8 +65,9 @@ import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 class DataReporting(object):    
     
     """ CLASS MEMBERS: Store the results of a query """
-    _counts_ = None
-    _times_ = None
+    _counts_ = dict()
+    _times_ = dict()
+    _filters_ = list()
     
     _font_size_ = 24
     _fig_width_pt_ = 246.0                  # Get this from LaTeX using \showthe\columnwidth
@@ -66,8 +84,9 @@ class DataReporting(object):
     _data_plot_ = None      # Stores the plot object
 
 
-
     def __init__(self, **kwargs):
+                
+        self._set_filters()
         
         for key in kwargs:
             
@@ -91,40 +110,38 @@ class DataReporting(object):
                 self._generate_plot_ = kwargs[key]
             
         
-        # print self._data_loader_.__str__
-        
     """
-
-        Smooths a list of values
+        Initialize the filters for data post processing
+    """
+    def _set_filters(self):
         
-        INPUT:
-                values               - a list of datetime objects
-                window_length       - indicate whether the list counts back from the end
-            
-        RETURN: 
-                new_values        - list of smoothed values
+        logging.info('Initializing filters.')
+        
+        self._filters_.append(DF.TotalCountFilter(lower_bound=10,mutable_obj=self))
+        self._filters_.append(DF.MatchKeysDataReporterFilter(mutable_obj=self))
 
     """
-    def smooth(self, values, window_length):
-
-        window_length = int(math.floor(window_length / 2))
-
-        if window_length < 1:
-            return values
-
-        list_len = len(values)
-        new_values = list()
-
-        for i in range(list_len):
-            index_left = max([0, i - window_length])
-            index_right = min([list_len - 1, i + window_length])
-
-            width = index_right - index_left + 1
-            
-            new_val = sum(values[index_left : (index_right + 1)]) / width
-            new_values.append(new_val)
-
-        return new_values
+        Runs through he list of data reporting filters and executes each
+    """        
+    def _execute_filters(self):
+        
+        for filter in self._filters_:
+            filter.execute()
+        
+    """
+        These methods expose the reporting data
+    """
+    def get_counts(self):
+        return self._counts_
+    
+    def get_times(self):
+        return self._times_
+    
+    def set_counts(self, new_dict):
+        self._counts_ = new_dict
+    
+    def set_times(self, new_dict):
+        self._times_ = new_dict
     
     """
     
@@ -145,21 +162,6 @@ class DataReporting(object):
             l.append(i)
         return l
         
-
-    """
-    
-        To be overloaded by subclasses for specific types of queries
-        
-        INPUT:
-                values               - a list of datetime objects
-                window_length       - indicate whether the list counts back from the end
-            
-        RETURN: 
-                return_status        - integer, 0 indicates un-exceptional execution
-    
-    """
-    def run_query(self, start_time, end_time, query_name, metric_name):
-        return 0
         
     
     """
@@ -189,9 +191,9 @@ class DataReporting(object):
                 return_status        - integer, 0 indicates un-exceptional execution
     
     """
-    def _write_to_html_table(self):
+    def _write_html_table(self):
         return 0
-    
+                
     
     
     """
@@ -217,11 +219,12 @@ class DataReporting(object):
     Performs queries that take timestamps, query, and an interval as arguments.  Data for a single metric 
     is generated for each time interval in the time period defined by the start and end timestamps. 
     
-    Types of queries supported:
     
-    report_banner_metrics_minutely
-    report_LP_metrics_minutely
-
+    Members:
+    ========
+    
+    _filters_     - stores a dictionary { filter_name : [filter_object, ]}
+    
 """
 
 class IntervalReporting(DataReporting):
@@ -244,15 +247,15 @@ class IntervalReporting(DataReporting):
                     self._data_loader_ = DL.CampaignIntervalReportingLoader()
                 else:
                     self._data_loader_ = DL.IntervalReportingLoader(kwargs[key])
+            
             elif key == 'was_run':
                 self._was_run_ = kwargs[key]
+            
                 
         """ Call constructor of parent """
         DataReporting.__init__(self, **kwargs)
+    
         
-
-        
-         
     """
         Usage instructions for executing a report via the IntervalReporting class
     """    
@@ -351,8 +354,6 @@ class IntervalReporting(DataReporting):
         else:
             pylab.legend(metrics.keys(),loc=2)
         
-        # add_line(Line2D([0.5, 0.5], [0, 1], transform=a.transAxes, linewidth=2, color='b'))
-
 
         pylab.xlabel(xlabel)
         pylab.ylabel(ylabel)
@@ -374,7 +375,8 @@ class IntervalReporting(DataReporting):
         
         """ Combine the interval data """
         if self._data_loader_.combine_rows() == 0:
-            print >> sys.stderr, 'No summary data for this reporting object.\n'
+            # print >> sys.stderr, 'No summary data for this reporting object.\n'
+            logging.info('No summary data for this reporting object.')
             return 0
         
         """ EXTRACT COLUMN NAMES AND ORDER THEM """
@@ -427,6 +429,8 @@ class IntervalReporting(DataReporting):
         self._counts_ = return_val[0]
         self._times_ = return_val[1]
         
+        """ TODO / FIX ME -- EVERYTHING AFTER THIS POINT SHOULD BE A FILTER """
+        
         """ Select only the specified item keys """
         if len(self._item_keys_) > 0:
             self._counts_ = self.select_metric_keys(self._counts_)
@@ -443,7 +447,17 @@ class IntervalReporting(DataReporting):
             if not(label in self._times_.keys()):
                 self._times_[label] = self._times_[self._times_.keys()[0]]
                 self._counts_[label] = [0.0] * len(self._times_[label])
-
+        
+        """  Remove artifacts not in the list if there are any labels specified """
+        if len(labels) > 0:
+            for label in self._counts_.keys():
+                if label not in labels:
+                    del self._counts_[label]
+                    del self._times_[label]
+        
+        """ Filter the data """
+        self._execute_filters()
+                
         """ COMPOSE a plot of the data """
         if self._generate_plot_:
             
@@ -455,7 +469,7 @@ class IntervalReporting(DataReporting):
             title = campaign + ':  ' + metric_full_name + ' -- ' + TP.timestamp_convert_format(start_time,1,2) + ' - ' + TP.timestamp_convert_format(end_time,1,2)
             ylabel = metric_full_name
             
-            """ Determine List maximums -- Pre-processing for plotting """
+            """ Determine List Maxima and Minima -- Pre-processing for plotting """
             times_max = 0
             metrics_max = 0
             
@@ -469,6 +483,7 @@ class IntervalReporting(DataReporting):
                 if list_max > times_max:
                     times_max = list_max
             
+            """ Set ranges for plotting based on maxima/minima """ 
             ranges = list()
             ranges.append(0.0)
             ranges.append(times_max * 1.1)
@@ -599,7 +614,7 @@ class ConfidenceReporting(DataReporting):
         pylab.subplot(subplot_index)
         pylab.figure(num=None,figsize=[26,14])    
         
-        bp = pylab.boxplot(data, sym='b+')
+        pylab.boxplot(data, sym='b+')
         pylab.xticks(range(1, len(labels) + 1), labels)
         
         """ Set the figure and font size """
@@ -625,7 +640,6 @@ class ConfidenceReporting(DataReporting):
         pylab.rcParams.update(params)
         
         pylab.grid()
-
         
         pylab.ylabel(ylabel)
         
