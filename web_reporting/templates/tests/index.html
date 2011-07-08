@@ -2,34 +2,40 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Generate a new test:</h1><br>
+<h1><u>Fundraiser Tests</u></h1><br>
 
+<div id="stylized" class="myform">
 <form action="/tests/build_test" method="post">
 {% csrf_token %}
-<label for="test_name"> 
-<pre>TEST NAME:		</pre>
+<h1>Generate a new test</h1><br>
+
+<label for="test_name">Test Name:
 </label>
 <input type="text" name="test_name" />
-<label for="utm_campaign"> 
-<pre>UTM CAMPAIGN:		</pre>
+
+<label for="utm_campaign"> UTM Campaign:
 </label>
 <input type="text" name="utm_campaign" />
-<label for="start_time"> 
-<pre>START TIMESTAMP:	</pre>		
+
+<label for="start_time">Start Timestamp:
+<span class="small">Format: yyyymmddhhiiss.</span>		
 </label>
 <input type="text" name="start_time" />
-<label for="end_time">
-<pre>END TIMESTAMP:		</pre>
+
+<label for="end_time">End Timestamp:
+<span class="small">Format: yyyymmddhhiiss.</span>
 </label>
 <input type="text" name="end_time" /><br><br>
-<input type="submit" value="Test" />
+
+<button type="submit">Test</button>
 </form>
+</div>
 
 
 <br><hr width=80%><br><br>
 
 <!-- Table listing all tests run -->
-
+<center>
 <table border="1" cellpadding="10">
 <tr>
 <th>Name</th>
@@ -56,23 +62,35 @@
 {% endfor %}
 
 </table> 
+</center>
 
-<br>
-<form action="/tests" method="post">
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<div id="stylized" class="myform">
+<form action="/campaigns/" method="post">
 {% csrf_token %}
-<label for="min_donations"> 
-<pre>Minimum Donations:	</pre>
+<h1>Filter the list of campaigns:</h1><br>
+<!--<p>This is the basic look of my form without table</p> -->
+
+<label>Minimum Donation
+<span class="small">Number of donations by which to filter.</span>
 </label>
 <input type="text" name="min_donations" value="{{min_donations|escape}}" />
-<label for="min_donations"> 
-<pre>Start UTC Timestamp:	</pre>
+
+<label>Start UTC Timestamp
+<span class="small">Earliest timestamp by which to filter campaigns</span>
 </label>
 <input type="text" name="utc_ts" value="{{earliest_utc|escape}}"/>
-<br>
-<input type="submit" value="Filter" />
-</form>
 
-<br><br><br>
+<br>
+<button type="submit">Filter</button>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+
 <u>Go to:</u>
 <br><br>
 <a href="/campaigns">Latest Campaigns</a><br><br>
