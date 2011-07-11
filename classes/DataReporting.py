@@ -64,10 +64,6 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 class DataReporting(object):    
     
-    """ CLASS MEMBERS: Store the results of a query """
-    _counts_ = dict()
-    _times_ = dict()
-    _filters_ = list()
     
     _font_size_ = 24
     _fig_width_pt_ = 246.0                  # Get this from LaTeX using \showthe\columnwidth
@@ -79,13 +75,17 @@ class DataReporting(object):
     _file_path_ = '.'
     _generate_plot_ = True
     
-    _data_loader_ = None
-    _table_html_ = ''       # Stores the table html
-    _data_plot_ = None      # Stores the plot object
-
 
     def __init__(self, **kwargs):
-                
+        
+        """ CLASS MEMBERS: Store the results of a query """
+        self.data_loader_ = None
+        self._table_html_ = ''       # Stores the table html
+        self._data_plot_ = None      # Stores the plot object
+
+        self._counts_ = dict()
+        self._times_ = dict()
+            
         self._set_filters()
         
         for key in kwargs:
@@ -117,7 +117,8 @@ class DataReporting(object):
         
         logging.info('Initializing filters.')
         
-        self._filters_.append(DF.TotalCountFilter(lower_bound=10,mutable_obj=self))
+        self._filters_ = list()
+        self._filters_.append(DF.TotalCountFilter(lower_bound=-1,mutable_obj=self))
         self._filters_.append(DF.MatchKeysDataReporterFilter(mutable_obj=self))
 
     """
@@ -371,7 +372,7 @@ class IntervalReporting(DataReporting):
             
             html    - html text for the resulting table
     """ 
-    def _write_html_table(self):
+    def _write_html_table(self, label_dict):
         
         """ Combine the interval data """
         if self._data_loader_.combine_rows() == 0:
@@ -396,13 +397,18 @@ class IntervalReporting(DataReporting):
             html = html + '<th>' + i + '</th>'
         html = html + '</tr>'
         
-
         """ Build rows """
         for item in data.keys():
             html = html + '<tr>'
-            html = html + '<td>' + item + '</td>'
-            for elem in col_names:
-                html = html + '<td>' + QD.get_metric_data_type(elem,data[item][elem]) + '</td>'
+            
+            if item in label_dict.keys():
+                html = html + '<td>' + label_dict[item] + '</td>'
+            else:
+                html = html + '<td>' + item + '</td>'
+                
+            for elem in col_names:                
+                elem_formatted = QD.get_metric_data_type(elem, data[item][elem])
+                html = html + '<td>' + elem_formatted + '</td>'
             html = html + '</tr>'
         
         html = html + '</table>'
@@ -422,7 +428,10 @@ class IntervalReporting(DataReporting):
                 The inputs serve as query arguments to generate the data
          
     """        
-    def run(self, start_time, end_time, interval, metric_name, campaign, labels):
+    def run(self, start_time, end_time, interval, metric_name, campaign, label_dict):
+        
+        """ Get the artifacts from label dictionary """
+        artifact_keys = label_dict.keys()
         
         """ Execute the query that generates interval reporting data """
         return_val = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
@@ -438,26 +447,28 @@ class IntervalReporting(DataReporting):
         
         """ Convert Times to Integers that indicate relative times AND normalize the intervals in case any are missing """
         for key in self._times_.keys():
-            self._times_[key] = TP.normalize_timestamps(self._times_[key], False, 3)
+            self._times_[key] = TP.normalize_timestamps(self._times_[key], False, 3)            
             self._times_[key], self._counts_[key] = TP.normalize_intervals(self._times_[key], self._counts_[key], interval)
-                
-        """ If there are missing metrics add them as zeros """
-        for label in labels:
+        
 
-            if not(label in self._times_.keys()):
-                self._times_[label] = self._times_[self._times_.keys()[0]]
-                self._counts_[label] = [0.0] * len(self._times_[label])
+        """ If there are missing metrics add them as zeros """
+        for artifact_key in artifact_keys:
+
+            if not(artifact_key in self._times_.keys()):
+                self._times_[artifact_key] = self._times_[self._times_.keys()[0]]
+                self._counts_[artifact_key] = [0.0] * len(self._times_[artifact_key])
         
         """  Remove artifacts not in the list if there are any labels specified """
-        if len(labels) > 0:
-            for label in self._counts_.keys():
-                if label not in labels:
-                    del self._counts_[label]
-                    del self._times_[label]
+        if len(artifact_keys) > 0:
+            for key in self._counts_.keys():
+                if key not in artifact_keys:
+                    del self._counts_[key]
+                    del self._times_[key]
         
         """ Filter the data """
         self._execute_filters()
-                
+        
+        
         """ COMPOSE a plot of the data """
         if self._generate_plot_:
             
@@ -489,6 +500,14 @@ class IntervalReporting(DataReporting):
             ranges.append(times_max * 1.1)
             ranges.append(0.0)
             ranges.append(metrics_max * 1.5)
+            
+            """ Collect the labels into a list """
+            if len(artifact_keys) > 0:
+                labels = list()
+                for key in self._counts_.keys():
+                    labels.append(label_dict[key])
+            else:
+                labels = self._counts_.keys()
             
             """ Generate plots given data """
             self._gen_plot(self._counts_, self._times_, title, xlabel, ylabel, ranges, subplot_index, fname, labels)
@@ -744,11 +763,11 @@ class ConfidenceReporting(DataReporting):
         counter = 1
         for key in items.keys():
             if counter == 1:
-                item_1 = items[key]
-                label_1 = key
+                label_1 = items[key]
+                item_1 = key
             elif counter == 2:
-                item_2 = items[key]
-                label_2 = key
+                label_2 = items[key]
+                item_2 = key
             counter += 1
                 
         """ Retrieve values from database """
@@ -756,7 +775,7 @@ class ConfidenceReporting(DataReporting):
         metrics_1 = Hlp.convert_Decimal_list_to_float(ret[0])
         metrics_2 = Hlp.convert_Decimal_list_to_float(ret[1])
         times_indices = ret[2]
-        
+
         """ run the confidence test """
         ret = self._hypothesis_test_.confidence_test(metrics_1, metrics_2, num_samples)
         means_1 = ret[0]
