@@ -27,7 +27,7 @@ from django.template import RequestContext
 
 
 """ Import python base modules """
-import sys, os, datetime
+import sys, os, datetime, re
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -47,8 +47,8 @@ def index(request):
     
     """ Get the donations for all campaigns over the last n hours """
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-6)
-    end_time = '20110623220000'
-    start_time = '20110623160000'
+    start_time = '20110708155000'
+    end_time = '20110708200000'
     
     """ Create a interval loader objects """
     ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
@@ -61,16 +61,16 @@ def index(request):
     os.chdir(projSet.__project_home__ + '/classes')
     
     #ir.run('20110603120000', '20110604000000', 2, 'donations', '',[])
-    ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',[])
-    ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',[])
-    ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',[])
+    ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
+    ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
+    ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
     
     os.chdir(projSet.__home__)
     
     """ Extract data from interval reporting objects """
-    cmpgn_data_dict = get_data_lists(ir_cmpgn)
-    cmpgn_banner_dict = get_data_lists(ir_banner)
-    cmpgn_lp_dict = get_data_lists(ir_lp)
+    cmpgn_data_dict = get_data_lists(ir_cmpgn, 'C_')
+    cmpgn_banner_dict = get_data_lists(ir_banner, 'B_')
+    cmpgn_lp_dict = get_data_lists(ir_lp, 'L11_')    
     
     """ combine the separate data sets """
     dict_param = combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict])
@@ -83,7 +83,7 @@ def index(request):
     !! FIXME -- Move to Helper?? !!
     
 """
-def get_data_lists(ir):
+def get_data_lists(ir, pattern):
     
     """ Get metrics """
     data = list()
@@ -91,25 +91,40 @@ def get_data_lists(ir):
     counts = list()
     max_data = 0
     
+    """ Find the key with the highest count """
+    max = 0
+    for key in ir._counts_.keys():
+        val = sum(ir._counts_[key])
+        if val > max:
+            max = val
+    
+    """ Only add keys with enough counts """
     data_index = 0
     for key in ir._counts_.keys():
         
-        data.append(list())
-        
-        if key == None or key == '':
-            labels = labels + 'empty?'
+        if key == None:
+            isFormed = re.search(pattern, '')
         else:
-            labels = labels + key + '?'
+            isFormed = re.search(pattern, key)
+            
+        if sum(ir._counts_[key]) > 0.01 * max and isFormed:
+            
+            data.append(list())
+            
+            if key == None or key == '':
+                labels = labels + 'empty?'
+            else:
+                labels = labels + key + '?'
+            
+            counts.append(len(ir._counts_[key]))  
+            
+            for i in range(counts[data_index]):
+                data[data_index].append([ir._times_[key][i], ir._counts_[key][i]])
+                if ir._counts_[key][i] > max_data:
+                    max_data = ir._counts_[key][i]
+                    
+            data_index = data_index + 1
         
-        counts.append(len(ir._counts_[key]))  
-        
-        for i in range(counts[data_index]):
-            data[data_index].append([ir._times_[key][i], ir._counts_[key][i]])
-            if ir._counts_[key][i] > max_data:
-                max_data = ir._counts_[key][i]
-                
-        data_index = data_index + 1
-    
     labels = labels + '!'
     
     return {'num_elems' : data_index, 'counts' : counts, 'labels' : labels, 'data' : data, 'max_data' : max_data}
