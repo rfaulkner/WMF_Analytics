@@ -16,7 +16,7 @@ __date__ = "April 8th, 2011"
 
 
 """ Import python base modules """
-import sys, MySQLdb, math, datetime, re, logging
+import sys, MySQLdb, math, datetime, re, logging, csv
 
 """ Import Analytics modules """
 import Fundraiser_Tools.settings as projSet
@@ -28,7 +28,6 @@ import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr
 logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
-
 
 """
 
@@ -56,9 +55,6 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 class DataLoader(object):
 
-    """ Database and Cursor objects """
-    _db_ = None
-    _cur_ = None
     
     _sql_path_ = '../sql/'    # Relative path for SQL files to be processed
     
@@ -76,6 +72,10 @@ class DataLoader(object):
     """
     def __init__(self):
         
+        """ Database and Cursor objects """
+        #_db_ = None
+        #_cur_ = None
+    
         """ State for all new dataloader objects is set to indicate that the associated SQL has yet to be run """
         self._was_run_ = False
         
@@ -603,7 +603,7 @@ class HypothesisTestLoader(DataLoader):
             if not(self._was_run_):
                 formatted_sql_stmnt_1 = QD.format_query(query_name, sql_stmnt, [t1, t2, item_1, campaign])
                 formatted_sql_stmnt_2 = QD.format_query(query_name, sql_stmnt, [t1, t2, item_2, campaign])
-                # print formatted_sql_stmnt_1
+                
             try:
                 
                 """ ONLY EXECUTE THE QUERY IF IT HASN'T BEEN BEFORE """
@@ -832,7 +832,16 @@ class TableLoader(DataLoader):
     def update_row(self, **kwargs):
         return
     
-    
+    def execute_SQL(self, SQL_statement):
+        
+        try:
+            return self._cur_.execute(SQL_statement)
+        except:
+            self._db_.rollback()
+            logging.error('Could not execute: ' + SQL_statement)
+            
+            return -1
+        
 """
 
     CLASS :: TTestLoaderHelp
@@ -852,7 +861,13 @@ class TableLoader(DataLoader):
 
 """
 class TTestLoaderHelp(TableLoader):
-        
+    
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+ 
     """
     This method knows about faulkner.t_test.  This is a lookup table for p-values
     given the degrees of freedom and statistic t test
@@ -867,8 +882,6 @@ class TTestLoaderHelp(TableLoader):
     """
     def get_pValue(self, degrees_of_freedom, t):
         
-        self.init_db()
-        
         select_stmnt = 'select max(p) from t_test where degrees_of_freedom = ' + str(degrees_of_freedom) + ' and t >= ' + str(t)
 
         try:
@@ -881,11 +894,8 @@ class TTestLoaderHelp(TableLoader):
                 p = .0005
         except:
             self._db_.rollback()
-            self._db_.close()
             sys.exit('Could not execute: ' + select_stmnt)
             
-        self._db_.close()
-        
         return p
 
 
@@ -914,6 +924,12 @@ class TTestLoaderHelp(TableLoader):
 """
 class TestTableLoader(TableLoader):
     
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+
     def process_kwargs(self, kwargs_dict):
         
         utm_campaign = 'NULL'
@@ -953,19 +969,14 @@ class TestTableLoader(TableLoader):
         cols = ' test_name = ' + test_name + ', test_type = ' + test_type + ', utm_campaign = ' +  utm_campaign + ', start_time = ' +  start_time + ', end_time = ' +  end_time + ', winner = ' +  winner + ', is_conclusive = ' +  is_conclusive + ', html_report = ' +  html_report 
         update_stmnt = 'update test set' + cols + ' where utm_campaign = ' + utm_campaign
         
-        self.init_db()
-        
         try:
-            self._cur_.execute(update_stmnt)
+            return self._cur_.execute(update_stmnt)
         except:
             self._db_.rollback()
-            self.close_db()
-            print >> sys.stderr, 'Could not execute: ' + update_stmnt
+            logging.error('Could not execute: ' + update_stmnt)
+            
             return -1
-        else:
-            self.close_db()
         
-        return 0
 
     
     def insert_row(self, **kwargs):
@@ -976,22 +987,14 @@ class TestTableLoader(TableLoader):
     
         insert_stmnt = insert_stmnt + '(' + test_name + ',' + test_type + ',' + utm_campaign + ',' + start_time + ',' + end_time + ',' + winner + ',' + is_conclusive + ',' + html_report + ')'
         
-        self.init_db()
-        
         try:
-            self._cur_.execute(insert_stmnt)
+            return self._cur_.execute(insert_stmnt)
         except:
             self._db_.rollback()
-            self.close_db()
-            
             logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
-        else:
-            self.close_db()
-
-        return 0
 
     
     def record_exists(self, **kwargs):
@@ -1001,8 +1004,6 @@ class TestTableLoader(TableLoader):
         if utm_campaign != 'NULL' and utm_campaign != None: 
             select_stmnt = 'select * from test where utm_campaign = ' + utm_campaign
             
-            self.init_db()
-        
             try:
                 self._cur_.execute(select_stmnt)
                 results = self._cur_.fetchone()
@@ -1010,12 +1011,8 @@ class TestTableLoader(TableLoader):
             except:
                 results = None
                 self._db_.rollback()
-                self.close_db()
-                
                 logging.error('Could not execute: ' + select_stmnt)
                 # sys.exit('Could not execute: ' + select_stmnt)
-            else:
-                self.close_db()
 
             if results is None:
                 return False
@@ -1031,8 +1028,6 @@ class TestTableLoader(TableLoader):
         
         select_stmnt = 'select * from test where utm_campaign = ' + Hlp.stringify(utm_campaign)
         
-        self.init_db()
-        
         try:
             self._cur_.execute(select_stmnt)
             results = self._cur_.fetchone()
@@ -1040,10 +1035,7 @@ class TestTableLoader(TableLoader):
         except:
             results = None
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + select_stmnt)
-        else:
-            self.close_db()
         
         return results
     
@@ -1052,8 +1044,6 @@ class TestTableLoader(TableLoader):
         
         select_stmnt = 'select * from test'
         
-        self.init_db()
-        
         try:
             self._cur_.execute(select_stmnt)
             results = self._cur_.fetchall()
@@ -1061,12 +1051,8 @@ class TestTableLoader(TableLoader):
         except:
             results = None
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + select_stmnt)
             # sys.exit('Could not execute: ' + select_stmnt)
-        else:
-            self.close_db()
-
         
         return results
         
@@ -1127,6 +1113,13 @@ class TestTableLoader(TableLoader):
 """
 class SquidLogTableLoader(TableLoader):
     
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+
+
     def process_kwargs(self, kwargs_dict):
         
         type = 'NULL'
@@ -1161,19 +1154,14 @@ class SquidLogTableLoader(TableLoader):
     
         insert_stmnt = insert_stmnt + '(' + type + ',' + log_copy_time + ',' + start_time + ',' + end_time + ',' + log_completion_pct + ',' + total_rows + ')'
         
-        self.init_db()
-        
         try:
             self._cur_.execute(insert_stmnt)
         except:
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
-        else:
-            self.close_db()
 
         return 0
 
@@ -1182,8 +1170,6 @@ class SquidLogTableLoader(TableLoader):
         
         select_stmnt = 'select * from squid_log_record where log_copy_time = ' + Hlp.stringify(log_copy_time)
         
-        self.init_db()
-        
         try:
             self._cur_.execute(select_stmnt)
             results = self._cur_.fetchone()
@@ -1191,10 +1177,7 @@ class SquidLogTableLoader(TableLoader):
         except:
             results = None
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + select_stmnt)
-        else:
-            self.close_db()
         
         return results
     
@@ -1203,8 +1186,6 @@ class SquidLogTableLoader(TableLoader):
         
         select_stmnt = 'select * from squid_log_record'
         
-        self.init_db()
-        
         try:
             self._cur_.execute(select_stmnt)
             results = self._cur_.fetchall()
@@ -1212,12 +1193,8 @@ class SquidLogTableLoader(TableLoader):
         except:
             results = None
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + select_stmnt)
             # sys.exit('Could not execute: ' + select_stmnt)
-        else:
-            self.close_db()
-
         
         return results
     
@@ -1229,17 +1206,13 @@ class SquidLogTableLoader(TableLoader):
         cols = ' type = ' + type + ', log_copy_time = ' + log_copy_time + ', start_time = ' +  start_time + ', end_time = ' +  end_time + ', log_completion_pct = ' +  log_completion_pct + ', total_rows = ' +  total_rows
         update_stmnt = 'update squid_log_record set' + cols + ' where log_copy_time = ' + log_copy_time
         
-        self.init_db()
-        
         try:
             self._cur_.execute(update_stmnt)
         except:
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + update_stmnt)
+            
             return -1
-        else:
-            self.close_db()
         
         return 0
     
@@ -1250,18 +1223,13 @@ class SquidLogTableLoader(TableLoader):
         '(select type as temp_type, max(log_copy_time) as max_copy_time from squid_log_record group by type, start_time) as temp join ' \
         'squid_log_record on (max_copy_time = squid_log_record.log_copy_time and temp_type = type)'
         
-        self.init_db()
-        
         try:
             self._cur_.execute(select_stmnt)
             results = self._cur_.fetchall()
         except:
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + select_stmnt)
             return -1
-        else:
-            self.close_db()
             
         return results
     
@@ -1269,18 +1237,13 @@ class SquidLogTableLoader(TableLoader):
         
         select_stmnt = 'select type, start_time, log_completion_pct, log_completion_pct from (select max(log_copy_time) as max_copy_time from squid_log_record) as temp join squid_log_record on max_copy_time = squid_log_record.log_copy_time'
         
-        self.init_db()
-        
         try:
             self._cur_.execute(select_stmnt)
             results = self._cur_.fetchall()
         except:
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + select_stmnt)
             return -1
-        else:
-            self.close_db()
         
         return results
     
@@ -1289,71 +1252,88 @@ class SquidLogTableLoader(TableLoader):
 
     CLASS :: ImpressionTableLoader
     
-    storage3.pmtpa.wmnet.faulkner.impression :
+    storage3.pmtpa.wmnet.faulkner.banner_impressions :
         
-    +------------+------------------+------+-----+-------------------+-----------------------------+
-    | Field      | Type             | Null | Key | Default           | Extra                       |
-    +------------+------------------+------+-----+-------------------+-----------------------------+
-    | utm_source | varchar(128)     | NO   | MUL |                   |                             | 
-    | referrer   | varchar(128)     | NO   |     |                   |                             | 
-    | country    | varchar(20)      | NO   | MUL |                   |                             | 
-    | lang       | varchar(20)      | NO   |     |                   |                             | 
-    | counts     | int(10) unsigned | YES  | MUL | NULL              |                             | 
-    | on_minute  | timestamp        | NO   | MUL | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP | 
-    +------------+------------------+------+-----+-------------------+-----------------------------+
+    +-----------------+------------------+------+-----+---------------------+-----------------------------+
+    | Field           | Type             | Null | Key | Default             | Extra                       |
+    +-----------------+------------------+------+-----+---------------------+-----------------------------+
+    | start_timestamp | timestamp        | NO   |     | CURRENT_TIMESTAMP   | on update CURRENT_TIMESTAMP | 
+    | utm_source      | varchar(128)     | YES  |     | NULL                |                             | 
+    | referrer        | varchar(128)     | YES  |     | NULL                |                             | 
+    | country         | varchar(128)     | YES  |     | NULL                |                             | 
+    | lang            | varchar(20)      | YES  |     | NULL                |                             | 
+    | counts          | int(10) unsigned | YES  |     | NULL                |                             | 
+    | on_minute       | timestamp        | NO   |     | 0000-00-00 00:00:00 |                             | 
+    +-----------------+------------------+------+-----+---------------------+-----------------------------+
             
 """
 class ImpressionTableLoader(TableLoader):
     
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+
+
     def process_kwargs(self, kwargs_dict):
         
+        start_timestamp = 'NULL'
         utm_source = 'NULL'
         referrer = 'NULL'
         country =  'NULL'
         lang =  'NULL'
         counts = 'NULL'
         on_minute = 'NULL'
-
+                
         for key in kwargs_dict:
-            if key == 'utm_source':           
+            if key == 'utm_source_arg':           
                 utm_source = Hlp.stringify(kwargs_dict[key])
-            elif key == 'referrer':
+            elif key == 'referrer_arg':
                 referrer = Hlp.stringify(kwargs_dict[key])
-            elif key == 'country':
+            elif key == 'country_arg':
                 country = Hlp.stringify(kwargs_dict[key])
-            elif key == 'lang':
+            elif key == 'lang_arg':
                 lang = Hlp.stringify(kwargs_dict[key])
-            elif key == 'counts':
+            elif key == 'counts_arg':
                 counts = Hlp.stringify(kwargs_dict[key])
-            elif key == 'on_minute':
-                on_minute = Hlp.stringify(kwargs_dict[key])
+            elif key == 'on_minute_arg':
+                on_minute = kwargs_dict[key]
+            elif key == 'start_timestamp_arg':
+                start_timestamp = kwargs_dict[key]
         
-        return [utm_source, referrer, country, lang, counts, on_minute]
+        return [start_timestamp, utm_source, referrer, country, lang, counts, on_minute]
     
     
     def insert_row(self, **kwargs):
         
-        insert_stmnt = 'insert into impression values '
+        insert_stmnt = 'insert into banner_impressions values '
         
-        utm_source, referrer, country, lang, counts, on_minute = self.process_kwargs(kwargs)
+        start_timestamp, utm_source, referrer, country, lang, counts, on_minute = self.process_kwargs(kwargs)
     
-        insert_stmnt = insert_stmnt + '(' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' + counts + ',' + on_minute + ')'
-        
-        self.init_db()
-        
+        val = '(' + start_timestamp + ',' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' \
+                                    + counts + ',' + on_minute + ');'
+                                    
+        insert_stmnt = insert_stmnt + val
+
         try:
             self._cur_.execute(insert_stmnt)
         except:
             self._db_.rollback()
-            self.close_db()
             logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
             # sys.exit('Could not execute: ' + insert_stmnt)
-        else:
-            self.close_db()
 
         return 0
+    
+    
+    def delete_row(self, start_timestamp):
+        
+        deleteStmnt = 'delete from banner_impressions where start_timestamp = \'' + start_timestamp + '\';'
+        
+        self.execute_SQL(deleteStmnt)
+        
     
 """
 
@@ -1383,6 +1363,12 @@ class ImpressionTableLoader(TableLoader):
 """
 class LandingPageTableLoader(TableLoader):
     
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+        
     def process_kwargs(self, kwargs_dict):
         
         utm_source = 'NULL'
@@ -1396,54 +1382,155 @@ class LandingPageTableLoader(TableLoader):
         country = 'NULL'
         project = 'NULL'
         ip = 'NULL'
-
-        for key in kwargs_dict:
-            if key == 'utm_source':           
-                utm_source = Hlp.stringify(kwargs_dict[key])
-            elif key == 'utm_campaign':
-                utm_campaign = Hlp.stringify(kwargs_dict[key])
-            elif key == 'utm_medium':
-                utm_medium = Hlp.stringify(kwargs_dict[key])
-            elif key == 'landing_page':
-                landing_page = Hlp.stringify(kwargs_dict[key])
-            elif key == 'page_url':
-                page_url = Hlp.stringify(kwargs_dict[key])
-            elif key == 'referrer_url':
-                referrer_url = Hlp.stringify(kwargs_dict[key])
-            elif key == 'browser':
-                browser = Hlp.stringify(kwargs_dict[key])
-            elif key == 'lang':
-                lang = Hlp.stringify(kwargs_dict[key])
-            elif key == 'country':
-                country = Hlp.stringify(kwargs_dict[key])
-            elif key == 'project':
-                project = Hlp.stringify(kwargs_dict[key])
-            elif key == 'ip':
-                ip = Hlp.stringify(kwargs_dict[key])
         
-        return [utm_source, utm_campaign, utm_medium, landing_page, page_url, referrer_url, browser, lang, country, project, ip]
+        
+        for key in kwargs_dict:
+            if key == 'utm_source_arg':           
+                utm_source = Hlp.stringify(kwargs_dict[key])
+            elif key == 'utm_campaign_arg':
+                utm_campaign = Hlp.stringify(kwargs_dict[key])
+            elif key == 'utm_medium_arg':
+                utm_medium = Hlp.stringify(kwargs_dict[key])
+            elif key == 'landing_page_arg':
+                landing_page = Hlp.stringify(kwargs_dict[key])
+            elif key == 'page_url_arg':
+                page_url = Hlp.stringify(kwargs_dict[key])
+            elif key == 'referrer_url_arg':
+                referrer_url = Hlp.stringify(kwargs_dict[key])
+            elif key == 'browser_arg':
+                browser = Hlp.stringify(kwargs_dict[key])
+            elif key == 'lang_arg':
+                lang = Hlp.stringify(kwargs_dict[key])
+            elif key == 'country_arg':
+                country = Hlp.stringify(kwargs_dict[key])
+            elif key == 'project_arg':
+                project = Hlp.stringify(kwargs_dict[key])
+            elif key == 'ip_arg':
+                ip = Hlp.stringify(kwargs_dict[key])
+            elif key == 'start_timestamp_arg':
+                start_timestamp = Hlp.stringify(kwargs_dict[key])
+            elif key == 'timestamp_arg':
+                timestamp = Hlp.stringify(kwargs_dict[key])
+                
+        return [start_timestamp, timestamp, utm_source, utm_campaign, utm_medium, landing_page, page_url, referrer_url, browser, lang, country, project, ip]
     
     
     def insert_row(self, **kwargs):
         
-        insert_stmnt = 'insert into landing_page values '
+        insert_stmnt = 'insert into landing_page_requests values '
         
-        utm_source, utm_campaign, utm_medium, landing_page, page_url, referrer_url, browser, lang, country, project, ip = self.process_kwargs(kwargs)
+        start_timestamp, timestamp, utm_source, utm_campaign, utm_medium, landing_page, page_url, referrer_url, browser, lang, country, project, ip = self.process_kwargs(kwargs)
+        
+        val = '(' + 'convert(' + start_timestamp + ', datetime)' + ',' + utm_source + ',' + utm_campaign + ',' + utm_medium + ',' + landing_page + \
+                    ',' + page_url + ',' + referrer_url + ',' + browser + ',' + lang + ',' + country + ','  \
+                    + project + ',' +  ip + ',' + 'convert(' + timestamp + ', datetime)' + ');'
+                    
+        insert_stmnt = insert_stmnt + val
+        
+        return self.execute_SQL(insert_stmnt)
+        
     
-        insert_stmnt = insert_stmnt + '(' + utm_source + ',' + utm_campaign + ',' + utm_medium + ',' + landing_page + ',' + page_url + ',' + referrer_url + ',' + lang + ',' + country + ',' + project + ',' + ip + ')'
+    
+    def delete_row(self, start_timestamp):
         
+        deleteStmnt = 'delete from landing_page_requests where start_timestamp = \'' + start_timestamp + '\';'
+        
+        return self.execute_SQL(deleteStmnt)
+
+
+"""
+
+    CLASS :: IPCountryTableLoader
+    
+    storage3.pmtpa.wmnet.faulkner.ip_country :
+    
+    +---------------+-------------+------+-----+---------+-------+
+    | Field         | Type        | Null | Key | Default | Extra |
+    +---------------+-------------+------+-----+---------+-------+
+    | ip_from       | varchar(50) | NO   | PRI |         |       | 
+    | ip_to         | varchar(50) | YES  |     | NULL    |       | 
+    | registry      | varchar(50) | YES  |     | NULL    |       | 
+    | assigned      | varchar(50) | YES  |     | NULL    |       | 
+    | country_ISO_1 | varchar(50) | YES  |     | NULL    |       | 
+    | country_ISO_2 | varchar(50) | YES  |     | NULL    |       | 
+    | country_name  | varchar(50) | YES  |     | NULL    |       | 
+    +---------------+-------------+------+-----+---------+-------+
+"""
+class IPCountryTableLoader(TableLoader):
+    
+    def __init__(self):
         self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+
+
+    """ Given an IP localizes the country """
+    def localize_IP(self, ip_string):
+        
+        # compute ip number
+        ip_fields = ip_string.split('.')
+        w = int(ip_fields[0])
+        x = int(ip_fields[1])
+        y = int(ip_fields[2])
+        z = int(ip_fields[3])
+        
+        ip_num = 16777216 * w + 65536 * x + 256 * y + z;
+        
+        sql_stmnt = 'select country_ISO_1 from ip_country where ' + str(ip_num) + ' >= ip_from and ' + str(ip_num) + ' <= ip_to'
         
         try:
-            self._cur_.execute(insert_stmnt)
-        except:
+            self._cur_.execute(sql_stmnt)
+            row = self._cur_.fetchone()
+        
+        except:    
             self._db_.rollback()
-            self.close_db()
-            logging.error('Could not execute: ' + insert_stmnt)
+            logging.error('Could not execute: ' + sql_stmnt)
+        
+        try:
+            country = row[0]
+        except:
+            country = ''
+        
+        return country
+    
+    
+    """ Load  data into the IP localization table to associate IPs with countries """
+    def load_IP_localization_table(self):
+        
+        """ Get db object / Create cursor  """
+        
+        # Parse CSV file 
+        ipReader = csv.reader(open('./csv/IpToCountry.csv', 'rb'))
+        insert_stmnt = 'INSERT INTO ip_country VALUES '
+        # (ip_from,ip_to,registry,assigned,country_ISO_1,country_ISO_2,country_name) 
+        header = 1
+        for row in ipReader:
+            # skip the csv comments
+            if row[0][0] != '#':
+                header = 0
             
-            return -1
-            # sys.exit('Could not execute: ' + insert_stmnt)
-        else:
-            self.close_db()
-
-        return 0
+            if not(header):
+                
+                for i in range(len(row)):
+                    pieces = row[i].split('\'')
+                    
+                    if len(pieces) > 1:
+                        new_str = pieces[0]
+                        
+                        # remove single quotes from fields
+                        for j in range(1,len(pieces)):
+                            new_str = new_str + ' ' + pieces[j]
+                    
+                        row[i] = new_str
+                            
+                vals = '\',\''.join(row)
+                sql_stmnt = insert_stmnt + '(\'' + vals + '\')'
+                
+                #cur.execute(sql_stmnt)
+                try:
+                    self._cur_.execute(sql_stmnt)
+                except:
+                    self._db_.rollback()
+                    logging.error('Could not insert: ' + sql_stmnt)        
+                
