@@ -22,11 +22,10 @@ __date__ = "June 20th, 2011"
 """ Import django modules """
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.http import HttpResponseRedirect, HttpResponse
-from django.core.urlresolvers import reverse
+from django.http import HttpResponse
 
 """ Import python base modules """
-import sys, os, datetime, operator, MySQLdb
+import sys, os, datetime, operator, MySQLdb, logging
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -36,6 +35,9 @@ import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 import Fundraiser_Tools.classes.TimestampProcessor as TP
 import Fundraiser_Tools.settings as projSet
 
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
 
 """
@@ -147,7 +149,7 @@ def show_campaigns(request, utm_campaign):
         If unsuccessful reverse to index view and emit error message
     """
     try:
-        ir.run(start_time, end_time, interval, 'views', utm_campaign, [])
+        ir.run(start_time, end_time, interval, 'views', utm_campaign, {})
     
     except Exception as inst:
         print >> sys.stderr, type(inst)     # the exception instance
@@ -156,48 +158,52 @@ def show_campaigns(request, utm_campaign):
         
         """ !! FIXME / TODO - when reversing POST an error message also !! """
         # err_msg = 'There is insufficient data to analyze this campaign %s.' % utm_campaign
-        return HttpResponseRedirect(reverse('campaigns.views.index'))
+        # return HttpResponseRedirect(reverse('campaigns.views.index'))
     
     """ search for start_time and end_time """
     # top_view_interval = max(ir._counts_[utm_campaign])
 
     start_count = 0
     end_count = len(ir._counts_[utm_campaign]) 
-
-    count = 0
     
     """ 
         ESTIMATE THE START AND END TIME OF THE CAMAPIGN
         
         Search for the first instance when more than 10 views are observed over a smapling period
     """
-    for i in ir._counts_[utm_campaign]:
+    
+    num_datapoints = len(ir._counts_[utm_campaign])
+    range_list = range(num_datapoints)
+    
+    for i in range_list:
         # if i > (0.5 * top_view_interval) and not(begin_count):
-        if i > 10:
-            start_count = count
-            break
-        
-        count = count + 1
-        
+        if ir._counts_[utm_campaign][i] > 10:
+            start_count = i
+            start_count = ir._times_[utm_campaign][i]
+            break    
     
-    count = 0
-    ir._counts_[utm_campaign].reverse()
-    for i in ir._counts_[utm_campaign]:
+    range_list.reverse()
+    for i in range_list:
         
-        if i > 10:
-            end_count = count
-            break
-        
-        count = count + 1
-    
-    ir._counts_[utm_campaign].reverse()
-    
+        if ir._counts_[utm_campaign][i] > 10:
+            end_count = i
+            end_count = ir._times_[utm_campaign][i]
+            break    
+
     """ Based on where the first and last number of views/interval are observed to be greater that 10, generate the associated timestamps """
-    end_count = len(ir._counts_[utm_campaign]) - end_count
-    start_time_est = TP.timestamp_to_obj(start_time, 1) + datetime.timedelta(minutes=interval * start_count)
-    end_time_est = TP.timestamp_to_obj(start_time, 1) + datetime.timedelta(minutes=interval * end_count)
+    
+    start_time_est = TP.timestamp_to_obj(start_time, 1) + datetime.timedelta(minutes=start_count)
+    end_time_est = TP.timestamp_to_obj(start_time, 1) + datetime.timedelta(minutes=end_count)
+
+    """ Really bad hack for the moment - subtract a day from times """
+    """ use for campaigns: C_JMvJD_Junetest_EN, C_JMvJD_Junetest_US """
+    start_time_est = start_time_est + datetime.timedelta(days=-1)
+    end_time_est = end_time_est + datetime.timedelta(days=-1)
+    
     start_time_est = TP.timestamp_from_obj(start_time_est, 1, 2)
     end_time_est = TP.timestamp_from_obj(end_time_est, 1, 2)
+    
+
     
     """ Read the test name """
     ttl = DL.TestTableLoader()
@@ -206,7 +212,7 @@ def show_campaigns(request, utm_campaign):
     
     """ Regenerate the data using the estimated start and end times  !! FIXME / MODIFY -- this is cumbersome .. should just generate the plot !! """
     ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
-    ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, [])
+    ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, {})
 
         
     """ determine the type of test """
