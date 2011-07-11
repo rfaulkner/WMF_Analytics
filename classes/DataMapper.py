@@ -14,7 +14,7 @@ __date__ = "April 25th, 2011"
 
 
 """ Import python base modules """
-import sys, urlparse as up, httpagentparser, math, commands, cgi, re, gzip, os, MySQLdb, datetime
+import sys, urlparse as up, httpagentparser, commands, cgi, re, gzip, os, datetime, logging
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.DataLoader as DL
@@ -23,6 +23,9 @@ import Fundraiser_Tools.settings as projSet
 import Fundraiser_Tools.classes.TimestampProcessor as TP
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
 """
 
@@ -39,6 +42,9 @@ import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 """
 class DataMapper(object):
     
+    _LP_LOG_PREFIX_ = 'bannerImpressions' 
+    _BANNER_LOG_PREFIX_ = 'landingpages'
+    
     """
         Copies mining logs from remote site for a given hour
         
@@ -48,11 +54,10 @@ class DataMapper(object):
     def copy_logs(self, type, **kwargs):
         
         if type == FDH._TESTTYPE_BANNER_:
-            # prefix = 'bannerImpressions-2011-06-01-11PM*'
-            prefix = 'bannerImpressions'
+            prefix = self._LP_LOG_PREFIX_
+            
         elif type == FDH._TESTTYPE_LP_:
-            # prefix = 'landingpages-2011-06-01-11PM*'
-            prefix = 'landingpages'
+            prefix = self._BANNER_LOG_PREFIX_
         
         filename = prefix
         
@@ -82,21 +87,34 @@ class DataMapper(object):
         """ adjust the hour based on time of day """ 
         if hour > 12:
             hour = str(hour-12)
-            day_part = 'PM*'
+            day_part = 'PM'
         else:
             hour = str(hour)
-            day_part = 'AM*'
+            day_part = 'AM'
         
         if int(hour) < 10:
             hour = '0' + str(int(hour))
             
         filename = filename + '-' + year + '-' + month + '-' + day + '-' + hour + day_part
-        #filename = 'bannerImpressions-2011-05-27-11PM--25*'
-        # filename = prefix + '-2011-06-01-11PM*' 
-        cmd = 'sftp ' + projSet.__user__ + '@' + projSet.__squid_log_server__ + ':' + projSet.__squid_log_home__ + filename  + ' ' + projSet.__squid_log_local_home__
-        
-        os.system(cmd)
-        
+
+        """ Try to load each log for that hour - only load gzipped logs for now """
+        for i in range(4):
+            minute = i * 15
+            
+            if minute >= 10:
+                minute = str(minute) + '.log.gz'
+            else:
+                minute = '0' + str(minute) + '.log.gz'
+            
+            full_filename = filename  + '--' + minute
+            
+            cmd = 'sftp ' + projSet.__user__ + '@' + projSet.__squid_log_server__ + ':' + projSet.__squid_log_home__ + full_filename + ' ' + projSet.__squid_log_local_home__ 
+            
+            if not(self.log_exists(full_filename)):            
+                os.system(cmd)
+            else:
+                logging.info('File: %s has already been loaded.' % full_filename)
+                
         return filename
 
     """
@@ -121,7 +139,6 @@ class DataMapper(object):
         files = os.listdir(projSet.__squid_log_local_home__)
         files.sort()
         
-        new_files = list()
         for f in files:
             if f == log_name:
                 return True
@@ -140,53 +157,65 @@ class DataMapper(object):
 
 """
 class FundraiserDataMapper(DataMapper):
-    
-    _db_ = None
-    _cur_ = None
-    
-    _impression_table_name_ = 'banner_impressions'
-    _landing_page_table_name_ = 'landing_page_requests'
-    
+                
     _BANNER_REQUEST_ = 0
     _LP_REQUEST_ = 1
     
     _BANNER_FIELDS_ =  ' (start_timestamp, utm_source, referrer, country, lang, counts, on_minute) '
     _LP_FIELDS_ = ' (start_timestamp, utm_source, utm_campaign, utm_medium, landing_page, page_url, referrer_url, browser, lang, country, project, ip, request_time) '
     
+    def __init__(self):
+        
+        """ Initialize dataloaders and connections """
+        self._DL_impressions_ = DL.ImpressionTableLoader()
+        self._DL_LPrequests_ = DL.LandingPageTableLoader()
+        
+        self._DL_impressions_.init_db()
+        self._DL_LPrequests_.init_db()
+        
     
-    """ !! MODIFY -- use dataloaders! """ 
-    def _init_db(self):     
-        self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
-        self._cur_ = self._db_.cursor()
         
-    """ !! MODIFY -- use dataloaders! """ 
-    def _close_db(self):
-        self._cur_.close()
-        self._db_.close()
+    """ 
+        Check for new log files on the remote server
+    """ 
+    def poll_log_files(self, type, **kwargs):
         
+        """ Get remote directory listing """
         
+        """ Extract latest timestamp from filenames """
+        
+        """ Compare to latest log file loaded"""
+        
+        return
+        
+         
     """
         Remove banner impression or landing page squid records from tables before loading 
     """
     def _clear_squid_records(self, start, request_type):
         
-        
         """ Ensure that the range is correct; otherwise abort - critical that outside records are not deleted """
         timestamp = TP.timestamp_convert_format(start,1,2)
         
-        if request_type == self._BANNER_REQUEST_:
-            deleteStmnt = 'delete from ' + self._impression_table_name_ + ' where start_timestamp = \'' + timestamp + '\';'
-        elif request_type == self._LP_REQUEST_:
-            deleteStmnt = 'delete from ' + self._landing_page_table_name_ + ' where start_timestamp = \'' + timestamp + '\';'
-        
         try:
-            self._cur_.execute(deleteStmnt)
-            print >> sys.stdout, "Executed delete: " + deleteStmnt
-        except:
-            print >> sys.stderr, "Could not execute delete:\n" + deleteStmnt + "\nResuming insert ..."
-            pass
-
+            if request_type == self._BANNER_REQUEST_:
+                self._DL_impressions_.delete_row(timestamp)
+            elif request_type == self._LP_REQUEST_:
+                self._DL_LPrequests_.delete_row(timestamp)
+            
+            logging.info("Executed delete for start time " + timestamp)
         
+        except Exception as inst:
+            
+            logging.error("Could not execute delete for start time " + timestamp) 
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)     # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            """ Die if the records cannot be removed """
+            sys.exit()
+
         
     """
         Given the name of a log file extract the squid requests corresponding to banner impressions.
@@ -199,7 +228,7 @@ class FundraiserDataMapper(DataMapper):
     """
     def mine_squid_impression_requests(self, logFileName):
         
-        self._init_db()
+        # self._init_db()
 
         sltl = DL.SquidLogTableLoader()
         itl = DL.ImpressionTableLoader()
@@ -223,7 +252,7 @@ class FundraiserDataMapper(DataMapper):
         queryIndex = 4;
     
         counts = Hlp.AutoVivification()
-        insertStmt = 'INSERT INTO ' + self._impression_table_name_ + self._BANNER_FIELDS_ + ' values '
+        # insertStmt = 'INSERT INTO ' + self._impression_table_name_ + self._BANNER_FIELDS_ + ' values '
     
         min_log = -1
         hr_change = 0
@@ -337,7 +366,7 @@ class FundraiserDataMapper(DataMapper):
                 
             """
             if min_log < minute and not(hr_change):
-    
+                
                 if minute == 0:
                     hr_change = 1
     
@@ -367,14 +396,8 @@ class FundraiserDataMapper(DataMapper):
                                 lang = langKeys[lang_ind]
                                 count = langCounts[lang]
                                 
-                                try:
-                                    val = '(' + start_timestamp_in + ',\'' + banner + '\',\'' + project + '\',\'' + country + '\',\'' + lang + '\',' \
-                                    + str(count) + ',' + time_stamp_in + ');'
-                                    #print insertStmt + val
-                                    self._cur_.execute(insertStmt + val)
-                                except:
-                                    self._db_.rollback()
-                                    sys.exit("Database Interface Exception - Could not execute statement:\n" + insertStmt + val)
+                                itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=time_stamp_in, start_timestamp_arg=start_timestamp_in)
+
     
                 # Re-initialize counts
                 counts = Hlp.AutoVivification()
@@ -389,7 +412,6 @@ class FundraiserDataMapper(DataMapper):
 
         
         logFile.close()
-        self._close_db()
 
 
 
@@ -404,11 +426,11 @@ class FundraiserDataMapper(DataMapper):
     """
     def mine_squid_landing_page_requests(self,  logFileName):
 
-        self._init_db()
-        
+        #self._init_db()
+        """ Create the dataloaders and initialize """
         sltl = DL.SquidLogTableLoader()
         lptl = DL.LandingPageTableLoader()
-        
+        ipctl = DL.IPCountryTableLoader()
         
         """ Retrieve the log timestamp from the filename """
         #time_stamps = Hlp.get_timestamps(logFileName)
@@ -430,18 +452,12 @@ class FundraiserDataMapper(DataMapper):
         queryIndex = 4;
         pathIndex = 2;
     
-        """ SQL Statements """
-    
-        insertStmt_lp = 'INSERT INTO ' + self._landing_page_table_name_ + self._LP_FIELDS_ + ' values '
-    
         """ Clear the old records """
         self._clear_squid_records(start, self._LP_REQUEST_)
         
         """ Add a row to the SquidLogTable """
         sltl.insert_row(type='lp_view',log_copy_time=curr_time,start_time=start,end_time=end,log_completion_pct='0.0',total_rows='0')
 
-        count_correct = 0
-        count_total = 0
         line_count = 0
         
         """
@@ -573,11 +589,7 @@ class FundraiserDataMapper(DataMapper):
             query_fields = cgi.parse_qs(parsed_landing_url[queryIndex]) # Get the banner name and lang
             path_pieces = parsed_landing_url[pathIndex].split('/')
 
-            #print ''
-            #print landing_url
             include_request, index_str_flag = self.evaluate_landing_url(landing_url, parsed_landing_url, query_fields, path_pieces)
-            #print [include_request, index_str_flag]
-
             
             if include_request:
                 
@@ -601,7 +613,7 @@ class FundraiserDataMapper(DataMapper):
                             
                     except:
                         landing_page = 'NONE'
-                        country = Hlp.localize_IP(self._cur_, ip_add)
+                        country = ipctl.localize_IP(ip_add) 
                         
                 else: 
                     """ Address cases where the query string does not contain the landing page - ...wikimediafoundation.org/wiki/... """
@@ -625,11 +637,11 @@ class FundraiserDataMapper(DataMapper):
                                 country = landing_path[3]
                                 
                         except:
-                            country =  Hlp.localize_IP(self._cur_, ip_add) 
+                            country = ipctl.localize_IP(ip_add)
                 
                 # If country is confused with the language use the ip
                 if country == country.lower():
-                    country = Hlp.localize_IP(self._cur_, ip_add) 
+                    country = ipctl.localize_IP(ip_add) 
                                 
                 # ensure fields exist
                 try:
@@ -642,19 +654,11 @@ class FundraiserDataMapper(DataMapper):
                     utm_campaign = 'NONE'
                     utm_medium = 'NONE'
                 
-                # INSERT INTO landing_page ('utm_source', 'utm_campaign', 'utm_medium', 'landing_page', 'page_url', 'lang', 'project', 'ip')  values ()
-                try:
-                    val = '(' + start_timestamp_in + ',\'' + utm_source + '\',\'' + utm_campaign + '\',\'' + utm_medium + '\',\'' + landing_page + \
-                    '\',\'' + landing_url + '\',\'' + referrer_url + '\',\'' + browser + '\',\'' + source_lang + '\',\'' + country + '\',\''  \
-                    + project + '\',\'' +  ip_add + '\',' + 'convert(\'' + timestamp_string + '\', datetime)' + ');'
-                    
-                    #print insertStmt + val
-                    self._cur_.execute(insertStmt_lp + val)
-                    
-                except:
-                    print "Could not insert:\n" + insertStmt_lp + val
-                    pass
-                    
+                """ Insert record into the landing_page_requests table """
+                
+                lptl.insert_row(utm_source_arg=utm_source, utm_campaign_arg=utm_campaign, utm_medium_arg=utm_medium, landing_page_arg=landing_page, page_url_arg=landing_url, \
+                    referrer_url_arg=referrer_url, browser_arg=browser, lang_arg=source_lang, country_arg=country, project_arg=project, ip_arg=ip_add, start_timestamp_arg=start_timestamp_in, timestamp_arg=timestamp_string)
+                
             line = logFile.readline()
             line_count = line_count + 1 
     
@@ -663,7 +667,7 @@ class FundraiserDataMapper(DataMapper):
                 completion = float(line_count / total_lines_in_file) * 100.0
                 sltl.update_table_row(type='lp_view',log_copy_time=curr_time,start_time=start,end_time=end,log_completion_pct=completion.__str__(),total_rows=line_count.__str__())
 
-        self._close_db()
+        #self._close_db()
         
 
     """
@@ -689,12 +693,10 @@ class FundraiserDataMapper(DataMapper):
                 time_bits = time_stamp.split('T')
                 date_fields = time_bits[0].split('-')
                 time_fields = time_bits[1].split(':')
-                minute = int(time_fields[1])
             
             except (ValueError, IndexError):
                 
                 line = logFile.readline()
-                total_lines_in_file = total_lines_in_file - 1
                 continue
                 
             """ Break the loop once we have a timestamp """
@@ -747,8 +749,8 @@ class FundraiserDataMapper(DataMapper):
     def evaluate_landing_url(self, landing_url, parsed_landing_url, query_fields, path_pieces):        
         
         hostIndex = 1
-        queryIndex = 4
-        pathIndex = 2
+        #queryIndex = 4
+        #pathIndex = 2
 
         """ 
             Filter the landing URLs
@@ -777,8 +779,8 @@ class FundraiserDataMapper(DataMapper):
             cond3 = (regexp_res == None)
             
             return [(cond1 or cond2) and cond3, index_str_flag]
-             
-        except Exception as e: 
+
+        except: 
             #print type(e)     # the exception instance
             #print e.args      # arguments stored in .args
             #print e           # __str__ allows args to printed directly
