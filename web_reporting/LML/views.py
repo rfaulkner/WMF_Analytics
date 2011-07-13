@@ -22,14 +22,12 @@ __date__ = "June 20th, 2011"
 
 """ Import django modules """
 from django.shortcuts import render_to_response
-from django.http import Http404
-from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 
 """ Import python base modules """
-import sys, os, re, datetime, operator, MySQLdb
+import re, datetime, MySQLdb, logging, sys
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -43,21 +41,46 @@ import Fundraiser_Tools.settings as projSet
 
 
 
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
+
+_beginning_time_ = '000001122334455'
+_end_time_ = '99990011223344'
+
+
 """
     Index page for finding the latest camapigns.  Displays a list of recent campaigns with more than k donations over the last n hours. 
     
 """
 def index(request):
     
+    err_msg, earliest_utc_ts_var, latest_utc_ts_var = process_filter_data(request)
+    
     sltl = DL.SquidLogTableLoader()
     
     """ Show the squid log table """
     squid_table = sltl.get_all_rows_unique_start_time()
+    filtered_squid_table = list()
+    
+    for row in squid_table:
+         
+        log_start_time = sltl.get_squid_log_record_field(row, 'start_time')
+        
+        """ Ensure the timestamp is properly formatted """
+        if TP.is_timestamp(log_start_time, 2):
+            log_start_time = TP.timestamp_convert_format(log_start_time, 2, 1)
+            
+        if int(log_start_time) > int(earliest_utc_ts_var) and int(log_start_time) < int(latest_utc_ts_var):
+            filtered_squid_table.append(row)
+    
+    squid_table = filtered_squid_table
+    squid_table.reverse()
     
     """ Show the latest log that has been or is loading and its progress """
     completion_rate = sltl.get_completion_rate_of_latest_log()
     
-    return render_to_response('LML/index.html', {'squid_table' : squid_table, 'completion_rate' : completion_rate},  context_instance=RequestContext(request))
+    return render_to_response('LML/index.html', {'err_msg' : err_msg, 'squid_table' : squid_table, 'completion_rate' : completion_rate},  context_instance=RequestContext(request))
 
 
 """
@@ -83,7 +106,7 @@ def copy_logs_process(request):
         day_var = MySQLdb._mysql.escape_string(request.POST['day'])
         hour_var = MySQLdb._mysql.escape_string(request.POST['hour'])
                 
-    except KeyError as e:
+    except KeyError:
         """ flag an error here for the user """
         return HttpResponseRedirect(reverse('LML.views.index'))
         # pass
@@ -96,9 +119,27 @@ def copy_logs_process(request):
     
     return render_to_response('LML/log_list.html', {'log_file_list' : dm.get_list_of_logs()},  context_instance=RequestContext(request))
 
+
 def log_list(request):
+    
+    err_msg, earliest_utc_ts_var, latest_utc_ts_var = process_filter_data(request)
+    
     dm = DM.DataMapper()
-    return render_to_response('LML/log_list.html', {'log_file_list' : dm.get_list_of_logs()},  context_instance=RequestContext(request))
+    log_file_list = dm.get_list_of_logs()
+    filtered_list = list()
+    
+    for log_file in log_file_list:
+        
+        log_start_time = dm.get_timestamps(log_file)[0]
+        
+        if int(log_start_time) > int(earliest_utc_ts_var) and int(log_start_time) < int(latest_utc_ts_var):
+            filtered_list.append(log_file)
+        
+        log_file_list = filtered_list
+    
+    log_file_list.reverse()
+    
+    return render_to_response('LML/log_list.html', {'err_msg' : err_msg, 'log_file_list' : log_file_list},  context_instance=RequestContext(request))
 
 
 """
@@ -122,7 +163,7 @@ def mine_logs_process(request):
         day_var = MySQLdb._mysql.escape_string(request.POST['day'])
         hour_var = MySQLdb._mysql.escape_string(request.POST['hour'])
                 
-    except KeyError as e:
+    except KeyError:
         """ flag an error here for the user """
         return HttpResponseRedirect(reverse('LML.views.index'))
         # pass
@@ -130,14 +171,12 @@ def mine_logs_process(request):
     """ Initialize the datamapper and then copy the banner and lp logs """
     fdm = DM.FundraiserDataMapper()
     log_files_list = fdm.get_list_of_logs()
-    
-    log_names = list()
-        
+            
     date_string = year_var + '-' + month_var + '-' + day_var + '-' + hour_var
     
     for lf in log_files_list:
         if re.search(date_string, lf):
-             FDT.MinerThread(lf).start()
+            FDT.MinerThread(lf).run()
             
     return HttpResponseRedirect(reverse('LML.views.index'))
 
@@ -150,10 +189,42 @@ def mine_logs_process(request):
 """
 def mine_logs_process_file(request, log_name):
 
-    mt = FDT.MinerThread(log_name)
-    mt.start()
+    FDT.MinerThread(log_name).run()
             
     return HttpResponseRedirect(reverse('LML.views.index'))
 
 
+"""
+    Generic timestamp filter processing
+"""
+def process_filter_data(request):
+        
+    err_msg = ''
+    
+    """ Parse the filter fields """
+    try:
+        
+        latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'])
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'])
+        
+        if not TP.is_timestamp(earliest_utc_ts_var, 1) or  not TP.is_timestamp(earliest_utc_ts_var, 1):
+            raise TypeError
+            
+            
+        if latest_utc_ts_var == '':
+            latest_utc_ts_var = _end_time_
+            
+    except KeyError:
+        
+        earliest_utc_ts_var = _beginning_time_
+        latest_utc_ts_var = _end_time_
+    
+    except TypeError:
+        
+        err_msg = 'Please enter a valid timestamp.'
+        
+        earliest_utc_ts_var = _beginning_time_
+        latest_utc_ts_var = _end_time_
+
+    return err_msg, earliest_utc_ts_var, latest_utc_ts_var
     

@@ -4,9 +4,16 @@
 
 <h1>Log Mining Logs:</h1><br>
 <h4>The table below is a listing of all of the squid logs that have been mined:</h4><br>
+<div class="spacer"></div>
+
+{% if err_msg != '' %}
+	<span style="color:red">{{err_msg}}</span>
+	<div class="spacer"></div>
+{% endif %}
 
 <!-- Table listing all tests run -->
 
+<center>
 <table border="1" cellpadding="10">
 <tr>
 <th>Log Type</th>
@@ -29,8 +36,35 @@
 {% endfor %}
 
 </table> 
+</center>
 
-<br><br><br>
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<div id="stylized" class="myform">
+<form action="/LML/" method="post">
+{% csrf_token %}
+<h1><u>Filter Log Records</u></h1><br>
+<!--<p>This is the basic look of my form without table</p> -->
+
+<label>Start UTC Timestamp
+<span class="small">Earliest Timestamp: yyymmddhhiiss</span>
+</label>
+<input type="text" name="earliest_utc_ts" value="" />
+
+<label>End UTC Timestamp
+<span class="small">Latest Timestamp: yyymmddhhiiss</span>
+</label>
+<input type="text" name="latest_utc_ts" value=""/>
+
+<br>
+<button type="submit">Filter</button>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+
 <u>Go to:</u>
 <br><br>
 <a href="/LML/copy_logs_form">Copy Logs</a><br><br>

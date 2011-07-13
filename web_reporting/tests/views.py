@@ -46,22 +46,59 @@ import Fundraiser_Tools.settings as projSet
 LOGGING_STREAM = sys.stderr
 logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
-
+_beginning_time_ = '000001122334455'
+_end_time_ = '99990011223344'
 
 """
     Index page for tests ... lists all existing tests and allows a new test to be run
 """
 def index(request):
     
+    err_msg = ''
+    
+    """ Parse the filter fields """
+    try:
+        
+        latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'])
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'])
+        
+        if not TP.is_timestamp(earliest_utc_ts_var, 1) or  not TP.is_timestamp(earliest_utc_ts_var, 1):
+            raise TypeError
+            
+            
+        if latest_utc_ts_var == '':
+            latest_utc_ts_var = _end_time_
+            
+    except KeyError:
+        
+        earliest_utc_ts_var = _beginning_time_
+        latest_utc_ts_var = _end_time_
+    
+    except TypeError:
+        
+        err_msg = 'Please enter a valid timestamp.'
+        
+        earliest_utc_ts_var = _beginning_time_
+        latest_utc_ts_var = _end_time_
+            
     ttl = DL.TestTableLoader()
     test_rows = ttl.get_all_test_rows()
-
+    
+    """ Build a list of tests -- apply filters """
     l = []
     for i in test_rows:
-        l.append(i)
+        test_start_time = ttl.get_test_field(i, 'start_time')
+        
+        """ Ensure the timestamp is properly formatted """
+        if TP.is_timestamp(test_start_time, 2):
+            test_start_time = TP.timestamp_convert_format(test_start_time, 2, 1)
+        
+        if int(test_start_time) > int(earliest_utc_ts_var) and int(test_start_time) < int(latest_utc_ts_var):
+            l.append(i)
+        
     l.reverse()
     
-    return render_to_response('tests/index.html', {'test_rows' : l},  context_instance=RequestContext(request))
+    return render_to_response('tests/index.html', {'err_msg' : err_msg, 'test_rows' : l},  context_instance=RequestContext(request))
 
 
 
@@ -77,6 +114,7 @@ def test(request):
     """ redirect based on origin if there is an error """
     """ check post data """
     
+        
     """ 
         Process user POST data 
         
