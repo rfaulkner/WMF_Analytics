@@ -38,10 +38,7 @@ __revision__ = "$Rev$"
 __date__ = "April 8th, 2011"
 
 
-import sys
-import datetime
-import calendar as cal
-import math
+import datetime, calendar as cal, math
 import Fundraiser_Tools.classes.Helper as mh
 
 """
@@ -52,17 +49,17 @@ import Fundraiser_Tools.classes.Helper as mh
 """
 def timestamps_for_interval(start_time_obj, timestamp_format, **kwargs):
    
-   for key in kwargs:
-       
-       if key == 'minutes':
-           end_time_obj = start_time_obj + datetime.timedelta(minutes=kwargs[key])
-       elif key == 'hours':
-            end_time_obj = start_time_obj + datetime.timedelta(hours=kwargs[key])
-    
-       start_timestamp = timestamp_from_obj(start_time_obj, timestamp_format, 3)
-       end_timestamp = timestamp_from_obj(end_time_obj, timestamp_format, 3)
+    for key in kwargs:
         
-       return [start_timestamp, end_timestamp]
+        if key == 'minutes':
+            end_time_obj = start_time_obj + datetime.timedelta(minutes=kwargs[key])
+        elif key == 'hours':
+            end_time_obj = start_time_obj + datetime.timedelta(hours=kwargs[key])
+        
+        start_timestamp = timestamp_from_obj(start_time_obj, timestamp_format, 3)
+        end_timestamp = timestamp_from_obj(end_time_obj, timestamp_format, 3)
+         
+        return [start_timestamp, end_timestamp]
    
    
 """
@@ -80,50 +77,50 @@ def timestamps_for_interval(start_time_obj, timestamp_format, **kwargs):
 """
 def normalize_timestamps(time_lists, count_back, time_unit):
      
-     time_lists, isList = timestamps_to_dict(time_lists)
-     
-     """ Depending on args set the start date """
-     if count_back:
-         start_date_obj = find_latest_date_in_list(time_lists)
-     else:
-         start_date_obj = find_earliest_date_in_list(time_lists)
-     
-     start_month = start_date_obj.month
-     start_day = start_date_obj.day
-     start_hr  = start_date_obj.hour
-     start_mte = start_date_obj.minute
-     
-     length_of_month = cal.mdays[start_month]
-     
-     # Normalize dates
-     time_norm = mh.AutoVivification()
-     for key in time_lists.keys():
-         for date_obj in time_lists[key]:
-             
-             month = date_obj.month
-             day = date_obj.day
-             hr = date_obj.hour
-             mte = date_obj.minute
-             
-             if time_unit == 0:
-                 elem = (day - start_day)
-             elif time_unit == 1:
-                 elem = (day - start_day) * 24 + (hr - start_hr)
-             elif time_unit == 2:
-                 elem = (day - start_day) * 24 * 60 + (hr - start_hr) * 60 + (mte - start_mte)
-             elif time_unit == 3:
-                 elem = (month - start_month) * 24 * 60 * length_of_month + (day - start_day) * 24 * 60 + (hr - start_hr) * 60 + (mte - start_mte)
-             try: 
-                 time_norm[key].append(elem)
-             except:
-                 time_norm[key] = list()
-                 time_norm[key].append(elem)
-     
-     """ If the original argument was a list put it back in that form """
-     if isList:
-         time_norm = time_norm[key]
-         
-     return time_norm
+    time_lists, isList = timestamps_to_dict(time_lists)
+    
+    """ Depending on args set the start date """
+    if count_back:
+        start_date_obj = find_latest_date_in_list(time_lists)
+    else:
+        start_date_obj = find_earliest_date_in_list(time_lists)
+    
+    start_month = start_date_obj.month
+    start_day = start_date_obj.day
+    start_hr  = start_date_obj.hour
+    start_mte = start_date_obj.minute
+    
+    length_of_month = cal.mdays[start_month]
+    
+    # Normalize dates
+    time_norm = mh.AutoVivification()
+    for key in time_lists.keys():
+        for date_obj in time_lists[key]:
+            
+            month = date_obj.month
+            day = date_obj.day
+            hr = date_obj.hour
+            mte = date_obj.minute
+            
+            if time_unit == 0:
+                elem = (day - start_day)
+            elif time_unit == 1:
+                elem = (day - start_day) * 24 + (hr - start_hr)
+            elif time_unit == 2:
+                elem = (day - start_day) * 24 * 60 + (hr - start_hr) * 60 + (mte - start_mte)
+            elif time_unit == 3:
+                elem = (month - start_month) * 24 * 60 * length_of_month + (day - start_day) * 24 * 60 + (hr - start_hr) * 60 + (mte - start_mte)
+            try: 
+                time_norm[key].append(elem)
+            except:
+                time_norm[key] = list()
+                time_norm[key].append(elem)
+    
+    """ If the original argument was a list put it back in that form """
+    if isList:
+        time_norm = time_norm[key]
+        
+    return time_norm
      
  
 """
@@ -251,6 +248,19 @@ def gen_date_strings(time_ref, hours_back, format, resolution):
     RETURN:
          start_time     - formatted datetime string
          end_time       - formatted datetime string
+         
+         
+    Examples of format definitions:
+
+        format 1 - 20080101000606
+        format 2 - 2008-01-01 00:06:06   
+        
+    Examples of resolution definitions:
+    
+        resolution 0 - xxxx-xx-xx 00:00:00
+        resolution 1 - xxxx-xx-xx xx:00:00
+        resolution 2 - xxxx-xx-xx xx:xx:00
+        resolution 3 - xxxx-xx-xx xx:xx:xx
 
 """
 def timestamp_from_obj(time_obj, format, resolution):
@@ -311,13 +321,24 @@ def timestamp_from_obj(time_obj, format, resolution):
     Convert timestamp to a datetime object of a given format
     
     INPUT:
-    
         timestamp        - timestamp string
         format           - the format of the returned timestamp strings 
     
-    
     RETURN:
          time_obj     - datetime conversion of timestamp string
+         
+         
+    Examples of format definitions:
+
+        format 1 - 20080101000606
+        format 2 - 2008-01-01 00:06:06   
+        
+    Examples of resolution definitions:
+    
+        resolution 0 - xxxx-xx-xx 00:00:00
+        resolution 1 - xxxx-xx-xx xx:00:00
+        resolution 2 - xxxx-xx-xx xx:xx:00
+        resolution 3 - xxxx-xx-xx xx:xx:xx
      
 """
 def timestamp_to_obj(timestamp, format):
@@ -358,7 +379,7 @@ def timestamp_to_obj(timestamp, format):
     
 """
 def normalize_intervals(times, metrics, interval):
-    
+        
     current_time = 0.0
     index = 0
     iterations = 0
@@ -388,7 +409,7 @@ def normalize_intervals(times, metrics, interval):
         current_time = current_time + interval
         
         iterations = iterations + 1
-        
+
     return [new_times, new_metrics]
 
 """
@@ -503,63 +524,6 @@ def get_time_lists(start_time, end_time, interval, num_samples, format):
         
     return [times, time_indices]
 
-
-
-def get_timestamps_with_interval(logFileName, interval):
-    
-    log_start, log_end = get_timestamps(logFileName)
-    
-    end_obj = timestamp_to_obj(log_end, 1)
-    start_obj = end_obj + datetime.timedelta(minutes=-interval)
-    
-    start_timestamp = timestamp_from_obj(start_obj, 1, 2)
-    end_timestamp = timestamp_from_obj(end_obj, 1, 2)
-    
-    return [start_timestamp, end_timestamp]
-    
-    
-""" Extract a timestamp from the filename """
-def get_timestamps(logFileName):
-    
-    fname_parts = logFileName.split('-')
-
-    year = int(fname_parts[1])
-    month = int(fname_parts[2])
-    day = int(fname_parts[3])
-    hour = int(fname_parts[4][0:2])
-    minute = int(fname_parts[6][0:2])
-    
-    # Is this an afternoon log?
-    afternoon = (fname_parts[4][2:4] == 'PM') 
-     
-    # Adjust the hour as necessary if == 12AM or *PM
-    if afternoon and hour < 12:
-        hour = hour + 12
-        
-    if not(afternoon) and hour == 12:
-        hour = 0
-
-    prev_hr = getPrevHour(year, month, day, hour)
-    
-    str_month = '0' + str(month) if month < 10 else str(month)
-    str_day = '0' + str(day) if day < 10 else str(day)
-    str_hour = '0' + str(hour) if hour < 10 else str(hour)
-    str_minute = '0' + str(minute) if minute < 10 else str(minute)
-    
-    prev_month = prev_hr[1] 
-    prev_day = prev_hr[2]
-    prev_hour = prev_hr[3]
-    str_prev_month = '0' + str(prev_month) if prev_month < 10 else str(prev_month)
-    str_prev_day = '0' + str(prev_day) if prev_day < 10 else str(prev_day)
-    str_prev_hour = '0' + str(prev_hour) if prev_hour < 10 else str(prev_hour)
-    
-    log_end = str(year) + str_month + str_day + str_hour + str_minute + '00'
-    log_start = str(prev_hr[0]) + str_prev_month + str_prev_day + str_prev_hour + '5500' 
-    
-    #log_start = str(year) + str(month) + str(day) + str(hour) + '5500'
-    #log_end = str(prev_hr[0]) + str(prev_hr[1]) + str(prev_hr[2]) + str(prev_hr[3]) + '5500' 
-
-    return [log_start, log_end]
 
 
 """ Determines the following hour based on the precise date to the hour """
