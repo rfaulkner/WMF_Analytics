@@ -45,6 +45,10 @@ class DataMapper(object):
     _LP_LOG_PREFIX_ = 'bannerImpressions' 
     _BANNER_LOG_PREFIX_ = 'landingpages'
     
+    _log_copy_interval_ = 15
+    _log_poll_interval_ = 1
+    
+         
     """
         Copies mining logs from remote site for a given hour
         
@@ -97,6 +101,7 @@ class DataMapper(object):
             
         filename = filename + '-' + year + '-' + month + '-' + day + '-' + hour + day_part
 
+        copied_logs = list()
         """ Try to load each log for that hour - only load gzipped logs for now """
         for i in range(4):
             minute = i * 15
@@ -112,10 +117,11 @@ class DataMapper(object):
             
             if not(self.log_exists(full_filename)):            
                 os.system(cmd)
+                copied_logs.append(full_filename)
             else:
                 logging.info('File: %s has already been loaded.' % full_filename)
                 
-        return filename
+        return copied_logs
 
     """
         Return a listing of all of the squid logs
@@ -144,6 +150,93 @@ class DataMapper(object):
                 return True
             
         return False
+    
+    
+    """
+        Retrieve the timestamp of the latest log
+    """
+    def get_time_of_last_log(self):
+        
+        log_names = self.get_list_of_logs()
+        
+        for name in log_names:
+        
+            """ Retrieve the log timestamp from the filename and convert to datetime objects """
+            time_stamps = self.get_timestamps_with_interval(name, self._log_copy_interval_)
+            log_end_time_obj = TP.timestamp_to_obj(time_stamps[1], 1)
+            
+            if name == log_names[0]:
+                log_time_obj = log_end_time_obj 
+            else:
+                if log_end_time_obj > log_time_obj:
+                    log_time_obj = log_end_time_obj
+        
+        return log_time_obj
+    
+    """ 
+        Extract a timestamp from the squid log filename given the interval length over which the contained requests are logged 
+    """    
+    def get_timestamps_with_interval(self, logFileName, interval):
+    
+        log_end = self.get_timestamps(logFileName)[1]
+        
+        end_obj = TP.timestamp_to_obj(log_end, 1)
+        start_obj = end_obj + datetime.timedelta(minutes=-interval)
+        
+        start_timestamp = TP.timestamp_from_obj(start_obj, 1, 2)
+        end_timestamp = TP.timestamp_from_obj(end_obj, 1, 2)
+        
+        return [start_timestamp, end_timestamp]
+        
+        
+    """ 
+        Extract a timestamp from the squid log filename
+        
+        e.g. landingpages-2011-07-01-09PM--00.log.gz
+             bannerImpressions-2011-07-01-09PM--00.log.gz
+             
+    """
+    def get_timestamps(self, logFileName):
+        
+        fname_parts = logFileName.split('-')
+    
+        year = int(fname_parts[1])
+        month = int(fname_parts[2])
+        day = int(fname_parts[3])
+        hour = int(fname_parts[4][0:2])
+        minute = int(fname_parts[6][0:2])
+        
+        # Is this an afternoon log?
+        afternoon = (fname_parts[4][2:4] == 'PM') 
+         
+        # Adjust the hour as necessary if == 12AM or *PM
+        if afternoon and hour < 12:
+            hour = hour + 12
+            
+        if not(afternoon) and hour == 12:
+            hour = 0
+    
+        prev_hr = TP.getPrevHour(year, month, day, hour)
+        
+        str_month = '0' + str(month) if month < 10 else str(month)
+        str_day = '0' + str(day) if day < 10 else str(day)
+        str_hour = '0' + str(hour) if hour < 10 else str(hour)
+        str_minute = '0' + str(minute) if minute < 10 else str(minute)
+        
+        prev_month = prev_hr[1] 
+        prev_day = prev_hr[2]
+        prev_hour = prev_hr[3]
+        str_prev_month = '0' + str(prev_month) if prev_month < 10 else str(prev_month)
+        str_prev_day = '0' + str(prev_day) if prev_day < 10 else str(prev_day)
+        str_prev_hour = '0' + str(prev_hour) if prev_hour < 10 else str(prev_hour)
+        
+        log_end = str(year) + str_month + str_day + str_hour + str_minute + '00'
+        log_start = str(prev_hr[0]) + str_prev_month + str_prev_day + str_prev_hour + '5500' 
+            
+        return [log_start, log_end]
+        
+        
+        
 """
 
     CLASS :: FundraiserDataMapper
@@ -174,21 +267,34 @@ class FundraiserDataMapper(DataMapper):
         self._DL_LPrequests_.init_db()
         
     
+    """
+        Determines if new logs may be waiting - if so they are copied and mined
+    """
+    def poll_logs(self):
         
-    """ 
-        Check for new log files on the remote server
-    """ 
-    def poll_log_files(self, type, **kwargs):
+        time_of_last_log = self.get_time_of_last_log()
+        curr_time = datetime.datetime.now()
         
-        """ Get remote directory listing """
+        logging.debug('Time of last log: %s' % str(time_of_last_log))
+        logging.debug('Current Time: %s' % str(curr_time))
         
-        """ Extract latest timestamp from filenames """
-        
-        """ Compare to latest log file loaded"""
-        
-        return
-        
-         
+        if time_of_last_log + datetime.timedelta(minutes=self._log_copy_interval_) < curr_time:
+            
+            """ Copy over the latest logs """
+            copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour))
+            copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour))
+            
+            print copied_banner_logs
+            print copied_lp_logs
+            
+            """ Mine the latest logs """
+            for banner_imp_file in copied_banner_logs:
+                self.mine_squid_impression_requests(banner_imp_file)
+                
+            for lp_view_file in copied_lp_logs:
+                self.mine_squid_landing_page_requests(lp_view_file)
+    
+     
     """
         Remove banner impression or landing page squid records from tables before loading 
     """
@@ -234,7 +340,7 @@ class FundraiserDataMapper(DataMapper):
         itl = DL.ImpressionTableLoader()
         
         """ Retrieve the log timestamp from the filename """
-        time_stamps = TP.get_timestamps_with_interval(logFileName, 15)
+        time_stamps = self.get_timestamps_with_interval(logFileName, self._log_copy_interval_)
         
         start = time_stamps[0]
         end = time_stamps[1]
@@ -434,7 +540,7 @@ class FundraiserDataMapper(DataMapper):
         
         """ Retrieve the log timestamp from the filename """
         #time_stamps = Hlp.get_timestamps(logFileName)
-        time_stamps = TP.get_timestamps_with_interval(logFileName, 15)
+        time_stamps = self.get_timestamps_with_interval(logFileName, self._log_copy_interval_)
         
         start = time_stamps[0]
         end = time_stamps[1]
