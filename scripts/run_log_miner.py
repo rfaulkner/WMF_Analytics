@@ -1,7 +1,7 @@
 
 """
 
-    This script will run the 
+    Wrapper script will be run periodically to copy and mine udp2log files  
 
 """
 
@@ -16,7 +16,7 @@ __date__ = "July 13th, 2011"
 import sys, datetime, settings
 
 """ Modify the classpath to include local projects """
-sys.path.append(settings.__project_home__)
+sys.path.append(settings.__home__)
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.DataMapper as DM
