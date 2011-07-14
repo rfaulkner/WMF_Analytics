@@ -13,14 +13,13 @@ __date__ = "July 13th, 2011"
 
 
 """ Import python base modules """
-import sys, datetime
+import sys, datetime, settings
 
 """ Modify the classpath to include local projects """
 sys.path.append(settings.__project_home__)
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.DataMapper as DM
-import Fundraiser_Tools.settings
     
 """
     Define script usage
