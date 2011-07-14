@@ -400,6 +400,8 @@ def get_metric_index(query_name, metric_name):
             return 11
         elif metric_name == 'amt_per_view':
             return 12
+        elif metric_name == 'amt50_per_view':
+            return 16
         elif metric_name == 'amt_per_donation':
             return 13
         elif metric_name == 'amt50_per_imp':

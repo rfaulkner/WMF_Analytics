@@ -18,7 +18,8 @@ donations / views as don_per_view,
 amount / views as amt_per_view,
 amount / donations  as amt_per_donation,
 (amount50 / impressions) * (total_views / views) as amt50_per_imp,
-(amount100 / impressions) * (total_views / views) as amt100_per_imp
+(amount100 / impressions) * (total_views / views) as amt100_per_imp,
+amount50 / views as amt50_per_view
 
 from
 

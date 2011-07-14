@@ -3,13 +3,13 @@
 
 
 <h1><u>{{ utm_campaign }}: Test Report</u></h1>
-<h3><u>The winning banner is <b>{{ winner }}</b>.</u></h3><br><br>
+<h3><u>The winning banner is <b>{{ winner_dpi }}</b>.</u></h3><br><br>
 {% if winner != 'inconclusive' %}
-	The winner, {{ winner }}, had a {{ percent_win_dpi }}% increase in donations / impression on average. {{ conf_dpi }}<br>
-	The winner, {{ winner }}, had a {{ percent_win_api }}% increase in amount50 / impression on average. {{ conf_api }}<br>
-	The winner, {{ winner }}, had a {{ percent_win_dpv }}% increase in donations / view on average. {{ conf_dpv }}<br>
-	The winner, {{ winner }}, had a {{ percent_win_apv }}% increase in amount50 / view on average. {{ conf_apv }}<br>
-	The winner, {{ winner }}, had a {{ percent_win_cr }}% increase in click rate on average. {{ conf_cr }}<br>
+	The winner, {{ winner_dpi }}, had a {{ percent_win_dpi }}% increase in donations / impression on average. {{ conf_dpi }}<br>
+	The winner, {{ winner_api }}, had a {{ percent_win_api }}% increase in amount50 / impression on average. {{ conf_api }}<br>
+	The winner, {{ winner_dpv }}, had a {{ percent_win_dpv }}% increase in donations / view on average. {{ conf_dpv }}<br>
+	The winner, {{ winner_apv }}, had a {{ percent_win_apv }}% increase in amount50 / view on average. {{ conf_apv }}<br>
+	The winner, {{ winner_cr }}, had a {{ percent_win_cr }}% increase in click rate on average. {{ conf_cr }}<br>
 {% endif %}
 
 <br>

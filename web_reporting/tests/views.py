@@ -253,9 +253,10 @@ def test(request):
 
     if test_type_var == FDH._TESTTYPE_BANNER_:
         
-        winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, percent_win_cr, conf_cr, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
+        winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
         
-        html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_ + '.html', {'winner' : winner_dpi, 'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
+        html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_ + '.html', {'winner_dpi' : winner_dpi, 'winner_api' : winner_api, 'winner_cr' : winner_cr, \
+                                                                                       'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
                                                                                        'conf_dpi' : conf_dpi, 'conf_api' : conf_api, 'conf_cr' : conf_cr, 'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
                                     'summary_table': html_table, 'sample_interval' : sample_interval}, context_instance=RequestContext(request))
     elif test_type_var == FDH._TESTTYPE_LP_:
@@ -267,11 +268,12 @@ def test(request):
     
     elif test_type_var == FDH._TESTTYPE_BANNER_LP_:
         
-        winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, percent_win_cr, conf_cr, \
+        winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, \
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, \
         html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
         
-        html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_LP_ + '.html', {'winner' : winner_dpi, 'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
+        html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_LP_ + '.html', {'winner_dpi' : winner_dpi, 'winner_api' : winner_api, 'winner_dpv' : winner_dpv, 'winner_apv' : winner_apv, 'winner_cr' : winner_cr, \
+                                                                                          'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
                                                                                           'conf_dpi' : conf_dpi, 'conf_api' : conf_api, 'conf_cr' : conf_cr, \
                                                                                           'conf_dpv' : conf_dpv, 'conf_apv' : conf_apv, \
                                                                                           'percent_win_dpv' : '%.2f' % percent_win_dpv, 'percent_win_apv' : '%.2f' % percent_win_apv, \
@@ -297,9 +299,9 @@ def test(request):
     
     
     if ttl.record_exists(utm_campaign=utm_campaign_var):
-        ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string)
+        ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_dpi)
     else:
-        ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string)
+        ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_dpi)
     
     return html
 
@@ -356,26 +358,29 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, sample_inter
     """ PERFORM HYPOTHESIS TESTING """
     
     if test_type == FDH._TESTTYPE_BANNER_:
+        
         winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_banner_confidence','don_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_banner_confidence','amt50_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name,'report_banner_confidence','click_rate',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         
-        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, percent_increase_cr, confidence_cr, html_table]
+        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, html_table]
     
     elif test_type == FDH._TESTTYPE_LP_:
+        
         winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_LP_confidence','don_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_LP_confidence','amt50_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         
         return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, html_table]
     
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
+        
         winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_bannerLP_confidence','don_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_bannerLP_confidence','amt50_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name,'report_bannerLP_confidence','click_rate',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_dpv, percent_increase_dpv, confidence_dpv = cr.run(test_name,'report_bannerLP_confidence','don_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_apv, percent_increase_apv, confidence_apv = cr.run(test_name,'report_bannerLP_confidence','amt50_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         
-        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, percent_increase_cr, confidence_cr, \
+        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, \
                 winner_dpv, percent_increase_dpv, confidence_dpv, winner_apv, percent_increase_apv, confidence_apv, html_table]
         
     #winner_dpi, percent_increase_dpi, confidence_dpi = ['',0.0,'']

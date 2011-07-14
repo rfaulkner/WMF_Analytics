@@ -4,10 +4,19 @@
 
 <h1><u>Fundraiser Tests</u></h1><br>
 
+<div class="spacer"></div>
+
+{% if err_msg != '' %}
+	<span style="color:red">{{err_msg}}</span>
+	<div class="spacer"></div>
+{% endif %}
+
 <div id="stylized" class="myform">
 <form action="/tests/build_test" method="post">
 {% csrf_token %}
-<h1>Generate a new test</h1><br>
+<h1><u>Generate a New Test</u></h1>
+
+<div class="spacer"></div>
 
 <label for="test_name">Test Name:
 </label>
@@ -25,14 +34,19 @@
 <label for="end_time">End Timestamp:
 <span class="small">Format: yyyymmddhhiiss.</span>
 </label>
-<input type="text" name="end_time" /><br><br>
+<input type="text" name="end_time" />
+
+<div class="spacer"></div>
 
 <button type="submit">Test</button>
 </form>
 </div>
 
 
-<br><hr width=80%><br><br>
+<div class="spacer"></div>
+<div class="spacer"></div>
+<hr width=80%>
+<div class="spacer"></div>
 
 <!-- Table listing all tests run -->
 <center>
@@ -66,22 +80,23 @@
 
 <div class="spacer"></div>
 <div class="spacer"></div>
+<div class="spacer"></div>
 
 <div id="stylized" class="myform">
-<form action="/campaigns/" method="post">
+<form action="/tests/" method="post">
 {% csrf_token %}
-<h1>Filter the list of campaigns:</h1><br>
+<h1><u>Filter Tests</u></h1><br>
 <!--<p>This is the basic look of my form without table</p> -->
 
-<label>Minimum Donation
-<span class="small">Number of donations by which to filter.</span>
-</label>
-<input type="text" name="min_donations" value="{{min_donations|escape}}" />
-
 <label>Start UTC Timestamp
-<span class="small">Earliest timestamp by which to filter campaigns</span>
+<span class="small">Earliest Timestamp: yyymmddhhiiss</span>
 </label>
-<input type="text" name="utc_ts" value="{{earliest_utc|escape}}"/>
+<input type="text" name="earliest_utc_ts" value="" />
+
+<label>End UTC Timestamp
+<span class="small">Latest Timestamp: yyymmddhhiiss</span>
+</label>
+<input type="text" name="latest_utc_ts" value=""/>
 
 <br>
 <button type="submit">Filter</button>
