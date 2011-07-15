@@ -159,6 +159,9 @@ class DataMapper(object):
         
         log_names = self.get_list_of_logs()
         
+        """ In case directory initialize datetime object to one day in the past  """
+        log_time_obj = datetime.datetime.now() + datetime.timedelta(days=-1)
+        
         for name in log_names:
         
             """ Retrieve the log timestamp from the filename and convert to datetime objects """
