@@ -286,16 +286,21 @@ class FundraiserDataMapper(DataMapper):
             """ Copy over the latest logs """
             copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour))
             copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour))
-            
-            print copied_banner_logs
-            print copied_lp_logs
-            
+                        
             """ Mine the latest logs """
             for banner_imp_file in copied_banner_logs:
-                self.mine_squid_impression_requests(banner_imp_file)
-                
+                try:
+                    self.mine_squid_impression_requests(banner_imp_file)
+                except IOError as inst:
+                    logging.error(inst)
+                    logging.error('Could not mine contents of %s, it appears that it does not exist. ' % banner_imp_file)
+                    
             for lp_view_file in copied_lp_logs:
-                self.mine_squid_landing_page_requests(lp_view_file)
+                try:
+                    self.mine_squid_landing_page_requests(lp_view_file)
+                except IOError as inst:
+                    logging.error(inst)
+                    logging.error('Could not mine contents of %s, it appears that it does not exist. ' % lp_view_file)
     
      
     """
