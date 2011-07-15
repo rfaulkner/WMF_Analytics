@@ -674,15 +674,21 @@ class FundraiserDataMapper(DataMapper):
                 user_agent_string = lineArgs[13]
             except IndexError:
                 user_agent_string = ''
+            
+            try:
+                user_agent_fields = httpagentparser.detect(user_agent_string)
+                browser = 'NONE'
+        
+                # Check to make sure fields exist
+                if len(user_agent_fields['browser']) != 0:
+                    if len(user_agent_fields['browser']['name']) != 0:
+                        browser = user_agent_fields['browser']['name']
+            except:
                 
-            user_agent_fields = httpagentparser.detect(user_agent_string)
-            browser = 'NONE'
-    
-            # Check to make sure fields exist
-            if len(user_agent_fields['browser']) != 0:
-                if len(user_agent_fields['browser']['name']) != 0:
-                    browser = user_agent_fields['browser']['name']
-    
+                logging.error('Could not process user agent string.')
+                browser = 'NONE'
+                pass
+                
             """
                  Process landing URL
                  ===================
