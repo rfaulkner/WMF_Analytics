@@ -13,7 +13,7 @@ __date__ = "July 13th, 2011"
 
 
 """ Import python base modules """
-import sys, datetime, settings
+import sys, datetime, settings, argparse
 
 """ Modify the classpath to include local projects """
 sys.path.append(settings.__home__)
