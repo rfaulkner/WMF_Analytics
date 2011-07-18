@@ -83,7 +83,7 @@ class DataLoader(object):
     def init_db(self):
         
         """ Establish connection """
-        # self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+        #self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
         self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
         
         """ Create cursor """
@@ -1247,6 +1247,33 @@ class SquidLogTableLoader(TableLoader):
         
         return results
     
+    """
+        This method handles mapping test row fields to col names
+        
+    """
+    def get_squid_log_record_field(self, row, key):
+        
+        try:
+            if key == 'type':
+                return row[0]
+            elif key == 'log_copy_time':
+                return row[1].__str__()
+            elif key == 'start_time':           
+                return row[2].__str__()
+            elif key == 'end_time':
+                return row[3].__str__()
+            elif key == 'log_completion_pct':
+                return row[4]
+            elif key == 'total_rows':
+                return row[5]
+        
+        except Exception as inst:
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            return ''
     
 """
 
