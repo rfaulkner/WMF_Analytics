@@ -273,7 +273,7 @@ class FundraiserDataMapper(DataMapper):
     """
         Determines if new logs may be waiting - if so they are copied and mined
     """
-    def poll_logs(self):
+    def poll_logs(self, **kwargs):
         
         time_of_last_log = self.get_time_of_last_log()
         curr_time = datetime.datetime.now()
@@ -284,10 +284,17 @@ class FundraiserDataMapper(DataMapper):
         if time_of_last_log + datetime.timedelta(minutes=self._log_copy_interval_) < curr_time:
             
             """ Copy over the latest logs """
-            copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
-            copied_banner_logs.extend(self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
-            copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
-            copied_lp_logs.extend(self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
+            if not kwargs.keys():
+                
+                copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
+                copied_banner_logs.extend(self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
+                copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
+                copied_lp_logs.extend(self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
+            
+            else:
+                
+                copied_banner_logs = self.copy_logs('banner', **kwargs)
+                copied_lp_logs = self.copy_logs('lp', **kwargs)
                         
             """ Mine the latest logs """
             for banner_imp_file in copied_banner_logs:
