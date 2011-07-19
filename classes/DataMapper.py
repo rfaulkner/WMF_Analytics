@@ -401,6 +401,7 @@ class FundraiserDataMapper(DataMapper):
         """
         
         line_count = 0
+        
         line = logFile.readline()
         while (line != ''):
     
@@ -479,10 +480,9 @@ class FundraiserDataMapper(DataMapper):
     
             """ Group banner impression counts based on (banner, country, project, language) """
             try:
-                counts[banner][country][project][lang] = counts[banner][country][project][lang] + 1
+                counts[banner][country][project][lang] = counts[banner][country][project][lang] + 1                
             except TypeError:
                 counts[banner][country][project][lang] = 1
-    
 
             """ 
                 Break out impression data by minute.  This conditional detects when a request with a previously unseen minute in the timestamp appears.
@@ -559,9 +559,9 @@ class FundraiserDataMapper(DataMapper):
         #time_stamps = Hlp.get_timestamps(logFileName)
         time_stamps = self.get_timestamps_with_interval(logFileName, self._log_copy_interval_)
         
-        start = time_stamps[0]
+        # start = time_stamps[0]
         end = time_stamps[1]
-        start_timestamp_in = "convert(\'" + start + "\', datetime)"
+        # start_timestamp_in = "convert(\'" + start + "\', datetime)"
         curr_time = TP.timestamp_from_obj(datetime.datetime.now(),1,3)
         
         """ retrieve the start time of the log """
@@ -582,6 +582,7 @@ class FundraiserDataMapper(DataMapper):
         sltl.insert_row(type='lp_view',log_copy_time=curr_time,start_time=start,end_time=end,log_completion_pct='0.0',total_rows='0')
 
         line_count = 0
+        requests_loaded = 0
         
         """ Extract the mining patterns from the DB """
         mptl = DL.MiningPatternsTableLoader()
@@ -791,7 +792,9 @@ class FundraiserDataMapper(DataMapper):
                 """ Insert record into the landing_page_requests table """
                 
                 lptl.insert_row(utm_source_arg=utm_source, utm_campaign_arg=utm_campaign, utm_medium_arg=utm_medium, landing_page_arg=landing_page, page_url_arg=landing_url, \
-                    referrer_url_arg=referrer_url, browser_arg=browser, lang_arg=source_lang, country_arg=country, project_arg=project, ip_arg=ip_add, start_timestamp_arg=start_timestamp_in, timestamp_arg=timestamp_string)
+                    referrer_url_arg=referrer_url, browser_arg=browser, lang_arg=source_lang, country_arg=country, project_arg=project, ip_arg=ip_add, start_timestamp_arg=start, timestamp_arg=timestamp_string)
+                
+                requests_loaded = requests_loaded + 1
                 
             line = logFile.readline()
             line_count = line_count + 1 
