@@ -142,16 +142,7 @@ def log_list(request):
     return render_to_response('LML/log_list.html', {'err_msg' : err_msg, 'log_file_list' : log_file_list},  context_instance=RequestContext(request))
 
 
-"""
-    Form view that enables user to enter a squid log hour
-    *All* available logs from that hour are loaded
-"""
-def mine_logs_form(request):
-    now = datetime.datetime.now() + datetime.timedelta(hours=7)
-    return render_to_response('LML/mine_logs.html', {'year': now.year, 'month': now.month, 'day': now.day, 'hour': now.hour},  context_instance=RequestContext(request))
-
 """ 
-    !! FIXME -- this needs to be tested !!
     Process mining logs for a given hour - linked from the mine logs form
 """
 def mine_logs_process(request):

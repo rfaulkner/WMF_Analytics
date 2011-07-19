@@ -3,7 +3,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Mining Patterns:</h1><br>
+<h1><u></>Mining Patterns:</u></h1><br>
 <div class="spacer"></div>
 
 {% if err_msg != '' %}
@@ -16,27 +16,31 @@
 <div id="stylized" class="myform">
 <form action="/LML/mining_patterns_del" method="post">
 {% csrf_token %}
-<h1>Existing Patterns:</h1><br>
+<h1>Existing Mining Patterns</h1><br>
 
+<label>Banner Patterns:</label>
+<span class="medium">Select any patterns that are to be removed</span>
+<div class="spacer"></div>
 
 {% if banner_patterns %}
-<label>Banner Patterns:
-<span class="medium">Select any patterns that are to be removed</span></label>
 	{% for name in banner_patterns %}
-<input type="checkbox" name="banner_patterns" value="{{ name }}" />{{ name }}
-<br>
+<input type="checkbox" name="banner_patterns" value="{{ name }}" />"{{ name }}"<div class="spacer_small"></div>
 	{% endfor %}
+{% else %}
+	<h2>No Banner Patterns.</h2><div class="spacer"></div>
 {% endif %}
 
 <div class="spacer"></div>
 
 <label>Landing Page Patterns:</label>
-{% if lp_patterns %}
 <span class="medium">Select any patterns that are to be removed</span>
+<div class="spacer"></div>
+{% if lp_patterns %}
 	{% for name in lp_patterns %}
-<input type="checkbox" name="lp_patterns" value="{{ name }}" />{{ name }}
-<br>
+<input type="checkbox" name="lp_patterns" value="{{ name }}" />"{{ name }}"<div class="spacer_small"></div>
 	{% endfor %}
+{% else %}
+	<h2>No Landing Page Patterns.</h2><div class="spacer"></div>
 {% endif %}
 
 <div class="spacer"></div>
@@ -46,12 +50,9 @@
 <div class="spacer"></div>
 
 </form>
-</div>
 
 <div class="spacer"></div>
-<div class="spacer"></div>
 
-<div id="stylized" class="myform">
 <form action="/LML/mining_patterns_add" method="post">
 {% csrf_token %}
 <h1>Add a Mining Pattern</h1><br>
@@ -60,12 +61,9 @@
 <span class="small">To which type of requests should this pattern apply?</span><br>
 </label>
 
-
-<input id="banner_radio" type="radio" name="pattern_type" value="banner"/>Banner
-<br>
-<input type="radio" name="pattern_type" value="lp" />Landing Page
-
 <div class="spacer"></div>
+<input id="banner_radio" type="radio" name="pattern_type" value="banner"/>Banner<div class="spacer_small"></div>
+<input type="radio" name="pattern_type" value="lp" />Landing Page<div class="spacer"></div>
 
 <label>Regular Expression Pattern
 <span class="small">Enter the regular expression pattern here.</span>

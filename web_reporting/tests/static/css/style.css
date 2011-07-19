@@ -5,6 +5,25 @@ font-size:14px;
 p, h1, form, button{border:0; margin:0; padding:0;}
 .spacer{clear:both; height:20px;}
 .spacer_small{clear:both; height:4px;}
+
+/* ----------- label_checkbox_pair ----------- */
+p.label_checkbox_pair {
+clear: both;
+float: none;
+position: relative;
+}
+p.label_checkbox_pair input {
+left: 80px;
+position: absolute;
+top: 1px;
+}
+p.label_checkbox_pair label {
+display: block;
+margin-left: 90px;
+width: 200px;
+}
+
+
 /* ----------- My Form ----------- */
 .myform{
 margin:0 auto;
@@ -22,6 +41,11 @@ padding:30px;
 	font-weight:bold;
 	margin-bottom:8px;
 }
+#stylized h2 {
+	font-size:14px;
+	font-weight:normal;
+	margin-bottom:8px;
+}
 #stylized p{
 	font-size:11px;
 	color:#666666;
@@ -32,7 +56,7 @@ padding:30px;
 #stylized label{
 	display:block;
 	font-weight:bold;
-	text-align:right;
+	text-align:left;
 	width:300px;
 	float:left;
 }
@@ -41,7 +65,7 @@ padding:30px;
 	display:block;
 	font-size:11px;
 	font-weight:normal;
-	text-align:right;
+	text-align:left;
 	width:300px;
 }
 #stylized .medium{
@@ -49,7 +73,7 @@ padding:30px;
 	display:block;
 	font-size:14px;
 	font-weight:normal;
-	text-align:right;
+	text-align:left;
 	width:300px;
 }
 #stylized input{
@@ -81,11 +105,6 @@ padding:30px;
 	margin:2px 0 20px 10px;
 }
 
-#stylized checkbox{
-	clear: left;
-	float: left;
-	margin-left: 300px;
-}
 
 .container {
     width: 80%;
