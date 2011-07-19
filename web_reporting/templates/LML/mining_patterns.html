@@ -1,0 +1,89 @@
+
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Mining Patterns:</h1><br>
+<div class="spacer"></div>
+
+{% if err_msg != '' %}
+	<span style="color:red">{{err_msg}}</span>
+	<div class="spacer"></div>
+{% endif %}
+
+<!-- Show existing patterns -->
+
+<div id="stylized" class="myform">
+<form action="/LML/mining_patterns_del" method="post">
+{% csrf_token %}
+<h1>Existing Patterns:</h1><br>
+
+
+{% if banner_patterns %}
+<label>Banner Patterns:
+<span class="medium">Select any patterns that are to be removed</span></label>
+	{% for name in banner_patterns %}
+<input type="checkbox" name="banner_patterns" value="{{ name }}" />{{ name }}
+<br>
+	{% endfor %}
+{% endif %}
+
+<div class="spacer"></div>
+
+<label>Landing Page Patterns:</label>
+{% if lp_patterns %}
+<span class="medium">Select any patterns that are to be removed</span>
+	{% for name in lp_patterns %}
+<input type="checkbox" name="lp_patterns" value="{{ name }}" />{{ name }}
+<br>
+	{% endfor %}
+{% endif %}
+
+<div class="spacer"></div>
+
+<button type="submit">Delete</button>
+
+<div class="spacer"></div>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<div id="stylized" class="myform">
+<form action="/LML/mining_patterns_add" method="post">
+{% csrf_token %}
+<h1>Add a Mining Pattern</h1><br>
+
+<label>Pattern Type:
+<span class="small">To which type of requests should this pattern apply?</span><br>
+</label>
+
+
+<input id="banner_radio" type="radio" name="pattern_type" value="banner"/>Banner
+<br>
+<input type="radio" name="pattern_type" value="lp" />Landing Page
+
+<div class="spacer"></div>
+
+<label>Regular Expression Pattern
+<span class="small">Enter the regular expression pattern here.</span>
+</label>
+<input type="text" name="regexp_pattern" value=""/>
+
+<br>
+<button type="submit">Add</button>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+
+<u>Go to:</u>
+<br><br>
+<a href="/LML">Log Mining Log</a><br><br>
+<a href="/">Home</a>
+<br>
+
+{% endblock %}

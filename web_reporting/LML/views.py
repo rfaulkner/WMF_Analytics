@@ -227,4 +227,90 @@ def process_filter_data(request):
         latest_utc_ts_var = _end_time_
 
     return err_msg, earliest_utc_ts_var, latest_utc_ts_var
+
+
+"""
+    Display and enable user to 
+"""
+def mining_patterns_view(request):
     
+    banner_patterns, lp_patterns = get_pattern_lists()
+            
+    return render_to_response('LML/mining_patterns.html', {'banner_patterns' : banner_patterns, 'lp_patterns' : lp_patterns},  context_instance=RequestContext(request))
+
+
+"""
+    Display and enable user to 
+"""
+def mining_patterns_add(request):
+    
+    err_msg = ''
+    mptl = DL.MiningPatternsTableLoader()
+    
+    """ Extract Post data """
+    try:
+        regexp = MySQLdb._mysql.escape_string(request.POST['regexp_pattern'])
+        type = MySQLdb._mysql.escape_string(request.POST['pattern_type'])
+        
+    except:
+        
+        err_msg = 'Fields to add mining pattern incorrect.'
+        pass 
+        
+    mptl.insert_row(pattern_type=type, pattern=regexp)
+    banner_patterns, lp_patterns = get_pattern_lists()
+    
+    return render_to_response('LML/mining_patterns.html', {'err_msg' : err_msg , 'banner_patterns' : banner_patterns, 'lp_patterns' : lp_patterns},  context_instance=RequestContext(request))
+
+        
+"""
+    Display and enable user to 
+"""
+def mining_patterns_delete(request):
+    
+    try:    
+        banner_patterns =  request.POST.getlist('banner_patterns')
+    
+    except:
+        banner_patterns = list()
+        pass
+    
+    try:
+        lp_patterns =  request.POST.getlist('lp_patterns')
+    
+    except:        
+        lp_patterns = list()
+        pass
+                
+    logging.debug(banner_patterns)
+    logging.debug(lp_patterns)
+    
+    mptl = DL.MiningPatternsTableLoader()
+    
+    """ Remove selected patterns """
+    for elem in banner_patterns:
+        mptl.delete_row(pattern=elem,pattern_type='banner')
+    
+    for elem in lp_patterns:
+        mptl.delete_row(pattern=elem,pattern_type='lp')
+        
+    banner_patterns, lp_patterns = get_pattern_lists()
+    
+    return render_to_response('LML/mining_patterns.html', {'banner_patterns' : banner_patterns, 'lp_patterns' : lp_patterns},  context_instance=RequestContext(request))
+
+
+def get_pattern_lists():
+    
+    mptl = DL.MiningPatternsTableLoader()
+    results = mptl.get_all_rows()
+    
+    banner_patterns = list()
+    lp_patterns = list()
+    
+    for row in results:
+        if mptl.get_mining_pattern_field(row, 'pattern_type') == 'banner':
+            banner_patterns.append(mptl.get_mining_pattern_field(row, 'pattern'))
+        elif mptl.get_mining_pattern_field(row, 'pattern_type') == 'lp':
+            lp_patterns.append(mptl.get_mining_pattern_field(row, 'pattern'))
+            
+    return banner_patterns, lp_patterns
