@@ -255,6 +255,8 @@ def test(request):
         
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
         
+        winner_var = winner_dpi
+        
         html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_ + '.html', {'winner_dpi' : winner_dpi, 'winner_api' : winner_api, 'winner_cr' : winner_cr, \
                                                                                        'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
                                                                                        'conf_dpi' : conf_dpi, 'conf_api' : conf_api, 'conf_cr' : conf_cr, 'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
@@ -262,6 +264,8 @@ def test(request):
     elif test_type_var == FDH._TESTTYPE_LP_:
         
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
+        
+        winner_var = winner_dpv
         
         html = render_to_response('tests/results_' + FDH._TESTTYPE_LP_ + '.html', {'winner' : winner_dpv, 'percent_win_dpv' : '%.2f' % percent_win_dpv, 'percent_win_apv' : '%.2f' % percent_win_apv, 'conf_dpv' : conf_dpv, 'conf_apv' : conf_apv, 'utm_campaign' : utm_campaign_var, \
                                     'metric_names_full' : metric_types_full, 'summary_table': html_table, 'sample_interval' : sample_interval}, context_instance=RequestContext(request))
@@ -271,6 +275,8 @@ def test(request):
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, \
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, \
         html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
+        
+        winner_var = winner_dpi
         
         html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_LP_ + '.html', {'winner_dpi' : winner_dpi, 'winner_api' : winner_api, 'winner_dpv' : winner_dpv, 'winner_apv' : winner_apv, 'winner_cr' : winner_cr, \
                                                                                           'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
@@ -299,9 +305,9 @@ def test(request):
     
     
     if ttl.record_exists(utm_campaign=utm_campaign_var):
-        ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_dpi)
+        ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
     else:
-        ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_dpi)
+        ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
     
     return html
 
