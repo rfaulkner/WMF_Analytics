@@ -583,6 +583,11 @@ class FundraiserDataMapper(DataMapper):
 
         line_count = 0
         
+        """ Extract the mining patterns from the DB """
+        mptl = DL.MiningPatternsTableLoader()
+        lp_patterns = mptl.get_pattern_lists()[1]
+
+
         """
             PROCESS REQUESTS FROM FILE
             ==========================
@@ -718,7 +723,7 @@ class FundraiserDataMapper(DataMapper):
             query_fields = cgi.parse_qs(parsed_landing_url[queryIndex]) # Get the banner name and lang
             path_pieces = parsed_landing_url[pathIndex].split('/')
 
-            include_request, index_str_flag = self.evaluate_landing_url(landing_url, parsed_landing_url, query_fields, path_pieces)
+            include_request, index_str_flag = self.evaluate_landing_url(landing_url, parsed_landing_url, query_fields, path_pieces, lp_patterns)
             
             if include_request:
                 
@@ -875,12 +880,12 @@ class FundraiserDataMapper(DataMapper):
         @type path_pieces: list
         
     """
-    def evaluate_landing_url(self, landing_url, parsed_landing_url, query_fields, path_pieces):        
+    def evaluate_landing_url(self, landing_url, parsed_landing_url, query_fields, path_pieces, lp_patterns):        
         
         hostIndex = 1
         #queryIndex = 4
         #pathIndex = 2
-
+                
         """ 
             Filter the landing URLs
         
@@ -890,24 +895,40 @@ class FundraiserDataMapper(DataMapper):
             Evaluate conditions which determine acceptance of request based on the landing url 
         """
         try: 
-            c1 = re.search('WMF', path_pieces[2] ) != None or re.search('Junetesting001', path_pieces[2] ) != None or re.search('L11', path_pieces[2] ) 
-            c2 = re.search('Hear_from_Kartika', path_pieces[2]) != None
             
-            cond1 = parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'wiki' and (c1 or c2)
+            logic_str_1 = False
+            for pattern in lp_patterns:
+                logic_str_1 = re.search(pattern, path_pieces[2]) or logic_str_1
+                
+            # c1 = re.search('WMF', path_pieces[2] ) != None or re.search('Junetesting001', path_pieces[2] ) != None or re.search('L11', path_pieces[2] ) 
+            # c2 = re.search('Hear_from_Kartika', path_pieces[2]) != None
+            
+            # cond1 = parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'wiki' and (c1 or c2)
+            condition_1 = parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'wiki' and logic_str_1
 
-            c1 = re.search('index.php', path_pieces[2] )  != None
-            index_str_flag = c1
+            # c1 = re.search('index.php', path_pieces[2] )  != None
+            # index_str_flag = c1
+            index_str_flag = re.search('index.php', path_pieces[2] )
             
             try:
-                c2 = re.search('WMF', query_fields['title'][0] ) != None or re.search('L2011', query_fields['title'][0] ) != None  or re.search('L11', query_fields['title'][0] ) != None 
+                # c2 = re.search('WMF', query_fields['title'][0] ) != None or re.search('L2011', query_fields['title'][0] ) != None  or re.search('L11', query_fields['title'][0] ) != None 
+                logic_str_2 = False
+                for pattern in lp_patterns:
+                    logic_str_2 = re.search(pattern, query_fields['title'][0] ) or logic_str_2
+                
             except KeyError:
-                c2 = 0
-            cond2 = (parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'w' and c1 and c2)
+                # c2 = 0
+                logic_str_2 = False
+                
+            # cond2 = (parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'w' and c1 and c2)
+            condition_2 = (parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'w' and index_str_flag and logic_str_2)
                             
+            """ The request must not be a "Special:LandingCheck" """
             regexp_res = re.search('Special:LandingCheck',landing_url)
-            cond3 = (regexp_res == None)
+            condition_3 = (regexp_res == None)
             
-            return [(cond1 or cond2) and cond3, index_str_flag]
+            """ Return the (1) whether to include the request or not, (2) the format type of the request """
+            return [(condition_1 or condition_2) and condition_3, index_str_flag]
 
         except: 
             #print type(e)     # the exception instance
