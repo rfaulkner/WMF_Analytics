@@ -1560,4 +1560,114 @@ class IPCountryTableLoader(TableLoader):
                 except:
                     self._db_.rollback()
                     logging.error('Could not insert: ' + sql_stmnt)        
+
+
+"""
+
+    CLASS :: MiningPatternsTableLoader
+    
+    storage3.pmtpa.wmnet.faulkner.mining_patterns :
+    
+    +--------------+-------------+------+-----+---------+-------+
+    | Field        | Type        | Null | Key | Default | Extra |
+    +--------------+-------------+------+-----+---------+-------+
+    | pattern_type | varchar(50) | NO   | PRI |         |       |
+    | pattern      | varchar(50) | NO   | PRI |         |       |
+    +--------------+-------------+------+-----+---------+-------+
+
+"""
+class MiningPatternsTableLoader(TableLoader):
+    
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+        
+    def process_kwargs(self, kwargs_dict):
+        
+        pattern_type = 'NULL'
+        pattern = 'NULL'        
+        
+        for key in kwargs_dict:
+            if key == 'pattern_type':           
+                pattern_type = Hlp.stringify(kwargs_dict[key])
+            elif key == 'pattern':
+                pattern = Hlp.stringify(kwargs_dict[key])
+
                 
+        return [pattern_type, pattern]
+    
+    
+    def get_all_rows(self):
+        
+        select_stmnt = 'select * from mining_patterns'
+        try:
+            self._cur_.execute(select_stmnt)
+            results = self._cur_.fetchall()
+        except:
+            self._db_.rollback()
+            logging.error('Could not execute: ' + select_stmnt)
+            
+        return results
+    
+    
+    def insert_row(self, **kwargs):
+        
+        insert_stmnt = 'insert into mining_patterns values '
+        
+        pattern_type, pattern = self.process_kwargs(kwargs)
+        
+        val = '(' + pattern_type + ',' + pattern + ');'
+                    
+        insert_stmnt = insert_stmnt + val
+        
+        return self.execute_SQL(insert_stmnt)
+        
+    
+    
+    def delete_row(self, pattern_type, pattern):
+        
+        deleteStmnt = 'delete from mining_patterns where pattern_type = \'%s\' and pattern = \'%s\';' % (pattern_type, pattern)
+        
+        return self.execute_SQL(deleteStmnt)
+
+
+    """
+        This method handles mapping test row fields to col names
+        
+    """
+    def get_mining_pattern_field(self, row, key):
+        
+        try:
+            if key == 'pattern_type':
+                return row[0]
+            elif key == 'pattern':
+                return row[1]
+        
+        except Exception as inst:
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            return ''
+    
+    
+    """
+        return the banner and landing page patterns as lists
+    """
+    def get_pattern_lists(self):
+    
+        results = self.get_all_rows()
+        
+        banner_patterns = list()
+        lp_patterns = list()
+        
+        for row in results:
+            if self.get_mining_pattern_field(row, 'pattern_type') == 'banner':
+                banner_patterns.append(self.get_mining_pattern_field(row, 'pattern'))
+            elif self.get_mining_pattern_field(row, 'pattern_type') == 'lp':
+                lp_patterns.append(self.get_mining_pattern_field(row, 'pattern'))
+                
+        return banner_patterns, lp_patterns
