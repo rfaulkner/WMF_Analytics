@@ -14,8 +14,6 @@ __revision__ = "$Rev$"
 __date__ = "May 8th, 2011"
 
 
-import sys
-
 
 """ Query Types """
 _QTYPE_BANNER_ = 'banner'
@@ -42,7 +40,7 @@ _COLTYPE_TIME_ = 'time'
 """ Defines the metric type of each column in the interval reporting queries  """
 _bannerlp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
 _banner_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
-_lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
+_lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
 
 
 def get_col_types(query_type):
@@ -70,14 +68,14 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader)
     
     if len(lp_list) > 1 and len(banner_list) > 1:
         
-        """ In case of BannerLP test concatenate banner lp names -- this """
+        """ In case of BannerLP test concatenate banner lp names """
         new_artifacts = list()
 
         for i in range(len(banner_list)):
             new_artifacts.append(banner_list[i] + '-' + lp_list[i])
         
         return _TESTTYPE_BANNER_LP_, new_artifacts
-    if len(banner_list) > 1:
+    elif len(banner_list) > 1:
         return _TESTTYPE_BANNER_, banner_list
     elif len(lp_list) > 1:
         return _TESTTYPE_LP_, lp_list
@@ -86,12 +84,7 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader)
     elif len(banner_list) > len(lp_list):
         return _TESTTYPE_BANNER_, banner_list
     else:
-        """ !! MODIFY -- hardcode for now, insert custom logic !! """
-        if utm_campaign == '20101228JA075':
-            return _TESTTYPE_BANNER_, banner_list 
-        elif utm_campaign == '20101230JA089_US':
-             return _TESTTYPE_BANNER_, banner_list
-         
+        """ default a banner test """         
         return _TESTTYPE_BANNER_, banner_list 
     
 """
@@ -120,7 +113,7 @@ def order_column_keys(keys):
     
     new_keys = list()
     
-    """ """
+    """ The general order of all column keys that may be found """
     order = ['ts', 'day_hr', 'utm_campaign', 'utm_source', 'banner', 'landing_page', 'impressions', 'imp', 'views', 'donations', 'clicks', 'total_clicks', 'amount','amount50', 'amount100', 'click_rate', 'conversion_rate', 'don_per_imp', 'amt_per_imp', 'amt50_per_imp', 'don_per_view', 'amt_per_view', 'amt50_per_view']
     
     for i in range(len(order)):
