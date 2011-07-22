@@ -13,7 +13,7 @@ __date__ = "July 13th, 2011"
 
 
 """ Import python base modules """
-import sys, datetime, settings, argparse
+import sys, datetime, settings, argparse, logging
 
 """ Modify the classpath to include local projects """
 sys.path.append(settings.__home__)
@@ -29,6 +29,12 @@ class Usage(Exception):
     def __init__(self, msg):
         self.msg = msg
 
+"""
+    Handles the 'time' argument
+"""
+def time_field(input):
+    
+    return input
 
 """
     Execution body of main
@@ -40,11 +46,20 @@ def main(args):
     LOGGING_STREAM = sys.stderr
     logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
     
-    logging.info('Looking for new logs on %s:%s' % (__squid_log_server__, __squid_log_home__))
+    logging.info('Looking for new logs on %s:%s' % (settings.__squid_log_server__, settings.__squid_log_home__))
        
     fdm = DM.FundraiserDataMapper()
-    fdm.poll_logs()
     
+    if args.year or args.month or args.day or args.hour:
+        
+        logging.info('Processing command line args ....')
+        fdm.poll_logs(year=args.year, month=args.month, day=args.day, hour=args.hour)
+    
+    else:
+
+        logging.info('No args command line args provided. Proceeding ...')
+        fdm.poll_logs()
+        
     logging.info('Log polling complete.')
     
     return 0
@@ -62,7 +77,12 @@ if __name__ == "__main__":
         description='Extracts revert data in db42.wikimedia.org:halfak and db42.wikimedia.org:enwiki.'
     )
     
-    """ No args """ 
+    """ Allow specification of the log time in CLI arguments """
+    
+    parser.add_argument('-y', '--year', metavar="<input>", type=time_field, help='The year of the log to be mined.', default=sys.stdin)
+    parser.add_argument('-m', '--month', metavar="<input>", type=time_field, help='The month of the log to be mined.', default=sys.stdin)
+    parser.add_argument('-d', '--day', metavar="<input>", type=time_field, help='The day of the log to be mined.', default=sys.stdin)
+    parser.add_argument('-u', '--hour', metavar="<input>", type=time_field, help='The hour of the log to be mined.', default=sys.stdin)
     
     args = parser.parse_args()
 
