@@ -238,6 +238,8 @@ def mining_patterns_add(request):
     err_msg = ''
     mptl = DL.MiningPatternsTableLoader()
     
+    type = 'banner'
+    
     """ Extract Post data """
     try:
         regexp = MySQLdb._mysql.escape_string(request.POST['regexp_pattern'])
