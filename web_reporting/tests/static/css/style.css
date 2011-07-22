@@ -6,23 +6,6 @@ p, h1, form, button{border:0; margin:0; padding:0;}
 .spacer{clear:both; height:20px;}
 .spacer_small{clear:both; height:4px;}
 
-/* ----------- label_checkbox_pair ----------- */
-p.label_checkbox_pair {
-clear: both;
-float: none;
-position: relative;
-}
-p.label_checkbox_pair input {
-left: 80px;
-position: absolute;
-top: 1px;
-}
-p.label_checkbox_pair label {
-display: block;
-margin-left: 90px;
-width: 200px;
-}
-
 
 /* ----------- My Form ----------- */
 .myform{
@@ -47,8 +30,8 @@ padding:30px;
 	margin-bottom:8px;
 }
 #stylized p{
-	font-size:11px;
-	color:#666666;
+	font-size:20px;
+	color:#444444;
 	margin-bottom:20px;
 	border-bottom:solid 1px #b7ddf2;
 	padding-bottom:10px;
@@ -104,7 +87,6 @@ padding:30px;
 	width:200px;
 	margin:2px 0 20px 10px;
 }
-
 
 .container {
     width: 80%;

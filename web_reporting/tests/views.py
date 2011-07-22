@@ -429,7 +429,7 @@ def add_comment(request, utm_campaign):
     for line in lines:
         
         if line == '<!-- Cend -->':
-            line = '\n<br>' + comments + '\n<br><br>  --' + now + '<br>\n' + '<!-- Cend -->'
+            line = '<div class="spacer"></div>\n<div class="spacer"></div>\n' + comments + '\n<div class="spacer"></div>  --' + now + '\n<!-- Cend -->'
         
         new_html = new_html + line + '\n'
     
