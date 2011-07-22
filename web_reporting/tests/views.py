@@ -30,7 +30,7 @@ from django.core.urlresolvers import reverse
 
 
 """ Import python base modules """
-import sys, os, MySQLdb, logging, math, datetime
+import sys, os, MySQLdb, logging, math, datetime, re
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -142,7 +142,19 @@ def test(request):
             labels = labels.__str__() 
         
         label_dict = dict()
+        label_dict_full = dict()
         
+        labels = labels[1:-1].split(',')
+            
+        for i in range(len(labels)):
+            label = labels[i].split('\'')[1]
+            label = label.strip()            
+            pieces = label.split(' ')
+            label = pieces[0]
+            for j in range(len(pieces) - 1):
+                label = label + '_' + pieces[j+1]
+            label_dict_full[label] = label
+                
         """ Look at the artifact names and map them into a dict() 
             Determine if artifacts were chosen by the user """
         
@@ -153,17 +165,8 @@ def test(request):
             for elem in artifacts_chosen:
                 label_dict[elem] = elem
         else:
-            print labels
-            labels = labels[1:-1].split(',')
+            label_dict = label_dict_full
             
-            for i in range(len(labels)):
-                label = labels[i].split('\'')[1]
-                label = label.strip()            
-                pieces = label.split(' ')
-                label = pieces[0]
-                for j in range(len(pieces) - 1):
-                    label = label + '_' + pieces[j+1]
-                label_dict[label] = label
             
     except Exception as inst:
         
@@ -198,7 +201,6 @@ def test(request):
         crl._query_type_ = test_type_var
         artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
     
-    
     """ convert the artifact list into a label dictionary for the template """
     if len(artifact_list) > 0:
         label_dict = dict()
@@ -206,7 +208,6 @@ def test(request):
             label_dict[elem] = elem
     
     """ Finally parse the POST QueryDict for user inserted labels """
-
     for key in label_dict.keys():
         try:
             if not(request.POST[key] == ''):
@@ -216,6 +217,14 @@ def test(request):
         except:
             logging.error('Could not find %s in the POST QueryDict.' % key)
     
+    for key in label_dict_full.keys():
+        try:
+            if not(request.POST[key] == ''):
+                label_dict_full[key] = request.POST[key]
+            else:
+                label_dict_full[key] = key
+        except:
+            logging.error('Could not find %s in the POST QueryDict.' % key)
     # logging.debug(label_dict)
     
     """ 
@@ -253,7 +262,7 @@ def test(request):
 
     if test_type_var == FDH._TESTTYPE_BANNER_:
         
-        winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
+        winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpi
         
@@ -263,7 +272,7 @@ def test(request):
                                     'summary_table': html_table, 'sample_interval' : sample_interval}, context_instance=RequestContext(request))
     elif test_type_var == FDH._TESTTYPE_LP_:
         
-        winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
+        winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpv
         
@@ -274,7 +283,7 @@ def test(request):
         
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, \
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, \
-        html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, sample_interval, test_interval, test_type_var, metric_types)
+        html_table =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpi
         
@@ -318,7 +327,7 @@ def test(request):
     
 
 """
-def auto_gen(test_name, start_time, end_time, campaign, label_dict, sample_interval, test_interval, test_type, metric_types):
+def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types):
 
     # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
     
@@ -345,14 +354,13 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, sample_inter
 
     """
         GENERATE PLOTS FOR EACH METRIC OF INTEREST
-         !! MODIFY -- allow a list of metrics to be passed 
     """
     for metric in metric_types:
         ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict)
         
         
     """ GENERATE A REPORT SUMMARY """
-    ir._write_html_table(label_dict)
+    ir._write_html_table(label_dict_full)
     html_table = ir._table_html_
     
     
