@@ -332,13 +332,6 @@ def timestamp_from_obj(time_obj, format, resolution):
 
         format 1 - 20080101000606
         format 2 - 2008-01-01 00:06:06   
-        
-    Examples of resolution definitions:
-    
-        resolution 0 - xxxx-xx-xx 00:00:00
-        resolution 1 - xxxx-xx-xx xx:00:00
-        resolution 2 - xxxx-xx-xx xx:xx:00
-        resolution 3 - xxxx-xx-xx xx:xx:xx
      
 """
 def timestamp_to_obj(timestamp, format):
@@ -352,6 +345,45 @@ def timestamp_to_obj(timestamp, format):
                                     int(timestamp[11:13]), int(timestamp[14:16]), int(timestamp[17:19]))
 
     return time_obj
+
+
+"""
+
+    Evaluates a timestamp of a given format to ensure that it is valid
+    
+    INPUT:
+        timestamp        - timestamp string
+        format           - the format of the returned timestamp strings 
+    
+    RETURN:
+         boolean result
+         
+         
+    Examples of format definitions:
+
+        format 1 - 20080101000606
+        format 2 - 2008-01-01 00:06:06   
+     
+"""
+def is_timestamp(timestamp, format):
+
+    try:
+        if format == 1:
+            if len(timestamp) == 14 and unicode(timestamp).isnumeric():
+                return True
+            else:
+                return False
+            
+        elif format == 2:
+            if len(timestamp) == 19 and unicode(timestamp[0:4]).isnumeric() and unicode(timestamp[5:7]).isnumeric() and unicode(timestamp[8:10]).isnumeric() and \
+                unicode(timestamp[11:13]).isnumeric() and unicode(timestamp[14:16]).isnumeric() and unicode(timestamp[17:19]).isnumeric():
+                return True
+            else:
+                return False
+    except:
+        return False
+    
+
 
 
 """
@@ -440,7 +472,7 @@ def timestamp_convert_format(ts, format_from, format_to):
             
     elif format_from == 2:
         if format_to == 1:
-            new_timestamp = ts[0:4] + ts[5:7] + ts[8:10] + ts[11:13] + ts[14:16] + ts[15:17]
+            new_timestamp = ts[0:4] + ts[5:7] + ts[8:10] + ts[11:13] + ts[14:16] + ts[17:19]
             
     return new_timestamp
  
