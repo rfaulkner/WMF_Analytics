@@ -28,7 +28,8 @@ __date__ = "December 16th, 2010"
 
 
 """ Import python base modules """
-import sys, pylab, math, logging
+import sys, pylab, math, logging, numpy as np, matplotlib.pyplot as plt
+
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.QueryData as QD
@@ -444,13 +445,12 @@ class IntervalReporting(DataReporting):
         if len(self._item_keys_) > 0:
             self._counts_ = self.select_metric_keys(self._counts_)
             self._times_ = self.select_metric_keys(self._times_)
-        
+
         """ Convert Times to Integers that indicate relative times AND normalize the intervals in case any are missing """
         for key in self._times_.keys():
             self._times_[key] = TP.normalize_timestamps(self._times_[key], False, 3)            
             self._times_[key], self._counts_[key] = TP.normalize_intervals(self._times_[key], self._counts_[key], interval)
         
-
         """ If there are missing metrics add them as zeros """
         for artifact_key in artifact_keys:
 
@@ -759,7 +759,7 @@ class ConfidenceReporting(DataReporting):
     """
     def run(self, test_name, query_name, metric_name, campaign, items, start_time, end_time, interval, num_samples):
         
-        """ TEMPORARY - map items and labels, this should be more generalized """
+        """ TEMPORARY - map TODO : this should be more generalized """
         counter = 1
         for key in items.keys():
             if counter == 1:
@@ -783,7 +783,9 @@ class ConfidenceReporting(DataReporting):
         std_devs_1 = ret[2]
         std_devs_2 = ret[3]
         confidence = ret[4]
-    
+        
+        logging.debug(ret)
+
         """ plot the results """
         xlabel = 'Hours'
         subplot_index = 111
@@ -813,6 +815,101 @@ class ConfidenceReporting(DataReporting):
 
 
 
-
+class DonorBracketReporting(DataReporting):
+        
+    """
+        Constructor
+        
+        @param **kwargs: allows plotting parameters to be tuned
+     
+    """
+    def __init__(self, **kwargs):
+        
+        query_type = FDH._QTYPE_BANNER_
+        
+        for key in kwargs:
+            if key == 'query_type':                          # Set custom data loaders
+                query_type = kwargs[key]
+                        
+            elif key == 'was_run':
+                self._was_run_ = kwargs[key]
+            
+        self._data_loader_ = DL.DonorBracketsReportingLoader(query_type)
+            
+        """ Call constructor of parent """
+        DataReporting.__init__(self, **kwargs)
 
     
+    """
+        Protected method.  Execute reporting query and generate plots.       
+        
+        INPUT:    The inputs define the plot arguments                
+        
+    """        
+    def _gen_plot(self, data, title, fname):
+        
+        bracket_names = data[0] 
+        donations = data[1]
+        amounts = data[2]
+        #bracket_values = data[3]
+
+        
+        """ Generate a histogram for each artifact """
+        subplot_index = 111
+        
+        for artifact in donations:  
+            
+            spacing = 0.1
+            width = 0.3            
+            indices = range(len(bracket_names[artifact]))
+            
+            """ Position the bars and the bar labels """
+            
+            bar_pos = list()
+            tick_pos = list()
+            
+            for i in indices:
+                bar_pos.append(spacing + i * spacing + i * width)
+                tick_pos.append(spacing + width / 2 + i * spacing + i * width) 
+            
+            """ plot the donations """
+            plt.subplot(subplot_index)
+            plt.figure(num=None,figsize=[26,14])    
+            plt.bar(bar_pos, donations[artifact], width)
+            pylab.grid()
+            pylab.title(artifact + ' --' + title)
+            pylab.ylabel('DONATIONS')
+            plt.xticks(tick_pos, bracket_names[artifact])
+            
+            pylab.savefig(self._file_path_ + fname + '_donations.' + self._fig_file_format_, format=self._fig_file_format_)
+            
+            plt.clf()
+            
+            """ plot the amounts """
+            plt.subplot(subplot_index)
+            plt.figure(num=None,figsize=[26,14])    
+            plt.bar(bar_pos, amounts[artifact], width)
+            pylab.grid()
+            pylab.title(artifact + ' --' + title)
+            pylab.ylabel('$ Raised')
+            plt.xticks(tick_pos, bracket_names[artifact] )
+            
+            pylab.savefig(self._file_path_ + fname + '_amounts.' + self._fig_file_format_, format=self._fig_file_format_)
+            
+            plt.clf()
+
+        
+    def run(self, start_time, end_time, campaign):
+        
+        """ retrieve rows from query on donor brackets """
+        data = self._data_loader_.run_query(start_time, end_time, campaign)
+        
+        """ Compose a plot of the data """
+        if self._generate_plot_:
+            
+            plot_title =  'Donor Dollar Breakdown:  ' + campaign + ' -- ' + TP.timestamp_convert_format(start_time,1,2) + ' - ' + TP.timestamp_convert_format(end_time,1,2)
+            fname = 'donor_brackets_' + campaign + '_' + self._data_loader_._query_type_
+                        
+            """ Generate plots given data """
+            self._gen_plot(data, plot_title, fname)
+        

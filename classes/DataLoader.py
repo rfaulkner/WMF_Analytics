@@ -806,6 +806,190 @@ class CampaignReportingLoader(DataLoader):
 
 
 """
+    This DataLoader class handles queries reporting on the donation amount profiles of (a) campaign(s):
+    
+        report
+"""
+class DonorBracketsReportingLoader(DataLoader):
+    
+    """
+        constructor
+        
+        @param query_type:  indicates the type of artifact reported by the query
+        
+                FDH._QTYPE_BANNER_
+                FDH._QTYPE_LP_
+                FDH._QTYPE_CAMPAIGN_
+    """
+    def __init__(self, query_type):
+        
+        self.init_db()
+        
+        """ Use _query_names_ to store a single query name """
+        self._query_names_ = 'report_donor_dollar_breakdown' # embed the query name in the class itself
+        self._query_type_ = query_type
+        
+    """ Close the connection """
+    def __del__(self):
+        self.close_db()
+    
+    
+    """
+        Retrieve the counts for donation brackets and process to pass for reporting
+    """
+    def run_query(self, start_time, end_time, campaign):
+        
+        query_name = self._query_names_
+        logging.info('Using query: ' + query_name)
+        
+        """ Load the SQL File & Format """
+        filename = projSet.__sql_home__ + query_name + '.sql'
+        sql_stmnt = Hlp.read_sql(filename)
+
+        """ Place comments in the query string to"""
+        if self._query_type_ == FDH._QTYPE_CAMPAIGN_:
+            sql_stmnt = sql_stmnt % ("utm_campaign as artifact,", start_time, end_time, campaign)
+        elif self._query_type_ == FDH._QTYPE_BANNER_:
+            sql_stmnt = sql_stmnt % ("SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as artifact,", start_time, end_time, campaign)
+        elif self._query_type_ == FDH._QTYPE_LP_:
+            sql_stmnt = sql_stmnt % ("SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-11) as artifact,", start_time, end_time, campaign)
+        
+        logging.info('Query Complete: ' + query_name)
+        
+        """ Execute the query """
+        try:
+            self._cur_.execute(sql_stmnt)
+            self._results_ = self._cur_.fetchall()
+        
+        except Exception as inst:
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)    # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            self._db_.rollback()
+            sys.exit(0)
+        
+        
+        """ Dictionaries to store the results - results are keyed by the artifact name (banner, LP, campaign) """
+        
+        bracket_names = dict()
+        donations = dict()
+        amounts = dict()
+        # bracket_values = dict()
+        
+        """ Process the results - break into separate dictionaries """
+        
+        for row in self._results_:
+            
+            artifact = self.get_query_record_field(row, 'artifact')
+            
+            if artifact not in bracket_names.keys():
+                
+                bracket_names[artifact] = list()
+                donations[artifact] = list()
+                amounts[artifact] = list()
+            
+            """ The name of the donor bracket - the first four characters may be omitted """
+            bracket_name = self.get_query_record_field(row, 'bracket_name')[4:]
+            
+            bracket_names[artifact].append( bracket_name )
+            donations[artifact].append(  int(self.get_query_record_field(row, 'count')) )
+            amounts[artifact].append(  self.get_query_record_field(row, 'total_amount') )
+            
+            """ For the largest bracket just use its min_val as the index 
+            if re.search('>', bracket_name):
+                bracket_values[artifact].append( float(self.get_query_record_field(row, 'min_val') ) )
+            else:
+                bracket_values[artifact].append( ( float(self.get_query_record_field(row, 'max_val')) + float(self.get_query_record_field(row, 'min_val')) )  / 2 )
+            """
+        return self._add_missing_brackets(bracket_names, donations, amounts)
+    
+    """ 
+        Add missing brackets -- helper to run_query 
+    """
+    def _add_missing_brackets(self, bracket_names, donations, amounts):
+    
+        brackets = DonorBracketsTableLoader().get_all_brackets()
+        
+        """ Truncate brackets to match what has been extracted from the db """
+        indices = range(len(brackets))
+        for i in indices:
+            brackets[i] = brackets[i][4:]
+            
+        queried_brackets = bracket_names.keys()
+        
+        """ new data dictionaries """
+        new_bracket_names = dict()
+        new_donations = dict()
+        new_amounts = dict()
+        
+        """ add keys to new lists """
+        for key in queried_brackets:
+            new_bracket_names[key] = list()
+            new_donations[key] = list()
+            new_amounts[key] = list()
+        
+        """  """
+        index = 0
+        for key in queried_brackets:
+            for i in brackets:
+                if i not in bracket_names[key]:
+                    new_bracket_names[key].append(i)
+                    new_donations[key].append(0.01)
+                    new_amounts[key].append(0.01)
+                else:
+                    new_bracket_names[key].append(bracket_names[key][index])
+                    new_donations[key].append(donations[key][index])
+                    new_amounts[key].append(amounts[key][index])
+                    index = index + 1
+
+        return new_bracket_names, new_donations, new_amounts
+    
+    
+    """
+        Turn a counts vector into a set of samples || TODO:  bump this up to the base class
+    """
+    def histify(self, data, label_indices):
+        
+        indices = range(len(data))
+        hist_list = list()
+
+        for index in indices:
+            samples = [label_indices[index]] * data[index]            
+            hist_list.extend(samples)
+            
+        return hist_list
+    
+    """
+        Retrieve 
+        
+        Fields: artifact (varchar) | bracket_name (varchar) | count (int) | total_amount (decimal)
+    """
+    def get_query_record_field(self, row, key):
+        
+        try:
+            if key == 'artifact':
+                return row[0]
+            if key == 'bracket_name':
+                return row[1]
+            elif key == 'count':
+                return row[2]
+            elif key == 'total_amount':           
+                return row[3]
+            elif key == 'min_val':           
+                return row[4]
+            elif key == 'max_val':           
+                return row[5]
+        
+        except Exception as inst:
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            return ''
+        
+"""
 
     CLASS :: TableLoader
     
@@ -1671,3 +1855,125 @@ class MiningPatternsTableLoader(TableLoader):
                 lp_patterns.append(self.get_mining_pattern_field(row, 'pattern'))
                 
         return banner_patterns, lp_patterns
+    
+
+"""
+
+    CLASS :: DonorBracketsTableLoader
+    
+    storage3.pmtpa.wmnet.faulkner.donor_brackets :
+        
+    +--------------+-------------+------+-----+---------+-------+
+    | Field        | Type        | Null | Key | Default | Extra |
+    +--------------+-------------+------+-----+---------+-------+
+    | bracket_name | varchar(20) | YES  |     | NULL    |       |
+    | min_val      | int(10)     | YES  |     | NULL    |       |
+    | max_val      | int(10)     | YES  |     | NULL    |       |
+    +--------------+-------------+------+-----+---------+-------+
+
+"""
+class DonorBracketsTableLoader(TableLoader):
+    
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+        
+    def process_kwargs(self, kwargs_dict):
+        
+        bracket_name = ''
+        min_val = 0
+        max_val = 99999999        
+        
+        for key in kwargs_dict:
+            if key == 'bracket_name':           
+                bracket_name = Hlp.stringify(kwargs_dict[key])
+            if key == 'min_val':           
+                min_val = Hlp.stringify(kwargs_dict[key])
+            elif key == 'max_val':
+                max_val = Hlp.stringify(kwargs_dict[key])
+
+        return [bracket_name, min_val, max_val]
+    
+    
+    def get_all_rows(self):
+        
+        select_stmnt = 'select * from donor_brackets'
+        try:
+            self._cur_.execute(select_stmnt)
+            results = self._cur_.fetchall()
+        except:
+            self._db_.rollback()
+            logging.error('Could not execute: ' + select_stmnt)
+            
+        return results
+    
+    def get_all_brackets(self):
+        
+        results = self.get_all_rows()
+        
+        brackets = list()
+        
+        for row in results:
+            brackets.append(self.get_donor_bracket_record_field(row,'bracket_name'))
+        
+        return brackets
+    
+    def get_row_by_min_value(self, min_val, max_val):
+        
+        select_stmnt = 'select * from donor_brackets where min_val = %s and max_val = %s' % (str(min_val), str(max_val))
+        
+        try:
+            self._cur_.execute(select_stmnt)
+            results = self._cur_.fetchall()
+        except:
+            self._db_.rollback()
+            logging.error('Could not execute: ' + select_stmnt)
+            
+        return results
+    
+    
+    def insert_row(self, **kwargs):
+        
+        insert_stmnt = 'insert into donor_brackets where '
+        
+        bracket_name, min_val, max_val = self.process_kwargs(kwargs)
+        
+        val = '(' + bracket_name + ',' + min_val + ',' + max_val + ');'
+                    
+        insert_stmnt = insert_stmnt + val
+        
+        return self.execute_SQL(insert_stmnt)
+        
+    
+    
+    def delete_row(self, **kwargs):
+        
+        bracket_name, min_val, max_val = self.process_kwargs(kwargs)
+        
+        deleteStmnt = 'delete from donor_brackets where bracket_name = \'%s\' and min_val = %s and max_val = %s;' % (bracket_name, min_val, max_val)
+        
+        return self.execute_SQL(deleteStmnt)
+
+    """
+        This method handles mapping test row fields to col names
+        
+    """
+    def get_donor_bracket_record_field(self, row, key):
+        
+        try:
+            if key == 'bracket_name':
+                return row[0]
+            elif key == 'min_val':
+                return row[1]
+            elif key == 'max_val':           
+                return row[2]
+        
+        except Exception as inst:
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            return ''
