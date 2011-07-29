@@ -100,29 +100,51 @@ class DataMapper(object):
             hour = '0' + str(int(hour))
             
         filename = filename + '-' + year + '-' + month + '-' + day + '-' + hour + day_part
-
+        cmd = 'sftp ' + projSet.__user__ + '@' + projSet.__squid_log_server__ + ':' + projSet.__squid_log_home__ + '%s ' + projSet.__squid_log_local_home__ 
+        
         copied_logs = list()
         """ Try to load each log for that hour - only load gzipped logs for now """
         for i in range(4):
             minute = i * 15
             
             if minute >= 10:
-                minute = str(minute) + '.log.gz'
+                minute = str(minute)
             else:
-                minute = '0' + str(minute) + '.log.gz'
+                minute = '0' + str(minute)
             
-            full_filename = filename  + '--' + minute
+            filename_key = filename  + '--' + minute    
             
-            cmd = 'sftp ' + projSet.__user__ + '@' + projSet.__squid_log_server__ + ':' + projSet.__squid_log_home__ + full_filename + ' ' + projSet.__squid_log_local_home__ 
-            
-            if not(self.log_exists(full_filename)):            
-                os.system(cmd)
-                copied_logs.append(full_filename)
+            if not(self.log_exists(filename_key)):           
+                
+                fname_arg = filename_key + '*'
+                
+                logging.info(cmd % fname_arg) 
+                os.system(cmd % fname_arg)
+                
+                """ Ensure the file exists based on the key and append to the list if so """
+                full_filename = self.get_full_filename(filename_key)
+                if full_filename != '':
+                    copied_logs.append(full_filename)
             else:
-                logging.info('File: %s has already been loaded.' % full_filename)
+                logging.info('File: %s has already been loaded.' % filename)
                 
         return copied_logs
 
+    """
+        Determine file suffix
+    """
+    def get_full_filename(self, filename_key):
+        
+        files = os.listdir(projSet.__squid_log_local_home__)
+        files.sort()
+        
+        for f in files:
+            if re.search(filename_key, f):
+                return f
+            
+        logging.error('File with key %s not found.' % filename_key)
+        return ''
+    
     """
         Return a listing of all of the squid logs
     """
@@ -138,7 +160,8 @@ class DataMapper(object):
         return new_files[1:]
         
     """
-        Determine if a squid log exists
+        Determine if a squid log exists by checking in the squid home directory - this assumes that all files loaded into this folder 
+        have been successfully mined
     """
     def log_exists(self, log_name):
         
@@ -146,11 +169,11 @@ class DataMapper(object):
         files.sort()
         
         for f in files:
-            if f == log_name:
+            """ Is the log name key a substring of the file name """
+            if re.search(log_name, f):
                 return True
             
         return False
-    
     
     """
         Retrieve the timestamp of the latest log
@@ -350,9 +373,9 @@ class FundraiserDataMapper(DataMapper):
         
     """
     def mine_squid_impression_requests(self, logFileName):
-        
-        # self._init_db()
 
+        logging.info('Begin mining of banner impressions in %s' % logFileName)
+        
         sltl = DL.SquidLogTableLoader()
         itl = DL.ImpressionTableLoader()
         
@@ -549,7 +572,8 @@ class FundraiserDataMapper(DataMapper):
     """
     def mine_squid_landing_page_requests(self,  logFileName):
 
-        #self._init_db()
+        logging.info('Begin mining of landing page requests in %s' % logFileName)
+        
         """ Create the dataloaders and initialize """
         sltl = DL.SquidLogTableLoader()
         lptl = DL.LandingPageTableLoader()
