@@ -25,7 +25,7 @@ from django.template import RequestContext
 from django.http import HttpResponse
 
 """ Import python base modules """
-import sys, os, datetime, operator, MySQLdb, logging
+import sys, datetime, operator, MySQLdb, logging
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -61,14 +61,12 @@ def index(request):
     
     """ Interface with the DataLoader """
     
-    os.chdir(projSet.__project_home__ + 'classes')
-    
     crl = DL.CampaignReportingLoader('totals')
     
     #end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=8), 1, hours=-24)
     #start_time = '20101230130400'
     #end_time = '20101230154400'
-    start_time = '20110531120000'
+    start_time = '20110630120000'
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
     
     campaigns, all_data = crl.run_query({'metric_name':'earliest_timestamp','start_time':start_time,'end_time':end_time})
@@ -111,8 +109,6 @@ def index(request):
                 new_sorted_campaigns.append([campaign[0], campaign[1], name, timestamp, all_data[key][2], all_data[key][4]])
     
     sorted_campaigns = new_sorted_campaigns
-    
-    os.chdir(projSet.__project_home__ + 'web_reporting')
 
     return render_to_response('campaigns/index.html', {'campaigns' : sorted_campaigns, 'err_msg' : err_msg, 'min_donations' : min_donations_var, 'earliest_utc' : earliest_utc_ts_var}, context_instance=RequestContext(request))
 
@@ -137,9 +133,7 @@ def show_campaigns(request, utm_campaign):
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
     
     interval = 2
-    
-    os.chdir(projSet.__project_home__ + 'classes')
-    
+        
     """ Estimate start/end time of campaign """
     """ This generates an image for campaign views """
     ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
@@ -210,7 +204,7 @@ def show_campaigns(request, utm_campaign):
     row = ttl.get_test_row(utm_campaign)
     test_name = ttl.get_test_field(row ,'test_name')
     
-    """ Regenerate the data using the estimated start and end times  !! FIXME / MODIFY -- this is cumbersome .. should just generate the plot !! """
+    """ Regenerate the data using the estimated start and end times """
     ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
     ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, {})
 
@@ -219,8 +213,6 @@ def show_campaigns(request, utm_campaign):
     """ Get the banners  """
     test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(''))
     
-    os.chdir(projSet.__project_home__ + 'web_reporting')
-
     return render_to_response('campaigns/show_campaigns.html', {'utm_campaign' : utm_campaign, 'test_name' : test_name, 'start_time' : start_time_est, 'end_time' : end_time_est, 'artifacts' : artifact_name_list, 'test_type' : test_type}, context_instance=RequestContext(request))    
     
     # return HttpResponseRedirect(reverse('campaigns.views.index'))

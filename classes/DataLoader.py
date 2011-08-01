@@ -54,10 +54,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
                
 """
 class DataLoader(object):
-
-    
-    _sql_path_ = '../sql/'    # Relative path for SQL files to be processed
-    
+ 
     _query_names_ = dict()
     _data_handler_ = None   # class that will define how to process the query fields
     _query_type_ = ''       # Stores the query type (dependent on the data handler definition)
@@ -204,6 +201,17 @@ class DataLoader(object):
             sys.exit(2)
 
 
+    def execute_SQL(self, SQL_statement):
+        
+        try:
+            self._cur_.execute(SQL_statement)
+            return self._cur_.fetchall()
+        
+        except:
+            self._db_.rollback()
+            logging.error('Could not execute: ' + SQL_statement)
+            
+            return -1
         
 """
 
@@ -280,7 +288,7 @@ class IntervalReportingLoader(DataLoader):
         """ QUERY PREP - ONLY EXECUTED IF THE QUERY HAS NOT BEEN RUN ALREADY """
         if not(self._was_run_):
             """ Load the SQL File & Format """
-            filename = self._sql_path_+ query_name + '.sql'
+            filename = projSet.__sql_home__+ query_name + '.sql'
             sql_stmnt = Hlp.read_sql(filename)
             
             sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, campaign, interval])
@@ -581,7 +589,7 @@ class HypothesisTestLoader(DataLoader):
             
             self.init_db()
             
-            filename = self._sql_path_ + query_name + '.sql'
+            filename = projSet.__sql_home__ + query_name + '.sql'
             sql_stmnt = Hlp.read_sql(filename)
             
         metric_index = QD.get_metric_index(query_name, metric_name)
@@ -719,7 +727,7 @@ class CampaignReportingLoader(DataLoader):
         logging.info('Using query: ' + query_name)
         
         """ Load the SQL File & Format """
-        filename = self._sql_path_+ query_name + '.sql'
+        filename = projSet.__sql_home__+ query_name + '.sql'
         sql_stmnt = Hlp.read_sql(filename)
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time])
         
@@ -773,7 +781,7 @@ class CampaignReportingLoader(DataLoader):
         logging.info('Using query: ' + query_name)
         
         """ Load the SQL File & Format """
-        filename = self._sql_path_+ query_name + '.sql'
+        filename = projSet.__sql_home__+ query_name + '.sql'
         sql_stmnt = Hlp.read_sql(filename)        
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, utm_campaign])
         
@@ -1016,16 +1024,6 @@ class TableLoader(DataLoader):
     def update_row(self, **kwargs):
         return
     
-    def execute_SQL(self, SQL_statement):
-        
-        try:
-            return self._cur_.execute(SQL_statement)
-        except:
-            self._db_.rollback()
-            logging.error('Could not execute: ' + SQL_statement)
-            
-            return -1
-        
 """
 
     CLASS :: TTestLoaderHelp

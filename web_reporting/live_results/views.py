@@ -47,8 +47,8 @@ def index(request):
     
     """ Get the donations for all campaigns over the last n hours """
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-6)
-    start_time = '20110708155000'
-    end_time = '20110708200000'
+    start_time = '20110729160000'
+    end_time = '20110729200000'
     
     """ Create a interval loader objects """
     ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
@@ -57,15 +57,11 @@ def index(request):
     
     sampling_interval = 10
     
-    """ Execute queries for campaign, banner, and landing page donations """    
-    os.chdir(projSet.__project_home__ + '/classes')
-    
+    """ Execute queries for campaign, banner, and landing page donations """        
     #ir.run('20110603120000', '20110604000000', 2, 'donations', '',[])
     ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
-    
-    os.chdir(projSet.__home__)
     
     """ Extract data from interval reporting objects """
     cmpgn_data_dict = get_data_lists(ir_cmpgn, 'C_')
@@ -80,7 +76,7 @@ def index(request):
 
 """
 
-    !! FIXME -- Move to Helper?? !!
+    !! TODO FIXME -- Move to Helper?? !!
     
 """
 def get_data_lists(ir, pattern):
@@ -132,7 +128,7 @@ def get_data_lists(ir, pattern):
 
 """
 
-    !! FIXME -- Move to Helper?? !!
+    !! TODO FIXME -- Move to Helper?? !!
     
 """
 def combine_data_lists(dict_list):

@@ -30,7 +30,7 @@ from django.core.urlresolvers import reverse
 
 
 """ Import python base modules """
-import sys, os, MySQLdb, logging, math, datetime, re
+import sys, MySQLdb, logging, math, datetime
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -134,11 +134,8 @@ def test(request):
             
                 
         except KeyError:
-                        
-            os.chdir(projSet.__project_home__ + 'classes')
-            test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type
-            os.chdir(projSet.__project_home__ + 'web_reporting')
-           
+
+            test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type           
             labels = labels.__str__() 
         
         label_dict = dict()
@@ -178,7 +175,6 @@ def test(request):
         return HttpResponseRedirect(reverse('tests.views.index'))
         # pass
     
-    os.chdir(projSet.__project_home__ + 'classes')
     
     crl = DL.CampaignReportingLoader('')
     artifact_list = list()
@@ -243,10 +239,7 @@ def test(request):
     time_diff = end_time_obj - start_time_obj
     time_diff_min = time_diff.seconds / 60.0
     test_interval = int(math.floor(time_diff_min / sample_interval)) # 2 is the interval
-    
-    
-    os.chdir(projSet.__project_home__ + 'web_reporting')
-    
+        
     metric_types = FDH.get_test_type_metrics(test_type_var)
     metric_types_full = dict()
     
@@ -331,12 +324,9 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_f
 
     # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
     
-    os.chdir('/home/rfaulkner/trunk/projects/Fundraiser_Tools/classes')
     
     """ Labels will always be metric names in this case """
     use_labels_var = True
-    #if len(label_dict) == 0:
-    #    use_labels_var = False
         
     """ 
         BUILD REPORTING OBJECTS 
@@ -351,7 +341,10 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_f
     ir_cmpgn = DR.IntervalReporting(use_labels=False,font_size=20,plot_type='line',query_type='campaign',file_path=projSet.__web_home__ + 'campaigns/static/images/')
     cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test',file_path=projSet.__web_home__ + 'tests/static/images/')
     
-
+    """ Create an object to perform the reporting for donation breakdowns and execute """
+    dbr = DR.DonorBracketReporting(query_type=FDH._QTYPE_CAMPAIGN_, file_path=projSet.__web_home__ + 'tests/static/images/')
+    dbr.run(start_time, end_time, campaign)
+    
     """
         GENERATE PLOTS FOR EACH METRIC OF INTEREST
     """
