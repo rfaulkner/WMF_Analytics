@@ -16,7 +16,7 @@ __date__ = "April 8th, 2011"
 
 
 """ Import python base modules """
-import sys, MySQLdb, math, datetime, re, logging, csv
+import sys, MySQLdb, math, datetime, re, logging, csv, operator
 
 """ Import Analytics modules """
 import Fundraiser_Tools.settings as projSet
@@ -200,19 +200,57 @@ class DataLoader(object):
             logging.error('Could not find a query for type: ' + self._query_type_)  
             sys.exit(2)
 
-
+    """
+        Executes a SQL statement and return the raw results.  This is good for generic queries.
+        
+    """
     def execute_SQL(self, SQL_statement):
         
         try:
             self._cur_.execute(SQL_statement)
             return self._cur_.fetchall()
         
-        except:
+        except Exception as inst:
+            
             self._db_.rollback()
+            
             logging.error('Could not execute: ' + SQL_statement)
+            logging.error(str(type(inst)))      # the exception instance
+            logging.error(str(inst.args))       # arguments stored in .args
+            logging.error(inst.__str__())       # __str__ allows args to printed directly
+
             
             return -1
+    
+    """
+        Takes raw results from a cursor object and sorts them based on a tuple unsigned integer key value
+    """
+    def sort_results(self, results, key):
         
+        return sorted(results, key=operator.itemgetter(key), reverse=False)
+    
+    """
+        Takes a list of tuple results and breaks each tuple key into its own list.  Such lists may be consumed by the matplotlib plotter
+    """
+    def break_results_into_lists(self, results):
+        
+        try:
+            
+            num_properties = len(results[0])
+            prop_range_list = range(num_properties)
+            lists = list()
+            
+            for j in prop_range_list:
+                lists.append(list())
+            
+            for i in range(len(results)):
+                for j in prop_range_list:
+                    lists[j].append(results[i][j])
+        
+        except:
+            pass
+        
+        return lists
 """
 
     This Loader inherits the functionality of DaatLoader and handles SQL queries that group data by time intervals.  These are generally preferable for most
