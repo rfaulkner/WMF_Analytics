@@ -948,6 +948,7 @@ class DonorBracketsReportingLoader(DataLoader):
             else:
                 bracket_values[artifact].append( ( float(self.get_query_record_field(row, 'max_val')) + float(self.get_query_record_field(row, 'min_val')) )  / 2 )
             """
+        # return bracket_names, donations, amounts
         return self._add_missing_brackets(bracket_names, donations, amounts)
     
     """ 
@@ -976,7 +977,10 @@ class DonorBracketsReportingLoader(DataLoader):
             new_amounts[key] = list()
         
         """  """
-        index = 0
+        index = dict()
+        for key in queried_brackets:
+            index[key] = 0
+            
         for key in queried_brackets:
             for i in brackets:
                 if i not in bracket_names[key]:
@@ -984,10 +988,10 @@ class DonorBracketsReportingLoader(DataLoader):
                     new_donations[key].append(0.01)
                     new_amounts[key].append(0.01)
                 else:
-                    new_bracket_names[key].append(bracket_names[key][index])
-                    new_donations[key].append(donations[key][index])
-                    new_amounts[key].append(amounts[key][index])
-                    index = index + 1
+                    new_bracket_names[key].append(bracket_names[key][index[key]])
+                    new_donations[key].append(donations[key][index[key]])
+                    new_amounts[key].append(amounts[key][index[key]])
+                    index[key] = index[key] + 1
 
         return new_bracket_names, new_donations, new_amounts
     

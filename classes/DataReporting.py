@@ -73,7 +73,7 @@ class DataReporting(object):
     _fig_file_format_ = 'png'
     _plot_type_ = 'line'
     _item_keys_ = list()
-    _file_path_ = '.'
+    _file_path_ = './'
     _generate_plot_ = True
     
 
@@ -844,59 +844,74 @@ class DonorBracketReporting(DataReporting):
         Protected method.  Execute reporting query and generate plots.       
         
         INPUT:    The inputs define the plot arguments                
+                    data is 
         
     """        
-    def _gen_plot(self, data, title, fname):
-        
-        bracket_names = data[0] 
-        donations = data[1]
-        amounts = data[2]
-        #bracket_values = data[3]
+    def _gen_plot(self, bracket_names, data, metric_name, title, fname):
 
+
+        spacing = 0.1
+        offset_spacing = 0
+        total_width = 0.3
+        width = total_width / (3 * float(len(data.keys())))             
         
         """ Generate a histogram for each artifact """
         subplot_index = 111
+
+        colours = ['r', 'b', 'y', 'g']
+        iter_colours = iter(colours)
+        indices = range(len(bracket_names))
         
-        for artifact in donations:  
+        rects = list()
+        
+        """ Build the tick labels for the  """
+        tick_pos = list()
+        for i in indices:            
+            tick_pos.append(spacing + width + i * spacing + i * width)
             
-            spacing = 0.1
-            width = 0.3            
-            indices = range(len(bracket_names[artifact]))
+        plt.clf()
+        plt.subplot(subplot_index)
+        plt.figure(num=None,figsize=[26,14])
+        plt.xticks(tick_pos, bracket_names)
+        plt.grid()
+        plt.title(title)
+        plt.ylabel(metric_name)
+        
+        for artifact in data:  
             
             """ Position the bars and the bar labels """
-            
             bar_pos = list()
-            tick_pos = list()
             
             for i in indices:
-                bar_pos.append(spacing + i * spacing + i * width)
-                tick_pos.append(spacing + width / 2 + i * spacing + i * width) 
+                bar_pos.append(spacing + i * spacing + i * width + offset_spacing)
             
-            """ plot the donations """
-            plt.subplot(subplot_index)
-            plt.figure(num=None,figsize=[26,14])    
-            plt.bar(bar_pos, donations[artifact], width)
-            pylab.grid()
-            pylab.title(artifact + ' --' + title)
-            pylab.ylabel('DONATIONS')
-            plt.xticks(tick_pos, bracket_names[artifact])
+            """ plot the donations """    
+            rects.append(plt.bar(bar_pos, data[artifact], width, color=iter_colours.next())[0])
             
-            pylab.savefig(self._file_path_ + fname + '_donations.' + self._fig_file_format_, format=self._fig_file_format_)
-            
-            plt.clf()
-            
-            """ plot the amounts """
-            plt.subplot(subplot_index)
-            plt.figure(num=None,figsize=[26,14])    
-            plt.bar(bar_pos, amounts[artifact], width)
-            pylab.grid()
-            pylab.title(artifact + ' --' + title)
-            pylab.ylabel('$ Raised')
-            plt.xticks(tick_pos, bracket_names[artifact] )
-            
-            pylab.savefig(self._file_path_ + fname + '_amounts.' + self._fig_file_format_, format=self._fig_file_format_)
-            
-            plt.clf()
+            """ increment the offset spacing for bars"""
+            offset_spacing = offset_spacing + width
+        
+        plt.legend(rects, data.keys())
+        plt.savefig(self._file_path_ + fname + '_' + metric_name + '.' + self._fig_file_format_, format=self._fig_file_format_)
+        
+      
+#            
+#            
+#            """ Clear the plot to add amount bars  """
+#            plt.clf()
+#            
+#            """ plot the amounts """
+#            plt.subplot(subplot_index)
+#            plt.figure(num=None,figsize=[26,14])    
+#            plt.bar(bar_pos, amounts[artifact], width)
+#            plt.grid()
+#            plt.title(artifact + ' --' + title)
+#            plt.ylabel('$ Raised')
+#            plt.xticks(tick_pos, bracket_names[artifact] )
+#            
+#            plt.savefig(self._file_path_ + fname + '_amounts.' + self._fig_file_format_, format=self._fig_file_format_)
+#            
+#            plt.clf()
 
         
     def run(self, start_time, end_time, campaign):
@@ -911,5 +926,8 @@ class DonorBracketReporting(DataReporting):
             fname = 'donor_brackets_' + campaign + '_' + self._data_loader_._query_type_
                         
             """ Generate plots given data """
-            self._gen_plot(data, plot_title, fname)
+            bracket_names = data[0]
+            bracket_names = bracket_names[bracket_names.keys()[0]]
+            self._gen_plot(bracket_names, data[1], 'Donations', plot_title, fname)
+            self._gen_plot(bracket_names, data[2], 'Amounts', plot_title, fname)
         
