@@ -894,24 +894,7 @@ class DonorBracketReporting(DataReporting):
         plt.legend(rects, data.keys())
         plt.savefig(self._file_path_ + fname + '_' + metric_name + '.' + self._fig_file_format_, format=self._fig_file_format_)
         
-      
-#            
-#            
-#            """ Clear the plot to add amount bars  """
-#            plt.clf()
-#            
-#            """ plot the amounts """
-#            plt.subplot(subplot_index)
-#            plt.figure(num=None,figsize=[26,14])    
-#            plt.bar(bar_pos, amounts[artifact], width)
-#            plt.grid()
-#            plt.title(artifact + ' --' + title)
-#            plt.ylabel('$ Raised')
-#            plt.xticks(tick_pos, bracket_names[artifact] )
-#            
-#            plt.savefig(self._file_path_ + fname + '_amounts.' + self._fig_file_format_, format=self._fig_file_format_)
-#            
-#            plt.clf()
+
 
         
     def run(self, start_time, end_time, campaign):
