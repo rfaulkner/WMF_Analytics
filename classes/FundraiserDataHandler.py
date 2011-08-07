@@ -38,9 +38,9 @@ _COLTYPE_TIME_ = 'time'
 
 
 """ Defines the metric type of each column in the interval reporting queries  """
-_bannerlp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
-_banner_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
-_lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
+_bannerlp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
+_banner_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
+_lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
 
 
 def get_col_types(query_type):
@@ -94,7 +94,7 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader)
 def get_test_type_metrics(test_type):
     
     if test_type == _TESTTYPE_BANNER_:
-        test_metrics = ['imp', 'click_rate', 'donations', 'don_per_imp', 'amt50_per_imp', ]
+        test_metrics = ['imp', 'click_rate', 'donations', 'don_per_imp', 'amt50_per_imp']
     if test_type == _TESTTYPE_LP_:
         test_metrics = ['views', 'donations', 'don_per_view', 'amt50_per_view']
     if test_type == _TESTTYPE_BANNER_LP_:
@@ -114,7 +114,7 @@ def order_column_keys(keys):
     new_keys = list()
     
     """ The general order of all column keys that may be found """
-    order = ['ts', 'day_hr', 'utm_campaign', 'utm_source', 'banner', 'landing_page', 'impressions', 'imp', 'views', 'donations', 'clicks', 'total_clicks', 'amount','amount50', 'amount100', 'click_rate', 'conversion_rate', 'don_per_imp', 'amt_per_imp', 'amt50_per_imp', 'don_per_view', 'amt_per_view', 'amt50_per_view']
+    order = ['ts', 'day_hr', 'utm_campaign', 'utm_source', 'banner', 'landing_page', 'impressions', 'imp', 'views', 'donations', 'clicks', 'total_clicks', 'amount','amount50', 'amount100', 'avg_donation', 'avg_donation50', 'click_rate', 'conversion_rate', 'don_per_imp', 'amt_per_imp', 'amt50_per_imp', 'don_per_view', 'amt_per_view', 'amt50_per_view']
     
     for i in range(len(order)):
         if order[i] in keys:

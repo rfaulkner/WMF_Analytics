@@ -423,6 +423,10 @@ def get_metric_index(query_name, metric_name):
             return 8
         elif metric_name == 'amt50_per_view':
             return 10
+        elif metric_name == 'avg_donation':
+            return 11
+        elif metric_name == 'avg_donation50':
+            return 12
         else:
             return -1
     elif query_name == 'report_banner_metrics_minutely':
@@ -438,6 +442,10 @@ def get_metric_index(query_name, metric_name):
             return 10
         elif metric_name == 'click_rate':
             return 7
+        elif metric_name == 'avg_donation':
+            return 11
+        elif metric_name == 'avg_donation50':
+            return 12
         else:
             return -1
     elif query_name == 'report_campaign_metrics_minutely':
@@ -491,6 +499,10 @@ def get_metric_index(query_name, metric_name):
             return 13
         elif metric_name == 'click_rate':
             return 7
+        elif metric_name == 'avg_donation':
+            return 14
+        elif metric_name == 'avg_donation50':
+            return 15
         else:
             return -1
         
@@ -538,6 +550,10 @@ def get_metric_full_name(metric_name):
         return 'Amount'
     elif metric_name == 'click_rate':
         return 'Banner Click Rate'
+    elif metric_name == 'avg_donation':
+        return 'Average Donation'
+    elif metric_name == 'avg_donation50':
+        return 'Average Donation50'
     else:
         return'no such metric'
 
@@ -550,7 +566,7 @@ def get_metric_data_type(metric_name, elem):
         return str(int(elem))
     elif metric_name == 'amt50_per_view' or metric_name == 'amt50_per_imp' or metric_name == 'don_per_view' or metric_name == 'don_per_imp' or metric_name == 'amt_per_imp' or metric_name == 'amt_per_view' or metric_name == 'click_rate':
         return "%.6f" % elem
-    elif metric_name == 'amount' or metric_name == 'amount50' or metric_name == 'amount100':
+    elif metric_name == 'amount' or metric_name == 'amount50' or metric_name == 'amount100' or metric_name == 'avg_donation' or metric_name == 'avg_donation50':
         return "%.2f" % elem
     else:
         return'no such metric'

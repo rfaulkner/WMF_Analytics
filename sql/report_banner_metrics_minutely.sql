@@ -14,7 +14,9 @@ amount50,
 -- donations / total_clicks as completion_rate,
 round((donations / impressions) * (total_views / views), 6) as don_per_imp,
 (amount / impressions) * (total_views / views) as amt_per_imp,
-(amount50 / impressions) * (total_views / views) as amt50_per_imp
+(amount50 / impressions) * (total_views / views) as amt50_per_imp,
+amount / donations as avg_donation,
+amount50 / donations as avg_donation50
 	
 from
 

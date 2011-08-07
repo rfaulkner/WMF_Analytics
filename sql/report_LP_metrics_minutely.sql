@@ -11,7 +11,9 @@ amount50,
 donations / total_clicks as completion_rate,
 donations / views as don_per_view,
 amount / views as amt_per_view,
-amount50 / views as amt50_per_view
+amount50 / views as amt50_per_view,
+amount / donations as avg_donation,
+amount50 / donations as avg_donation50
 
 from
 
