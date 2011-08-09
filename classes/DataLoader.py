@@ -89,6 +89,19 @@ class DataLoader(object):
     def close_db(self):
         self._cur_.close()
         self._db_.close()
+        
+    def establish_faulkner_conn(self):
+        
+        self.close_db()
+        self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
+        self._cur_ = self._db_.cursor()
+    
+    def establish_enwiki_conn(self):
+        
+        self.close_db()
+        self._db_ = MySQLdb.connect(host=projSet.__db_server_internproxy__, user=projSet.__user_internproxy__, db=projSet.__db_internproxy__, port=projSet.__db_port_internproxy__, passwd=projSet.__pass_internproxy__)
+        self._cur_ = self._db_.cursor()
+    
     
     """
         Make a new key-entry based on the search key and action.  Take all keys containing the search_key
@@ -1039,6 +1052,7 @@ class DonorBracketsReportingLoader(DataLoader):
             
             return ''
         
+           
 """
 
     CLASS :: TableLoader
@@ -1688,7 +1702,54 @@ class LandingPageTableLoader(TableLoader):
         
         return self.execute_SQL(deleteStmnt)
 
-
+    """
+        Retrieve the page ids for referrers from a given log start timestamp 
+    """
+    def get_referrers(self, start_timestamp):
+        
+        select_stmnt = "select referrer_url from landing_page_requests where start_timestamp = '%s';" % start_timestamp
+        select_stmt_page_ids = 'select page_id from page where%sand page_namespace = 0;'
+        
+        referrer_urls = list()
+        referrers = list()
+        ref_ids = list()
+        
+        results = self.execute_SQL(select_stmnt)
+        
+        for row in results:
+            referrer_urls.append(row[0])
+        logging.info(str(referrer_urls[:20]))
+        
+        """ Determine if the urls originate at some article - Get the referrers title """
+        page_titles = ' ('
+        for ref_url in referrer_urls:
+            if (re.search('wikipedia.org/wiki/', ref_url)):
+                ref_title = ref_url.split('wikipedia.org/wiki/')[1]
+                referrers.append(ref_title)
+                page_titles = page_titles + 'page_title = \'%s\' or ' % ref_title
+        logging.info(str(referrers[:20]))
+        
+        if len(referrers) > 0:
+            page_titles = page_titles[:-4] + ') '
+        else:
+            logging.error('No referrers found')
+            return []
+        
+        logging.info(page_titles[:50])
+        
+        """ Connect to 'enwiki' """    
+        self.establish_enwiki_conn()
+        
+        """ Get the page ids for the referrers """
+        results = self.execute_SQL(select_stmt_page_ids % page_titles)
+        for row in results:
+            ref_ids.append(int(row[0]))
+        logging.info(str(ref_ids[:20]))
+        """ Restore connection to 'faulkner' """
+        self.establish_faulkner_conn()
+    
+        return ref_ids
+        
 """
 
     CLASS :: IPCountryTableLoader
