@@ -106,7 +106,7 @@ class MatchKeysDataReporterFilter(DataFilter):
             """ Retrieve the first list of times to use as a template for missing keys  """
             template_times_list = times[times.keys()[0]]
         except:
-            print sys.stderr >> 'The dictionary storing time data is empty.'
+            logging.error('The dictionary storing time data is empty.')
             
         for key in counts.keys():
             if key in times.keys():
