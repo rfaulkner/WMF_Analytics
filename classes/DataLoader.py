@@ -227,7 +227,7 @@ class DataLoader(object):
             
             self._db_.rollback()
             
-            logging.error('Could not execute: ' + SQL_statement)
+            # logging.error('Could not execute: ' + SQL_statement)
             logging.error(str(type(inst)))      # the exception instance
             logging.error(str(inst.args))       # arguments stored in .args
             logging.error(inst.__str__())       # __str__ allows args to printed directly
@@ -1718,7 +1718,6 @@ class LandingPageTableLoader(TableLoader):
         
         for row in results:
             referrer_urls.append(row[0])
-        logging.info(str(referrer_urls[:20]))
         
         """ Determine if the urls originate at some article - Get the referrers title """
         page_titles = ' ('
@@ -1727,16 +1726,12 @@ class LandingPageTableLoader(TableLoader):
                 ref_title = ref_url.split('wikipedia.org/wiki/')[1]
                 referrers.append(ref_title)
                 page_titles = page_titles + 'page_title = \'%s\' or ' % ref_title
-        logging.info(str(referrers[:20]))
         
         if len(referrers) > 0:
             page_titles = page_titles[:-4] + ') '
         else:
-            logging.error('No referrers found')
             return []
-        
-        logging.info(page_titles[:50])
-        
+                
         """ Connect to 'enwiki' """    
         self.establish_enwiki_conn()
         
@@ -1744,11 +1739,28 @@ class LandingPageTableLoader(TableLoader):
         results = self.execute_SQL(select_stmt_page_ids % page_titles)
         for row in results:
             ref_ids.append(int(row[0]))
-        logging.info(str(ref_ids[:20]))
+        
         """ Restore connection to 'faulkner' """
         self.establish_faulkner_conn()
     
         return ref_ids
+    
+    """
+        Returns the timestamp start keys appearing within a timeframe
+        
+        @param start_time:  timestamp string of the start time
+        @param end_time:  timestamp string of the end time     
+    """
+    def get_log_start_times(self, start_time, end_time):
+        
+        timestamps = list()
+        sql = "select distinct(start_timestamp) from landing_page_requests where request_time >= '%s' and request_time < '%s'" % (start_time, end_time)
+        results = self.execute_SQL(sql)
+        
+        for row in results:
+            timestamps.append(row[0])
+        
+        return timestamps
         
 """
 
@@ -2078,3 +2090,75 @@ class DonorBracketsTableLoader(TableLoader):
             logging.error(inst)           # __str__ allows args to printed directly
             
             return ''
+        
+"""
+
+    CLASS :: PageCategoryTableLoader
+    
+    db42.pmtpa.wmnet.rfaulk.page_category :
+        
++------------+-----------------+------+-----+---------+-------+
+| Field      | Type            | Null | Key | Default | Extra |
++------------+-----------------+------+-----+---------+-------+
+| page_id    | int(8) unsigned | YES  | MUL | NULL    |       |
+| page_title | varbinary(255)  | YES  | MUL | NULL    |       |
+| category   | varbinary(255)  | YES  | MUL | NULL    |       |
++------------+-----------------+------+-----+---------+-------+
+
+"""
+class PageCategoryTableLoader(TableLoader):
+    
+    def __init__(self):
+        
+        self._db_ = MySQLdb.connect(host=projSet.__db_server_internproxy__, user=projSet.__user_internproxy__, db=projSet.__db_internproxy__, port=projSet.__db_port_internproxy__, passwd=projSet.__pass_internproxy__)
+        self._cur_ = self._db_.cursor()
+    
+        self._top_level_categories_ = ['Mathematics',
+         'People',
+         'Science',
+         'Law',
+         'History',
+         'Geography',
+         'Culture',
+         'Agriculture',
+         'Politics',
+         'Nature',
+         'Technology',
+         'Education',
+         'Applied_sciences',
+         'Health',
+         'Business',
+         'Belief',
+         'Humanities',
+         'Society',
+         'Life',
+         'Environment',
+         'Computers',
+         'Arts',
+         'Language']
+
+    def __del__(self):
+        self.close_db()
+
+    def get_article_categories_by_page_ids(self, page_id_list):
+        
+        page_id_str = ''
+        for id in page_id_list:
+            page_id_str = page_id_str + 'page_id = %s or ' % str(id)
+        page_id_str = page_id_str[:-4]
+        
+        sql = 'select category from rfaulk.page_category where %s' % page_id_str
+        
+        results = self.execute_SQL(sql)
+        
+        category_counts = dict()
+        for category in self._top_level_categories_:
+            category_counts[category] = 0
+            
+        for row in results:
+            category = row[0]
+            category = category.split(',')[0]
+            category_counts[category] = category_counts[category] + 1            
+            
+        return category_counts
+    
