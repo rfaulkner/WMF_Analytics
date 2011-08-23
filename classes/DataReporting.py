@@ -28,10 +28,11 @@ __date__ = "December 16th, 2010"
 
 
 """ Import python base modules """
-import sys, pylab, math, logging, numpy as np, matplotlib.pyplot as plt
+import sys, pylab, math, logging, matplotlib.pyplot as plt
 
 
 """ Import Analytics modules """
+import Fundraiser_Tools.settings as projSet
 import Fundraiser_Tools.classes.QueryData as QD
 import Fundraiser_Tools.classes.Helper as Hlp
 import Fundraiser_Tools.classes.TimestampProcessor as TP
@@ -39,6 +40,8 @@ import Fundraiser_Tools.classes.DataLoader as DL
 import Fundraiser_Tools.classes.HypothesisTest as HT
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 import Fundraiser_Tools.classes.DataFilters as DF
+import Fundraiser_Tools.classes.DataFilters as DF
+import WSOR.scripts.classes.WSORSlaveDataLoader as WSDL
 
 
 """ CONFIGURE THE LOGGER """
@@ -817,11 +820,11 @@ class ConfidenceReporting(DataReporting):
 
 class DonorBracketReporting(DataReporting):
         
-    """
-        Constructor
+    """    Constructor
         
-        @param **kwargs: allows plotting parameters to be tuned
-     
+            @param **kwargs: the query type (string) for the dataloader
+                             the (boolean) value indicating whether the query for this object has been executed
+
     """
     def __init__(self, **kwargs):
         
@@ -838,17 +841,13 @@ class DonorBracketReporting(DataReporting):
             
         """ Call constructor of parent """
         DataReporting.__init__(self, **kwargs)
-
     
-    """
-        Protected method.  Execute reporting query and generate plots.       
+    """ Protected method.  Generate plots.       
         
-        INPUT:    The inputs define the plot arguments                
-                    data is 
+        @param bracket_names: the categories that the 
         
     """        
     def _gen_plot(self, bracket_names, data, metric_name, title, fname):
-
 
         spacing = 0.1
         offset_spacing = 0
@@ -894,9 +893,8 @@ class DonorBracketReporting(DataReporting):
         plt.legend(rects, data.keys())
         plt.savefig(self._file_path_ + fname + '_' + metric_name + '.' + self._fig_file_format_, format=self._fig_file_format_)
         
-
-
-        
+    """ 
+    """ 
     def run(self, start_time, end_time, campaign):
         
         """ retrieve rows from query on donor brackets """
@@ -906,11 +904,134 @@ class DonorBracketReporting(DataReporting):
         if self._generate_plot_:
             
             plot_title =  'Donor Dollar Breakdown:  ' + campaign + ' -- ' + TP.timestamp_convert_format(start_time,1,2) + ' - ' + TP.timestamp_convert_format(end_time,1,2)
-            fname = 'donor_brackets_' + campaign + '_' + self._data_loader_._query_type_
+            fname = 'donor_brackets_' + campaign # + '_' + self._data_loader_._query_type_
                         
             """ Generate plots given data """
             bracket_names = data[0]
             bracket_names = bracket_names[bracket_names.keys()[0]]
-            self._gen_plot(bracket_names, data[1], 'Donations', plot_title, fname)
-            self._gen_plot(bracket_names, data[2], 'Amounts', plot_title, fname)
+            self._gen_plot(bracket_names, data[1], 'donations', plot_title, fname)
+            self._gen_plot(bracket_names, data[2], 'amounts', plot_title, fname)
         
+
+
+class CategoryReporting(DataReporting):
+    
+    """    Constructor
+        
+            @param **kwargs: allows plotting parameters to be tuned
+    """
+    def __init__(self, **kwargs):
+        
+        """ Process kwargs """
+        for key in kwargs:
+            if key == 'was_run':
+                self._was_run_ = kwargs[key]
+                
+        """ Initialize data loader objects """
+        self._PC_table_loader_ = DL.PageCategoryTableLoader()
+        self._LP_table_loader_ = DL.LandingPageTableLoader()
+        
+        """ Call constructor of parent """
+        DataReporting.__init__(self, **kwargs)
+        
+        return
+    
+    """
+        Generates a bar plot of categories from banners
+        
+        @param category_counts: dictionary of integer counts keyed on category names
+    """
+    def _gen_plot_bar(self, category_counts, title, fname):
+        
+        """ Add category data to a list from dict object """
+        data = list()
+        for key in category_counts:
+            data.append(category_counts[key])
+        category_names = category_counts.keys()
+        
+        spacing = 0.2
+        width = 0.3
+        
+        """ Generate a histogram for each artifact """
+        subplot_index = 111
+
+        colours = ['r', 'b', 'y', 'g']
+        iter_colours = iter(colours)
+        indices = range(len(category_names))
+        
+        rects = list()
+        
+        """ Build the tick labels for the  """
+        tick_pos = list()
+        for i in indices:            
+            tick_pos.append(spacing + width + i * spacing + i * width)
+            
+        plt.clf()
+        plt.subplot(subplot_index)
+        plt.figure(num=None,figsize=[26,14])
+        plt.xticks(tick_pos, category_names)
+        plt.grid()
+        plt.title(title)
+        plt.ylabel('Counts')
+        
+        bar_pos = list()
+        for i in indices:
+            bar_pos.append(spacing + i * spacing + i * width + width / 2)
+        rects.append(plt.bar(bar_pos, data, width, color=iter_colours.next())[0])
+        
+        # plt.legend(rects, data.keys())
+        plt.savefig(self._file_path_ + fname + '_bar.' + self._fig_file_format_, format=self._fig_file_format_)
+    
+    """
+        Generates a pie chart of categories from banners
+        
+        @param category_counts: dictionary of integer counts keyed on category names
+    """
+    def _gen_plot_pie(self, category_counts, title, fname):
+
+        """ Add category data to a list from dict object """
+        data = list()
+        category_names = list()
+        for key in category_counts:
+            data.append(category_counts[key])
+            category_names.append(key)
+        
+        plt.clf()
+        plt.subplot(111)
+        plt.figure(num=None,figsize=[26,14])
+        plt.grid()
+        plt.title(title)
+        plt.pie(data, labels=category_names)
+        
+        plt.savefig(self._file_path_ + fname + '_pie.' + self._fig_file_format_, format=self._fig_file_format_)
+        
+
+    """
+        Execution method for category reporting.
+        
+        @param shortest_paths: List containing
+    """    
+    def run(self, start_time, end_time):
+        
+        timestamps = self._LP_table_loader_.get_log_start_times(start_time, end_time)
+        
+        start_time_formatted = TP.timestamp_convert_format(start_time, 1, 2) 
+        end_time_formatted = TP.timestamp_convert_format(end_time, 1, 2)
+
+        logging.info('Getting referred pages between %s and %s ...' % (start_time_formatted, end_time_formatted))
+        page_ids = list()
+        for ts in timestamps:            
+            page_ids.extend(self._LP_table_loader_.get_referrers(ts))
+            
+        # shortest_paths = self._category_loader_.unpickle_var('shortest_paths.p')
+        logging.info('%s Referred pages ...' % str(len(page_ids)))
+        category_counts = self._PC_table_loader_.get_article_categories_by_page_ids(page_ids)
+                    
+        title = 'Histogram of Top Level Categories: %s - %s ' % (start_time_formatted, end_time_formatted)
+        fname = 'referrer_categories'
+        
+        self._gen_plot_bar(category_counts, title, fname)
+        
+        return category_counts
+    
+    
