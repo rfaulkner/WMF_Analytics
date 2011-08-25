@@ -1512,6 +1512,8 @@ class SquidLogTableLoader(TableLoader):
             logging.error(inst)           # __str__ allows args to printed directly
             
             return ''
+
+
     
 """
 
@@ -2097,35 +2099,33 @@ class DonorBracketsTableLoader(TableLoader):
     
     db42.pmtpa.wmnet.rfaulk.page_category :
         
-+------------+-----------------+------+-----+---------+-------+
-| Field      | Type            | Null | Key | Default | Extra |
-+------------+-----------------+------+-----+---------+-------+
-| page_id    | int(8) unsigned | YES  | MUL | NULL    |       |
-| page_title | varbinary(255)  | YES  | MUL | NULL    |       |
-| category   | varbinary(255)  | YES  | MUL | NULL    |       |
-+------------+-----------------+------+-----+---------+-------+
++----------------+-----------------+------+-----+---------+-------+
+| Field          | Type            | Null | Key | Default | Extra |
++----------------+-----------------+------+-----+---------+-------+
+| page_id        | int(8) unsigned | YES  | MUL | NULL    |       |
+| page_title     | varbinary(255)  | YES  | MUL | NULL    |       |
+| category       | varbinary(255)  | YES  |     | NULL    |       |
+| category_value | varbinary(255)  | YES  | MUL | NULL    |       |
++----------------+-----------------+------+-----+---------+-------+
 
 """
 class PageCategoryTableLoader(TableLoader):
     
     def __init__(self):
         
-        self._db_ = MySQLdb.connect(host=projSet.__db_server_internproxy__, user=projSet.__user_internproxy__, db=projSet.__db_internproxy__, port=projSet.__db_port_internproxy__, passwd=projSet.__pass_internproxy__)
-        self._cur_ = self._db_.cursor()
+        self.init_db()
+        # self._db_ = MySQLdb.connect(host=projSet.__db_server_internproxy__, user=projSet.__user_internproxy__, db=projSet.__db_internproxy__, port=projSet.__db_port_internproxy__, passwd=projSet.__pass_internproxy__)
+        # self._cur_ = self._db_.cursor()
     
         self._top_level_categories_ = ['Mathematics',
          'People',
          'Science',
          'Law',
          'History',
-         'Geography',
          'Culture',
-         'Agriculture',
          'Politics',
-         'Nature',
          'Technology',
          'Education',
-         'Applied_sciences',
          'Health',
          'Business',
          'Belief',
@@ -2135,11 +2135,17 @@ class PageCategoryTableLoader(TableLoader):
          'Environment',
          'Computers',
          'Arts',
-         'Language']
+         'Language',
+         'Places']
 
     def __del__(self):
         self.close_db()
 
+    """
+        Retrieve article top-level category for a list of page ids
+        
+        @param page_id_list: list of ids from page table
+    """
     def get_article_categories_by_page_ids(self, page_id_list):
         
         page_id_str = ''
@@ -2147,7 +2153,7 @@ class PageCategoryTableLoader(TableLoader):
             page_id_str = page_id_str + 'page_id = %s or ' % str(id)
         page_id_str = page_id_str[:-4]
         
-        sql = 'select category from rfaulk.page_category where %s' % page_id_str
+        sql = 'select category from faulkner.page_category where %s' % page_id_str
         
         results = self.execute_SQL(sql)
         
@@ -2160,5 +2166,46 @@ class PageCategoryTableLoader(TableLoader):
             category = category.split(',')[0]
             category_counts[category] = category_counts[category] + 1            
             
+        return category_counts
+    
+    
+    """
+        Produce the weighting for each category based on vector representations
+        
+        @param page_id_list: list of ids from page table
+    """
+    def get_article_vector_counts(self, page_id_list):
+        
+        page_id_str = ''
+        for id in page_id_list:
+            page_id_str = page_id_str + 'page_id = %s or ' % str(id)
+        page_id_str = page_id_str[:-4]
+        
+        sql = 'select category_value from faulkner.page_category where %s' % page_id_str
+        
+        results = self.execute_SQL(sql)
+        
+        category_counts = dict()
+        for category in self._top_level_categories_:
+            category_counts[category] = 0.0
+            
+        for row in results:
+            category_vector = row[0]
+            
+            """ Process the category_value string 
+                e.g. '0.05508 0.08098 0.05508 0.03968 0.05508 0.08098 0.06749 0.06749 0.03968 0.01367 0.05508 0.03968 0.08403 0.00283 0.0 0.01367 0.02814 0.07163 0.09752 0.05209' """
+            category_vector = category_vector.split()
+            
+            """ Some vectors may have nan values due to missing categories - this has a fairly low prevalence """
+            if 'nan' in category_vector:
+                # weight = 1.0 / len(self._top_level_categories_)
+                weight = 0.0
+                for category in self._top_level_categories_:
+                    category_counts[category] = category_counts[category] + weight
+            else:
+                for i in range(len(category_vector)):
+                    category = self._top_level_categories_[i]
+                    category_counts[category] = category_counts[category] + float(category_vector[i])
+                
         return category_counts
     

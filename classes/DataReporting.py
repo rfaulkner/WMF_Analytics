@@ -949,7 +949,7 @@ class CategoryReporting(DataReporting):
             data.append(category_counts[key])
         category_names = category_counts.keys()
         
-        spacing = 0.2
+        spacing = 0.3
         width = 0.3
         
         """ Generate a histogram for each artifact """
@@ -1011,7 +1011,7 @@ class CategoryReporting(DataReporting):
         
         @param shortest_paths: List containing
     """    
-    def run(self, start_time, end_time):
+    def run(self, start_time, end_time, campaign):
         
         timestamps = self._LP_table_loader_.get_log_start_times(start_time, end_time)
         
@@ -1025,10 +1025,11 @@ class CategoryReporting(DataReporting):
             
         # shortest_paths = self._category_loader_.unpickle_var('shortest_paths.p')
         logging.info('%s Referred pages ...' % str(len(page_ids)))
-        category_counts = self._PC_table_loader_.get_article_categories_by_page_ids(page_ids)
+        # category_counts = self._PC_table_loader_.get_article_categories_by_page_ids(page_ids)
+        category_counts = self._PC_table_loader_.get_article_vector_counts(page_ids)            
                     
         title = 'Histogram of Top Level Categories: %s - %s ' % (start_time_formatted, end_time_formatted)
-        fname = 'referrer_categories'
+        fname = 'referrer_categories_' + campaign
         
         self._gen_plot_bar(category_counts, title, fname)
         
