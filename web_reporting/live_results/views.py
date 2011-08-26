@@ -47,8 +47,9 @@ def index(request):
     
     """ Get the donations for all campaigns over the last n hours """
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-6)
-    start_time = '20110729160000'
-    end_time = '20110729200000'
+    #end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-6)
+    #start_time = '20110812150000'
+    #end_time = '20110812210000'
     
     """ Create a interval loader objects """
     ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)

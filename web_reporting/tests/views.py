@@ -342,8 +342,12 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_f
     cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test',file_path=projSet.__web_home__ + 'tests/static/images/')
     
     """ Create an object to perform the reporting for donation breakdowns and execute """
-    dbr = DR.DonorBracketReporting(query_type=FDH._QTYPE_CAMPAIGN_, file_path=projSet.__web_home__ + 'tests/static/images/')
-    dbr.run(start_time, end_time, campaign)
+    if(1):
+        DR.DonorBracketReporting(query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
+    
+    """ Plot the category distribution of users that clicked the banner """
+    if(1):
+        DR.CategoryReporting(file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
     
     """
         GENERATE PLOTS FOR EACH METRIC OF INTEREST
