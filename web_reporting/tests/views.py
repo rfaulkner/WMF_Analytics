@@ -30,7 +30,7 @@ from django.core.urlresolvers import reverse
 
 
 """ Import python base modules """
-import sys, MySQLdb, logging, math, datetime
+import sys, MySQLdb, logging, math, datetime, copy
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.Helper as Hlp
@@ -322,22 +322,10 @@ def test(request):
 """
 def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types):
 
-    # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
-    
-    
     """ Labels will always be metric names in this case """
+    # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
     use_labels_var = True
-        
-    """ 
-        BUILD REPORTING OBJECTS 
-    """
-    if test_type == FDH._TESTTYPE_BANNER_:
-        ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_,file_path=projSet.__web_home__ + 'tests/static/images/')
-    elif test_type == FDH._TESTTYPE_LP_:
-        ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
-    elif test_type == FDH._TESTTYPE_BANNER_LP_:
-        ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_LP_,file_path=projSet.__web_home__ + 'tests/static/images/')
-        
+    
     ir_cmpgn = DR.IntervalReporting(use_labels=False,font_size=20,plot_type='line',query_type='campaign',file_path=projSet.__web_home__ + 'campaigns/static/images/')
     cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test',file_path=projSet.__web_home__ + 'tests/static/images/')
     
@@ -346,19 +334,56 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_f
         DR.DonorBracketReporting(query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
     
     """ Plot the category distribution of users that clicked the banner """
-    if(1):
+    if(0):
         DR.CategoryReporting(file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
+        
+
+        
+    """ BUILD REPORTING OBJECTS """
     
-    """
-        GENERATE PLOTS FOR EACH METRIC OF INTEREST
-    """
+    if test_type == FDH._TESTTYPE_BANNER_:
+        ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_,file_path=projSet.__web_home__ + 'tests/static/images/')
+        link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
+        top_metric = ['don_per_imp'] 
+                    
+    elif test_type == FDH._TESTTYPE_LP_:
+        ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
+        link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
+        top_metric = ['don_per_view']
+        
+    elif test_type == FDH._TESTTYPE_BANNER_LP_:
+        ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_LP_,file_path=projSet.__web_home__ + 'tests/static/images/')
+        link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
+        top_metric = ['don_per_imp']
+    
+    
+    """ GENERATE PLOTS FOR EACH METRIC OF INTEREST """
     for metric in metric_types:
         ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict)
         
         
     """ GENERATE A REPORT SUMMARY """
-    ir._write_html_table(label_dict_full)
-    html_table = ir._table_html_
+    
+    if ir._data_loader_.combine_rows() == 0: # Combine the interval data 
+        logging.info('No summary data for this reporting object.')
+        html_table = '<br><p><b>Was unable to generate the summary data table.</b></p><br>'
+    
+    else:
+        table_data = copy.deepcopy(ir._data_loader_._summary_data_) # Ensure there are no recursive refs here
+        for item in table_data.keys()[:]:
+            
+            """ Check to see if the item was labelled """
+            if item in label_dict_full.keys():
+                new_key = link_item % (item, label_dict_full[item])
+            else:
+                new_key = link_item % (item, item)
+            
+            """ Replace the old key with the linked key """
+            table_data[new_key] =  table_data[item]
+            del table_data[item]
+
+        html_table = ir._write_html_table(table_data, top_metric)
+
     
     
     """ CHECK THE CAMPAIGN VIEWS AND DONATIONS """

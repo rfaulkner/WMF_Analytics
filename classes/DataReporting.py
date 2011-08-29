@@ -72,16 +72,19 @@ class DataReporting(object):
     _font_size_ = 24
     _fig_width_pt_ = 246.0                  # Get this from LaTeX using \showthe\columnwidth
     _inches_per_pt_ = 1.0/72.27             # Convert pt to inch
-    _use_labels_= False
-    _fig_file_format_ = 'png'
-    _plot_type_ = 'line'
-    _item_keys_ = list()
-    _file_path_ = './'
-    _generate_plot_ = True
     
 
     def __init__(self, **kwargs):
         
+        """ Configure tunable reporting params  """
+        self._use_labels_= False
+        self._fig_file_format_ = 'png'
+        self._plot_type_ = 'line'
+        self._item_keys_ = list()
+        self._file_path_ = './'
+        self._generate_plot_ = True
+
+
         """ CLASS MEMBERS: Store the results of a query """
         self.data_loader_ = None
         self._table_html_ = ''       # Stores the table html
@@ -370,26 +373,22 @@ class IntervalReporting(DataReporting):
         
     """
     
-        Protected method.  Takes the sum of interval metrics over time and writes them to an html table.
+        Protected method.  Turns a dictionary into an html table.
+        
+        @param label_dict:
+        @param top_metric: 
+        @param links: 
         
         RETURN:
             
             html    - html text for the resulting table
     """ 
-    def _write_html_table(self, label_dict):
-        
-        """ Combine the interval data """
-        if self._data_loader_.combine_rows() == 0:
-            # print >> sys.stderr, 'No summary data for this reporting object.\n'
-            logging.info('No summary data for this reporting object.')
-            return 0
+    def _write_html_table(self, data, highlighted_col_index):
         
         """ EXTRACT COLUMN NAMES AND ORDER THEM """
-        
-        data = self._data_loader_._summary_data_
-        index = self._data_loader_._summary_data_.keys()[0]
-        col_names = self._data_loader_._summary_data_[index].keys()
-        
+        index = data.keys()[0]
+        col_names = data[index].keys()
+
         col_names = FDH.order_column_keys(col_names)
         
         html = '<table border=\"1\" cellpadding=\"10\"><tr>'
@@ -397,28 +396,31 @@ class IntervalReporting(DataReporting):
         
         """ Build headers """
         html = html + '<th>' + self._data_loader_._query_type_ + '</th>'
-        for i in col_names:
-            html = html + '<th>' + i + '</th>'
+        for name in col_names:
+            if name in highlighted_col_index:
+                html = html + '<th style="background-color:orange;">' + name + '</th>'
+            else:
+                html = html + '<th>' + name + '</th>'
         html = html + '</tr>'
         
         """ Build rows """
         for item in data.keys():
             html = html + '<tr>'
             
-            if item in label_dict.keys():
-                html = html + '<td>' + label_dict[item] + '</td>'
-            else:
-                html = html + '<td>' + item + '</td>'
-                
+            html = html + '<td>' + item + '</td>'
+            
             for elem in col_names:                
                 elem_formatted = QD.get_metric_data_type(elem, data[item][elem])
-                html = html + '<td>' + elem_formatted + '</td>'
+                
+                if elem in highlighted_col_index:
+                    html = html + '<td style="background-color:yellow;">' + elem_formatted + '</td>'
+                else:
+                    html = html + '<td>' + elem_formatted + '</td>'
             html = html + '</tr>'
         
-        html = html + '</table>'
+        html = html + '</table>'        
         
-        self._table_html_ = html
-        
+        return html
 
 
     """
