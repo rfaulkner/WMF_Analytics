@@ -50,7 +50,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
             include_keys                   - include only certain keys based on key name
             exclude_keys                   - explicitly remove certain types of keys based on key name 
             get_sql_filename_for_query     - resolve a sql filename based on the simpler query type   
-            
+            map_autoviv_to_list            - conert a nested dict to a list 
                
 """
 class DataLoader(object):
@@ -264,6 +264,39 @@ class DataLoader(object):
             pass
         
         return lists
+
+
+
+    """
+        Recursive method that converts a nested dict into a list of rows
+        
+        @param data: autovivification object
+        @param mapped_data: stores result, initially an empty list
+        @param row: recursively stores current row contents
+        
+        e.g. map_autoviv_to_list({'1': {'2': 1, '3': 0}, '4': {'5' : 3, '6': 2}}, mapped_data, []) ==> mapped_data = [['1','2',1], ['1','3',0], ['4','5',3], ['4','6',2]]
+    """
+    def map_autoviv_to_list(self, data, mapped_data, row):
+        
+        if(isinstance(data, dict)):
+            for elem in data:                
+                new_row = row[:]
+                new_row.append(elem)
+                 
+                self.map_autoviv_to_list(data[elem], mapped_data, new_row)
+        else:
+            new_row = row[:]
+            new_row.append(data)
+            mapped_data.append(new_row)
+
+
+
+
+
+
+
+
+
 """
 
     This Loader inherits the functionality of DaatLoader and handles SQL queries that group data by time intervals.  These are generally preferable for most
@@ -1514,7 +1547,81 @@ class SquidLogTableLoader(TableLoader):
             return ''
 
 
+class CiviCRMLoader(TableLoader):
     
+    def __init__(self):
+        self.init_db()
+    
+    def __del__(self):
+        self.close_db()
+        
+    def process_kwargs(self, kwargs_dict):
+        
+        utm_source = 'NULL'
+                
+        for key in kwargs_dict:
+            if key == 'utm_source_arg':           
+                utm_source = Hlp.stringify(kwargs_dict[key])
+        
+        return [utm_source]
+    
+    """
+        Extracts the portion of donations that were transacted via paypal and credit-card by banner and landing page
+        
+        @param start_timestamp, end_timestamp, campaign: Query parameters for civiCRM contributions
+        
+        @return nested dict storing portions for each method
+        
+    """
+    def get_payment_methods(self, campaign, start_timestamp, end_timestamp):        
+        
+        sql_banner =  "select " + \
+                "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner, substring_index(utm_source, '.', -1) as payment_method, count(*) as counts " + \
+                "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
+                "where receive_date >= '%s' and receive_date < '%s' and utm_campaign = '%s' " % (start_timestamp, end_timestamp, campaign) + \
+                "group by 1,2 order by 1,2"
+        
+        sql_lp =  "select " + \
+                "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, substring_index(utm_source, '.', -1) as payment_method, count(*) as counts " + \
+                "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
+                "where receive_date >= '%s' and receive_date < '%s' and utm_campaign = '%s' " % (start_timestamp, end_timestamp, campaign) + \
+                "group by 1,2 order by 1,2"
+        
+        results_banner = self.execute_SQL(sql_banner)
+        results_lp = self.execute_SQL(sql_lp)
+        
+        banner_payment_methods = Hlp.AutoVivification()
+        for row in results_banner:
+            if cmp(row[1], 'pp') == 0:
+                banner_payment_methods[row[0]]['Paypal'] = int(row[2])
+            elif cmp(row[1], 'cc') == 0:
+                banner_payment_methods[row[0]]['Credit Card'] = int(row[2])
+        
+        lp_payment_methods = Hlp.AutoVivification()
+        for row in results_lp:
+            if cmp(row[1], 'pp') == 0:
+                lp_payment_methods[row[0]]['Paypal'] = int(row[2])
+            elif cmp(row[1], 'cc') == 0:
+                lp_payment_methods[row[0]]['Credit Card'] = int(row[2])
+                
+        for banner in banner_payment_methods:
+            total = 0
+            for payment_method in banner_payment_methods[banner]:
+                total = total + banner_payment_methods[banner][payment_method]
+            for payment_method in banner_payment_methods[banner]:
+                banner_payment_methods[banner][payment_method] = '%5.2f' % (float(banner_payment_methods[banner][payment_method]) / float(total) * 100.0)
+
+        for lp in lp_payment_methods:
+            total = 0
+            for payment_method in lp_payment_methods[lp]:
+                total = total + lp_payment_methods[lp][payment_method]
+            for payment_method in lp_payment_methods[lp]:
+                lp_payment_methods[lp][payment_method] = '%5.2f' % (float(lp_payment_methods[lp][payment_method]) / float(total) * 100.0)
+                                
+        return banner_payment_methods, lp_payment_methods
+
+    
+
 """
 
     CLASS :: ImpressionTableLoader
