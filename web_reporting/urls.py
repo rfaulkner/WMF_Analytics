@@ -16,6 +16,7 @@ urlpatterns = patterns('',
     (r'^campaigns/', include(projSet.__web_app_module__ + '.campaigns.urls')),
     (r'^tests/', include(projSet.__web_app_module__ + '.tests.urls')),
     (r'^live_stats/', include(projSet.__web_app_module__ + '.live_results.urls')),
+    (r'^live_lps/', include(projSet.__web_app_module__ + '.live_lps.urls')),
     (r'^LML/', include(projSet.__web_app_module__ + '.LML.urls')),
     (r'^admin/', include(admin.site.urls)),
 )

@@ -150,28 +150,7 @@ class DataReporting(object):
     
     def set_times(self, new_dict):
         self._times_ = new_dict
-    
-    """
-    
-        workaround for issue with tuple objects in HTML.py 
-        MySQLdb returns unfamiliar tuple elements from its fetchall() method
-        this is probably a version problem since the issue popped up in 2.5 but not 2.6
-        
-        INPUT:
-                row               - row object returned from MySQLdb.fetchall()
-                
-        RETURN: 
-                l                - a list of tuple objects from the db
-    
-    """
-    def listify(self, row):
-        l = []
-        for i in row:
-            l.append(i)
-        return l
-        
-        
-    
+
     """
     
         To be overloaded by subclasses for different plotting behaviour
@@ -189,7 +168,8 @@ class DataReporting(object):
 
     """
     
-        To be overloaded by subclasses for writing tables - this functionality currently exists outside of this class structure (test_reporting.py)
+        General method for constructing html tables
+        May be overloaded by subclasses for writing tables - this functionality currently exists outside of this class structure (test_reporting.py)
         
         INPUT:
                 values               - a list of datetime objects
@@ -199,8 +179,25 @@ class DataReporting(object):
                 return_status        - integer, 0 indicates un-exceptional execution
     
     """
-    def _write_html_table(self):
-        return 0
+    def _write_html_table(self, data, column_names):
+        
+        html = '<table border=\"1\" cellpadding=\"10\"><tr>'
+        
+        """ Build headers """
+        for name in column_names:
+            html = html + '<th>' + name.__str__() + '</th>'
+        html = html + '</tr>'
+        
+        """ Build rows """
+        for row in data:
+            html = html + '<tr>'
+            for item in row:                                    
+                html = html + '<td>' + item.__str__() + '</td>'
+            html = html + '</tr>'
+        
+        html = html + '</table>'        
+                
+        return html
                 
     
     
@@ -262,35 +259,7 @@ class IntervalReporting(DataReporting):
                 
         """ Call constructor of parent """
         DataReporting.__init__(self, **kwargs)
-    
         
-    """
-        Usage instructions for executing a report via the IntervalReporting class
-    """    
-    def usage(self): 
-                
-        print 'Types of queries:'
-        print '    (1) banner'
-        print '    (2) LP'
-        print ''
-        print 'e.g.'
-        print "    run('20101230160400', '20101230165400', 2, 'banner', 'imp', '20101230JA091_US', ['banner1', 'banner2'])"
-        print "    run('20101230160400', '20101230165400', 2, 'LP', 'views', '20101230JA091_US', [])"
-        print ''
-        print "    Keyword arguments may also be passed to the constructor:"
-        print ''
-        print "    font_size            - font size related to plots"
-        print "    fig_width_pt         - width of the plot"    
-        print "    inches_per_pt        - define point size relative to screen"
-        print "    use_labels           - whether to include specified labels in plot"
-        print "    fig_file_format      - file format of the image (default = .png)"
-        print "    plot_type            - line or step plot"
-        print "    item_keys            - the item keys expected (only these will be included)"
-        print "    file_path            - override the file path to store the plot output" 
-        print "    query_type           - the type of query to use"
-    
-        return
-    
 
     """
         Selecting a subset of the key items in a dictionary       

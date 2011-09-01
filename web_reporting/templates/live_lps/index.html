@@ -1,0 +1,48 @@
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1><u>Live Landing Pages (last 24 hours):</u></h1><br>
+
+{% if err_msg != '' %}
+	<br><span style="color:red">{{err_msg}}</span><br><br>
+{% endif %}
+
+<!-- Table listing all campaigns running -->
+<center>
+{{html_table|safe}}
+</center>
+
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<div id="stylized" class="myform">
+<form action="/live_lps/" method="post">
+{% csrf_token %}
+<h1>Filter the list of landing pages:</h1><br>
+<!--<p>This is the basic look of my form without table</p> -->
+
+<label>Minimum Donation
+<span class="small">Number of donations by which to filter.</span>
+</label>
+<input type="text" name="min_donations" value="{{min_donations|escape}}" />
+
+<label>Start UTC Timestamp
+<span class="small">Earliest timestamp by which to filter campaigns</span>
+</label>
+<input type="text" name="utc_ts" value="{{earliest_utc|escape}}"/>
+
+<br>
+<button type="submit">Filter</button>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+
+<u>Go to:</u>
+<br><br>
+<a href="/">Home</a>
+<br>
+
+{% endblock %}

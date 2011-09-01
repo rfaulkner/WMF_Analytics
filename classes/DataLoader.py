@@ -760,6 +760,9 @@ class HypothesisTestLoader(DataLoader):
 class CampaignReportingLoader(DataLoader):
     
     def __init__(self, query_type):
+        
+        self.init_db()
+        
         self._query_names_['totals'] = 'report_campaign_totals'
         self._query_names_['times'] = 'report_campaign_times'
         self._query_names_[FDH._TESTTYPE_BANNER_] = 'report_campaign_banners'
@@ -769,6 +772,10 @@ class CampaignReportingLoader(DataLoader):
         
         """ Call constructor of parent """
         DataLoader.__init__(self)
+    
+    """ Close the connection """
+    def __del__(self):
+        self.close_db()
         
     """
         !! MODIFY / FIXME -- use python reflection !! ... maybe
@@ -780,16 +787,12 @@ class CampaignReportingLoader(DataLoader):
     """
     def run_query(self, params):
         
-        self.init_db()
-        
         data = None
         
         if self._query_type_ == 'totals':
             data = self.query_totals(params)
         elif self._query_type_ == FDH._TESTTYPE_BANNER_ or self._query_type_ == FDH._TESTTYPE_LP_:
             data = self.query_artifacts(params)
-            
-        self.close_db()
         
         return data
     
@@ -896,6 +899,35 @@ class CampaignReportingLoader(DataLoader):
 
         return data
 
+    """
+        Produces results for live landing page reporting using query from ../../sql/report_lp_running.sql
+        
+        @param start_time: start timestamp of query
+        @param end_time: end timestamp of query
+        
+    """
+    def query_live_landing_pages(self, start_time, end_time):
+        
+        filename = projSet.__sql_home__+ 'report_lp_running.sql'
+        sql_stmnt = Hlp.read_sql(filename)
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time)
+        
+        logging.info('Using query:  report_lp_running -> get live landing pages')
+                
+        results =  self.execute_SQL(sql_stmnt)
+        
+        """ Process the new results - add links """
+        new_results = list()
+        for row in results:
+            new_row = list(row)
+            new_row[2] = '<a href="%s">%s</a>' % (row[2], row[2])
+            new_row[3] = '<a href="http://wikimediafoundation.org/wiki/%s/%s/%s">%s</a>' % (row[3], row[1], row[0], row[3])            
+            
+            new_results.append(new_row)
+        
+        return new_results
+        # columns = ['Country', 'Language', 'Live Banners', 'Landing Page', 'Views', 'Donations', 'Total Amount ($)']
+        
 
 """
     This DataLoader class handles queries reporting on the donation amount profiles of (a) campaign(s):
