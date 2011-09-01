@@ -920,7 +920,7 @@ class CampaignReportingLoader(DataLoader):
         new_results = list()
         for row in results:
             new_row = list(row)
-            new_row[2] = '<a href="%s">%s</a>' % (row[2], row[2])
+            new_row[2] = '<a href="http://%s">%s</a>' % (row[2], row[2])
             new_row[3] = '<a href="http://wikimediafoundation.org/wiki/%s/%s/%s">%s</a>' % (row[3], row[1], row[0], row[3])            
             
             new_results.append(new_row)
