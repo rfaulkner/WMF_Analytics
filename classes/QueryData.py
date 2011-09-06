@@ -414,19 +414,19 @@ def get_metric_index(query_name, metric_name):
         if metric_name == 'views':
             return 2
         elif metric_name == 'donations':
-            return 4
+            return 3
         elif metric_name == 'amount':
-            return 5
+            return 4
         elif metric_name == 'amount50':
-            return 6
+            return 5
         elif metric_name == 'don_per_view':
-            return 8
+            return 6
         elif metric_name == 'amt50_per_view':
-            return 10
+            return 8
         elif metric_name == 'avg_donation':
-            return 11
+            return 9
         elif metric_name == 'avg_donation50':
-            return 12
+            return 10
         else:
             return -1
     elif query_name == 'report_banner_metrics_minutely':

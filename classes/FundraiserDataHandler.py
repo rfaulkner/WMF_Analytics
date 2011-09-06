@@ -4,9 +4,6 @@
 
 Implements the stateful FundraiserDataHandler class that co-ordinates the data loading and reporting particular to the fundraiser
 
-!! MODIFY -- make singleton ??? !!
-
-
 """
 
 __author__ = "Ryan Faulkner"
@@ -30,9 +27,9 @@ _TESTTYPE_BANNER_LP_ = 'bannerlp'
 
 
 
-""" Column Types """
-_COLTYPE_RATE_ = 'rate'
-_COLTYPE_AMOUNT_ = 'amount'
+""" Column Types - these are mainly used to determine how multiple values are combined """
+_COLTYPE_RATE_ = 'rate' # averaged
+_COLTYPE_AMOUNT_ = 'amount' # summed
 _COLTYPE_KEY_ = 'key'
 _COLTYPE_TIME_ = 'time'
 
@@ -40,7 +37,7 @@ _COLTYPE_TIME_ = 'time'
 """ Defines the metric type of each column in the interval reporting queries  """
 _bannerlp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
 _banner_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
-_lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
+_lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
 
 
 def get_col_types(query_type):
