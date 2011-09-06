@@ -256,7 +256,7 @@ def test(request):
     if test_type_var == FDH._TESTTYPE_BANNER_:
         
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, html_table, \
-        html_table_pm_banner, html_table_pm_lp =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
+        html_table_pm_banner, html_table_pm_lp =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpi
         
@@ -267,7 +267,7 @@ def test(request):
     elif test_type_var == FDH._TESTTYPE_LP_:
         
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, html_table, \
-        html_table_pm_banner, html_table_pm_lp =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
+        html_table_pm_banner, html_table_pm_lp =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpv
         
@@ -278,7 +278,7 @@ def test(request):
         
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, \
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, \
-        html_table, html_table_pm_banner, html_table_pm_lp =  auto_gen(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
+        html_table, html_table_pm_banner, html_table_pm_lp =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpi
         
@@ -323,20 +323,27 @@ def test(request):
     
 
 """
-def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types):
+def generate_reporting_objects(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types):
 
     """ Labels will always be metric names in this case """
     # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
     use_labels_var = True
     
+    """ Build reporting objects """
     ir_cmpgn = DR.IntervalReporting(use_labels=False,font_size=20,plot_type='line',query_type='campaign',file_path=projSet.__web_home__ + 'campaigns/static/images/')
     cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test',file_path=projSet.__web_home__ + 'tests/static/images/')
     
-    """ Create an object to perform the reporting for donation breakdowns and execute """
+    """ 
+        DETERMINE DONOR DOLLAR BREAKDOWN 
+        ================================
+    """
     if(1):
         DR.DonorBracketReporting(query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
     
-    """ Plot the category distribution of users that clicked the banner """
+    """ 
+        DETERMINE CATEGORY DISTRIBUTION 
+        ===============================
+    """
     if(0):
         DR.CategoryReporting(file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
         
@@ -380,12 +387,18 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_f
         top_metric = ['don_per_imp']
     
     
-    """ GENERATE PLOTS FOR EACH METRIC OF INTEREST """
+    """ 
+        GENERATE PLOTS FOR EACH METRIC OF INTEREST 
+        ==========================================
+    """
     for metric in metric_types:
         ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict)
         
         
-    """ GENERATE A REPORT SUMMARY """
+    """ 
+        GENERATE A REPORT SUMMARY 
+        =========================
+    """
     
     if ir._data_loader_.combine_rows() == 0: # Combine the interval data 
         logging.info('No summary data for this reporting object.')
@@ -409,12 +422,18 @@ def auto_gen(test_name, start_time, end_time, campaign, label_dict, label_dict_f
 
     
     
-    """ CHECK THE CAMPAIGN VIEWS AND DONATIONS """
+    """ 
+        CHECK THE CAMPAIGN VIEWS AND DONATIONS 
+        ======================================
+    """
     ir_cmpgn.run(start_time, end_time, sample_interval, 'views', campaign, {})
     ir_cmpgn.run(start_time, end_time, sample_interval, 'donations', campaign, {})
     
     
-    """ PERFORM HYPOTHESIS TESTING """
+    """ 
+        PERFORM HYPOTHESIS TESTING 
+        ==========================
+    """
     
     if test_type == FDH._TESTTYPE_BANNER_:
         
