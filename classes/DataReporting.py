@@ -69,9 +69,6 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 class DataReporting(object):    
     
     
-    _font_size_ = 24
-    _fig_width_pt_ = 246.0                  # Get this from LaTeX using \showthe\columnwidth
-    _inches_per_pt_ = 1.0/72.27             # Convert pt to inch
     
 
     def __init__(self, **kwargs):
@@ -84,6 +81,10 @@ class DataReporting(object):
         self._file_path_ = './'
         self._generate_plot_ = True
 
+        self._font_size_ = 24
+        self._fig_width_pt_ = 246.0                  # Get this from LaTeX using \showthe\columnwidth
+        self._inches_per_pt_ = 1.0/72.27             # Convert pt to inch
+    
 
         """ CLASS MEMBERS: Store the results of a query """
         self.data_loader_ = None
@@ -947,7 +948,7 @@ class CategoryReporting(DataReporting):
             data.append(category_counts[key])
         category_names = category_counts.keys()
         
-        spacing = 0.3
+        spacing = 0.5
         width = 0.3
         
         """ Generate a histogram for each artifact """
@@ -965,6 +966,20 @@ class CategoryReporting(DataReporting):
             tick_pos.append(spacing + width + i * spacing + i * width)
             
         plt.clf()
+        
+        self._font_size_ = 14
+        params = {'axes.labelsize': self._font_size_,
+          'text.fontsize': self._font_size_,
+          'xtick.labelsize': self._font_size_,
+          'ytick.labelsize': self._font_size_,
+          'legend.pad': 0.1,     # empty space around the legend box
+          'legend.fontsize': self._font_size_,
+          'font.size': self._font_size_,
+          'text.usetex': False,
+          'figure.figsize': [26,14]}
+
+        plt.rcParams.update(params)
+        
         plt.subplot(subplot_index)
         plt.figure(num=None,figsize=[26,14])
         plt.xticks(tick_pos, category_names)
@@ -993,8 +1008,21 @@ class CategoryReporting(DataReporting):
         for key in category_counts:
             data.append(category_counts[key])
             category_names.append(key)
-        
+
         plt.clf()
+
+        params = {'axes.labelsize': self._font_size_,
+          'text.fontsize': self._font_size_,
+          'xtick.labelsize': self._font_size_,
+          'ytick.labelsize': self._font_size_,
+          'legend.pad': 0.1,     # empty space around the legend box
+          'legend.fontsize': self._font_size_,
+          'font.size': self._font_size_,
+          'text.usetex': False,
+          'figure.figsize': [26,14]}
+
+        plt.rcParams.update(params)
+        
         plt.subplot(111)
         plt.figure(num=None,figsize=[26,14])
         plt.grid()
