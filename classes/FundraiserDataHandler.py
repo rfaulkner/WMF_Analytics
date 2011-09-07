@@ -24,7 +24,7 @@ _QTYPE_TIME_ = 'minutely'
 _TESTTYPE_BANNER_ = 'banner'
 _TESTTYPE_LP_ = 'lp'
 _TESTTYPE_BANNER_LP_ = 'bannerlp'
-
+_TESTTYPE_VERBOSE_ = {'bannerlp' : 'Banner and Landing Page Test', 'banner' : 'Banner Test', 'lp' : 'Landing Page Test'}
 
 
 """ Column Types - these are mainly used to determine how multiple values are combined """

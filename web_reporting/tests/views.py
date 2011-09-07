@@ -101,6 +101,42 @@ def index(request):
     return render_to_response('tests/index.html', {'err_msg' : err_msg, 'test_rows' : l},  context_instance=RequestContext(request))
 
 
+"""
+    Produces a summary of all the tests that have been run
+"""
+def test_summaries(request):
+    
+    """ Initialize TestTableLoader """
+    ttl = DL.TestTableLoader()
+    test_rows = ttl.get_all_test_rows()
+    
+    """ Process test info / write html """
+    html = ''
+    for row in test_rows:
+        
+        test_name = ttl.get_test_field(row, 'test_name')
+        test_type = ttl.get_test_field(row, 'test_type')
+        utm_campaign = ttl.get_test_field(row, 'utm_campaign')
+        start_time = ttl.get_test_field(row, 'start_time')
+        end_time = ttl.get_test_field(row, 'end_time')
+        
+        try:
+            test_type = FDH._TESTTYPE_VERBOSE_[test_type]
+        except:
+            test_type = 'unknown'
+            pass
+        
+        try:
+            summary_table = ttl.get_test_field(row, 'html_report').split('<!-- SUMMARY TABLE MARKER -->')[1]
+            html = html + '<h1><u>' + test_name + ' -- ' +  utm_campaign + '</u></h1><div class="spacer"></div>' \
+            + '<font size="4"><u>Test Type:</u>  ' + test_type  + '</font><div class="spacer_small"></div>' \
+            + '<font size="4"><u>Running from</u> ' + start_time + ' <u>to</u> ' + end_time + '</font><div class="spacer"></div>' \
+            + summary_table + '<div class="spacer"></div><div class="spacer"></div>' 
+            
+        except:
+            pass
+        
+    return render_to_response('tests/test_summaries.html', {'template' : html},  context_instance=RequestContext(request))
 
 
 
