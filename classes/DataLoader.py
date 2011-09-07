@@ -16,7 +16,7 @@ __date__ = "April 8th, 2011"
 
 
 """ Import python base modules """
-import sys, MySQLdb, math, datetime, re, logging, csv, operator
+import sys, MySQLdb, math, datetime, re, logging, csv, operator, numpy as np
 
 """ Import Analytics modules """
 import Fundraiser_Tools.settings as projSet
@@ -310,9 +310,10 @@ class IntervalReportingLoader(DataLoader):
         
     """
     def __init__(self, query_type):
-        
+                    
         self._query_names_[FDH._QTYPE_BANNER_] = 'report_banner_metrics_minutely'
         self._query_names_[FDH._QTYPE_LP_] = 'report_LP_metrics_minutely'
+        # self._query_names_[FDH._QTYPE_LP_] = 'report_metrics_minutely'
         self._query_names_[FDH._QTYPE_BANNER_LP_] = 'report_bannerLP_metrics_minutely'
         self._query_names_['campaign'] = 'report_campaign_metrics_minutely'
         self._query_names_['campaign_total'] = 'report_campaign_metrics_minutely_total'
@@ -330,8 +331,7 @@ class IntervalReportingLoader(DataLoader):
         DataLoader.__init__(self)
         
         self._summary_data_ = None
-        
-        
+    
     """
         Executes the query which generates interval metrics and sets _results_ and _col_names_
         
@@ -352,7 +352,7 @@ class IntervalReportingLoader(DataLoader):
     def run_query(self, start_time, end_time, interval, metric_name, campaign):
 
         self.init_db()
-        
+                                                                                     
         query_name = self.get_sql_filename_for_query()
         logging.info('Using query: ' + query_name)
         
@@ -371,6 +371,7 @@ class IntervalReportingLoader(DataLoader):
     
         """ QUERY PREP - ONLY EXECUTED IF THE QUERY HAS NOT BEEN RUN ALREADY """
         if not(self._was_run_):
+
             """ Load the SQL File & Format """
             filename = projSet.__sql_home__+ query_name + '.sql'
             sql_stmnt = Hlp.read_sql(filename)
@@ -388,7 +389,7 @@ class IntervalReportingLoader(DataLoader):
             if not(self._was_run_):
                 logging.info('Running query ...')
                 
-                self._cur_.execute(sql_stmnt)
+                self._cur_.execute(sql_stmnt)                 
                 
                 """ GET THE COLUMN NAMES FROM THE QUERY RESULTS """
                 self._col_names_ = list()
@@ -477,6 +478,12 @@ class IntervalReportingLoader(DataLoader):
     """
     def combine_rows(self):
         
+        """ If the dataset is empty flag an error and set the summary data to empty """
+        if len(self._results_) == 0:
+            logging.error('Empty dataset.  Either no keys were found or the the queried data was empty')
+            self._summary_data_ = dict()            
+            return
+        
         query_name = self.get_sql_filename_for_query()
         logging.info('Using query: ' + query_name)
         
@@ -484,7 +491,7 @@ class IntervalReportingLoader(DataLoader):
         key_index = QD.get_key_index(query_name)
         
         data_dict = dict()
-        num_rows = len(self._results_)
+        num_data_points = Hlp.AutoVivification()
         
         """ Check that there are columns defined for the query type """
         if len(col_types) == 0:
@@ -507,8 +514,10 @@ class IntervalReportingLoader(DataLoader):
                 field = row[i]
                 
                 """ Change null values to 0 """
+                null_sample = False    
                 if field == None or field == 'NULL':
                     field = 0.0
+                    null_sample = True
                 
                 """ 
                     COMBINE THE DATA FOR EACH KEY
@@ -521,8 +530,14 @@ class IntervalReportingLoader(DataLoader):
                     
                     try:
                         data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] + float(field)
+                        if not(null_sample):                       
+                            num_data_points[key][self._col_names_[i]] = num_data_points[key][self._col_names_[i]] + 1
                     except KeyError:
                         data_dict[key][self._col_names_[i]] = float(field)
+                        if null_sample:
+                            num_data_points[key][self._col_names_[i]] = 0.001 # Initializr to a small positive value 
+                        else:
+                            num_data_points[key][self._col_names_[i]] = 1
                         
                 elif col_type == self._data_handler_._COLTYPE_AMOUNT_:
                     
@@ -531,15 +546,6 @@ class IntervalReportingLoader(DataLoader):
                     except KeyError:
                         data_dict[key][self._col_names_[i]] = float(field)
         
-        """ If the dataset is empty flag an error and set the summary data to empty """
-        try :
-            num_rows = len(self._results_) / len(data_dict.keys())
-            
-        except ZeroDivisionError:
-            logging.error('Empty dataset.  Either no keys were found or the the queried data was empty')
-            self._summary_data_ = dict()
-            
-            return
             
         """ 
             POST PROCESSING
@@ -549,10 +555,13 @@ class IntervalReportingLoader(DataLoader):
         for i in range(len(col_types)):
             if col_types[i] == self._data_handler_._COLTYPE_RATE_:
                 for key in data_dict.keys():
-                    data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] / num_rows
+                    try:
+                        data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] / num_data_points[key][self._col_names_[i]]
+                    except ZeroDivisionError:
+                        data_dict[key][self._col_names_[i]] = -99.0
         
         self._summary_data_ = data_dict
-    
+        print data_dict
 
 
 """
@@ -2333,7 +2342,7 @@ class PageCategoryTableLoader(TableLoader):
             
             """ Process the category_value string 
                 e.g. '0.05508 0.08098 0.05508 0.03968 0.05508 0.08098 0.06749 0.06749 0.03968 0.01367 0.05508 0.03968 0.08403 0.00283 0.0 0.01367 0.02814 0.07163 0.09752 0.05209' """
-            category_vector = category_vector.split()
+            category_vector = category_vector.split()            
             
             """ Some vectors may have nan values due to missing categories - this has a fairly low prevalence """
             if 'nan' in category_vector:
@@ -2342,9 +2351,22 @@ class PageCategoryTableLoader(TableLoader):
                 for category in self._top_level_categories_:
                     category_counts[category] = category_counts[category] + weight
             else:
+                
+                category_vector = np.array(category_vector)     # convert to a numpy array]
+                first_index = np.argmax(category_vector)
+                np.delete(category_vector, first_index)
+                second_index = np.argmax(category_vector)
+                
+                first_cat = self._top_level_categories_[first_index]
+                second_cat = self._top_level_categories_[second_index]
+                
+                category_counts[first_cat] = category_counts[first_cat] + 1.0
+                category_counts[second_cat] = category_counts[second_cat] + 0.5
+                """
+                # HERE Full vector counts are use
                 for i in range(len(category_vector)):
                     category = self._top_level_categories_[i]
                     category_counts[category] = category_counts[category] + float(category_vector[i])
-                
+                """
         return category_counts
     
