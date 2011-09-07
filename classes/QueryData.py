@@ -165,7 +165,7 @@ def format_query(query_name, sql_stmnt, args):
         where_str = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', where_str)
     
-    elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely':
+    elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_LP_metrics_minutely':
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -410,25 +410,29 @@ def get_metric_index(query_name, metric_name):
             return 15
         else:
             return -1
+        
     elif query_name == 'report_LP_metrics_minutely':
-        if metric_name == 'views':
+        if metric_name == 'imp':
             return 2
-        elif metric_name == 'donations':
+        elif metric_name == 'views':
             return 3
-        elif metric_name == 'amount':
+        elif metric_name == 'donations':
             return 4
-        elif metric_name == 'amount50':
+        elif metric_name == 'amount':
             return 5
-        elif metric_name == 'don_per_view':
+        elif metric_name == 'amount50':
             return 6
+        elif metric_name == 'don_per_view':
+            return 7
         elif metric_name == 'amt50_per_view':
-            return 8
-        elif metric_name == 'avg_donation':
             return 9
-        elif metric_name == 'avg_donation50':
+        elif metric_name == 'avg_donation':
             return 10
+        elif metric_name == 'avg_donation50':
+            return 11
         else:
             return -1
+        
     elif query_name == 'report_banner_metrics_minutely':
         if metric_name == 'imp':
             return 2
@@ -508,7 +512,25 @@ def get_metric_index(query_name, metric_name):
         
     else:
         return 'no such table'
-        
+
+"""
+    Based on a cursor object retrieve the index of a column name in the data object returned
+    
+    @param cursor: MySQLdb.cursor object
+    @param column_name: string column name
+    
+    @return: index of the column in the data results
+"""
+def get_columnn_index(cursor, column_name):
+    
+    query_cols = list()
+    for col in cursor.description:
+        query_cols.append(col[0])
+                        
+    return query_cols.index(column_name)
+    
+
+
 def get_plot_title(query_name):
     if query_name == 'report_banner_impressions_by_hour':
         return 'Banner Impressions Over the Past 24 Hours'
