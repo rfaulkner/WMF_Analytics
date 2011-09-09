@@ -40,8 +40,6 @@ import Fundraiser_Tools.classes.DataLoader as DL
 import Fundraiser_Tools.classes.HypothesisTest as HT
 import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
 import Fundraiser_Tools.classes.DataFilters as DF
-import Fundraiser_Tools.classes.DataFilters as DF
-import WSOR.scripts.classes.WSORSlaveDataLoader as WSDL
 
 
 """ CONFIGURE THE LOGGER """
@@ -67,8 +65,6 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 
 """
 class DataReporting(object):    
-    
-    
     
 
     def __init__(self, **kwargs):
@@ -1049,11 +1045,10 @@ class CategoryReporting(DataReporting):
         for ts in timestamps:            
             page_ids.extend(self._LP_table_loader_.get_referrers(ts))
             
-        # shortest_paths = self._category_loader_.unpickle_var('shortest_paths.p')
         logging.info('%s Referred pages ...' % str(len(page_ids)))
-        # category_counts = self._PC_table_loader_.get_article_categories_by_page_ids(page_ids)
-        category_counts = self._PC_table_loader_.get_article_vector_counts(page_ids)            
-                    
+        # category_counts = self._PC_table_loader_.get_article_vector_counts(page_ids)
+        category_counts = self._PC_table_loader_.get_normalized_category_counts(page_ids)            
+        print category_counts
         title = 'Histogram of Top Level Categories: %s - %s ' % (start_time_formatted, end_time_formatted)
         fname = 'referrer_categories_' + campaign
         
