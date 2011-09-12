@@ -46,29 +46,34 @@ import Fundraiser_Tools.settings as projSet
 def index(request):
     
     """ Get the donations for all campaigns over the last n hours """
-    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-6)
-    #end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-6)
-    #start_time = '20110812150000'
-    #end_time = '20110812210000'
+    duration_hrs = 6
+    sampling_interval = 10
     
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
+    #start_time = '20110902150000'
+    #end_time = '20110902210000'
+
+    """ compose a list of zero data """    
+    empty_data = [[1.0, 0.0]] * (duration_hrs * 60 / sampling_interval + 1)
+    for i in range(len(empty_data)):
+        empty_data[i][0] = empty_data[i][0] * i *  sampling_interval
+        
     """ Create a interval loader objects """
     ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
     ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False)
     ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False)
-    
-    sampling_interval = 10
-    
+        
     """ Execute queries for campaign, banner, and landing page donations """        
     #ir.run('20110603120000', '20110604000000', 2, 'donations', '',[])
     ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
     
-    """ Extract data from interval reporting objects """
-    cmpgn_data_dict = get_data_lists(ir_cmpgn, 'C_')
-    cmpgn_banner_dict = get_data_lists(ir_banner, 'B_')
-    cmpgn_lp_dict = get_data_lists(ir_lp, 'L11_')    
-    
+    """ Extract data from interval reporting objects """        
+    cmpgn_data_dict = get_data_lists(ir_cmpgn, ['C_', 'C11_'], empty_data)
+    cmpgn_banner_dict = get_data_lists(ir_banner, ['B_', 'B11_'], empty_data)
+    cmpgn_lp_dict = get_data_lists(ir_lp, ['L11_'], empty_data)
+         
     """ combine the separate data sets """
     dict_param = combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict])
     
@@ -77,10 +82,15 @@ def index(request):
 
 """
 
-    !! TODO FIXME -- Move to Helper?? !!
+    Helper method that formats Reporting data for consumption by javascript in live_results/index.html
     
+    @param ir: Interval Reporting object
+    @param pattern: A set of regexp patterns on which data keys are matched to filter
+    @param empty_data: A set of empty data to be used in case there is no usable data from the reporting object 
+    
+    @return: dictionary storing data for javascript processing
 """
-def get_data_lists(ir, pattern):
+def get_data_lists(ir, patterns, empty_data):
     
     """ Get metrics """
     data = list()
@@ -99,11 +109,13 @@ def get_data_lists(ir, pattern):
     data_index = 0
     for key in ir._counts_.keys():
         
-        if key == None:
-            isFormed = re.search(pattern, '')
-        else:
-            isFormed = re.search(pattern, key)
-            
+        isFormed = False
+        for pattern in patterns:
+            if key == None:
+                isFormed = isFormed or re.search(pattern, '')
+            else:
+                isFormed = isFormed or re.search(pattern, key)
+                
         if sum(ir._counts_[key]) > 0.01 * max and isFormed:
             
             data.append(list())
@@ -124,13 +136,20 @@ def get_data_lists(ir, pattern):
         
     labels = labels + '!'
     
-    return {'num_elems' : data_index, 'counts' : counts, 'labels' : labels, 'data' : data, 'max_data' : max_data}
+    """ Use the default empty data if there is none """
+    if not data:
+        return {'num_elems' : 1, 'counts' : [len(empty_data)], 'labels' : '!no_data?!', 'data' : empty_data, 'max_data' : 0.0}
+    else:
+        return {'num_elems' : data_index, 'counts' : counts, 'labels' : labels, 'data' : data, 'max_data' : max_data}
     
 
 """
 
-    !! TODO FIXME -- Move to Helper?? !!
+    Helper method that combines dictionaries for consumption by javascript in live_results/index.html
     
+    @param dict_list: A list of dictionaries with identical keys 
+    
+    @return: a dict where the elements of each key for of the input is combined into a list of elements
 """
 def combine_data_lists(dict_list):
     
