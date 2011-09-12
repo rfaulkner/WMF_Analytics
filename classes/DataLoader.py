@@ -561,7 +561,7 @@ class IntervalReportingLoader(DataLoader):
                         data_dict[key][self._col_names_[i]] = -99.0
         
         self._summary_data_ = data_dict
-        print data_dict
+        
 
 
 """
@@ -1853,47 +1853,56 @@ class LandingPageTableLoader(TableLoader):
         return self.execute_SQL(deleteStmnt)
 
     """
-        Retrieve the page ids for referrers from a given log start timestamp 
+        Retrieve the page ids for referrers from a given log start timestamp
     """
-    def get_referrers(self, start_timestamp):
+    def get_lp_referrers_by_log_start_timestamp(self, start_timestamp):
         
         select_stmnt = "select referrer_url from landing_page_requests where start_timestamp = '%s';" % start_timestamp
-        select_stmt_page_ids = 'select page_id from page where%sand page_namespace = 0;'
         
         referrer_urls = list()
-        referrers = list()
-        ref_ids = list()
-        
         results = self.execute_SQL(select_stmnt)
         
         for row in results:
             referrer_urls.append(row[0])
         
+        return self.get_referrers(referrer_urls)
+    
+    """
+       Retrieve the page ids for a list of referrer urls  
+    """
+    def get_referrers(self, referrer_urls):
+                
+        select_stmt_page_ids = 'select page_id, page_title from page where%sand page_namespace = 0;'
+        
+        referrers = list()
+        ref_ids = list()
+                
         """ Determine if the urls originate at some article - Get the referrers title """
-        page_titles = ' ('
+        page_title_str = ' ('
         for ref_url in referrer_urls:
             if (re.search('wikipedia.org/wiki/', ref_url)):
                 ref_title = ref_url.split('wikipedia.org/wiki/')[1]
-                referrers.append(ref_title)
-                page_titles = page_titles + 'page_title = \'%s\' or ' % ref_title
-        
-        if len(referrers) > 0:
-            page_titles = page_titles[:-4] + ') '
+                # referrers.append(ref_title)
+                page_title_str = page_title_str + 'page_title = \'%s\' or ' % ref_title
+                
+        if len(page_title_str) > 2:
+            page_title_str = page_title_str[:-4] + ') '
         else:
-            return []
+            return [], []
                 
         """ Connect to 'enwiki' """    
         self.establish_enwiki_conn()
         
         """ Get the page ids for the referrers """
-        results = self.execute_SQL(select_stmt_page_ids % page_titles)
+        results = self.execute_SQL(select_stmt_page_ids % page_title_str)
         for row in results:
             ref_ids.append(int(row[0]))
-        
+            referrers.append(row[1])
+            
         """ Restore connection to 'faulkner' """
         self.establish_faulkner_conn()
-    
-        return ref_ids
+        
+        return ref_ids, referrers
     
     """
         Returns the timestamp start keys appearing within a timeframe
@@ -2361,7 +2370,7 @@ class PageCategoryTableLoader(TableLoader):
                 second_cat = self._top_level_categories_[second_index]
                 
                 category_counts[first_cat] = category_counts[first_cat] + 1.0
-                category_counts[second_cat] = category_counts[second_cat] + 0.5
+                category_counts[second_cat] = category_counts[second_cat] + 0.0
                 """
                 # HERE Full vector counts are use
                 for i in range(len(category_vector)):
@@ -2370,3 +2379,117 @@ class PageCategoryTableLoader(TableLoader):
                 """
         return category_counts
     
+    """
+        Computes relative portions of categories among all pages and then compares those amounts to the relative persistence of categories
+        among a sample of pages.  A category score is computed from this.
+        
+        @param page_id_list: list of ids from page table
+    """
+    def get_normalized_category_counts(self, page_id_list):
+        
+        sql = "select substring_index(category,',',1), round(count(*)/total, 6) as portion from page_category, (select count(*) as total from page_category) as tmp group by 1;"
+        results = self.execute_SQL(sql)
+        norm_cats = dict()
+        
+        for row in results:
+            norm_cats[row[0]] = float(row[1])
+        
+        category_counts = self.get_article_vector_counts(page_id_list)
+        cat_count_total = 0.0
+        
+        for category in category_counts:
+            cat_count_total = cat_count_total + category_counts[category]
+        for category in category_counts:
+            category_counts[category] = float(category_counts[category]) / cat_count_total
+        print category_counts
+        print norm_cats
+        category_score = dict()
+        for category in norm_cats:
+            try:
+                category_score[category] = (category_counts[category] - norm_cats[category]) / norm_cats[category]
+            except:
+                category_score[category] = -1.0
+                pass
+            
+        return category_score
+    
+    
+"""
+
+    CLASS :: PageCategoryTableLoader
+    
+    db42.pmtpa.wmnet.rfaulk.traffic_samples:
+        
+    +--------------+------------------+------+-----+-------------------+-----------------------------+
+    | Field        | Type             | Null | Key | Default           | Extra                       |
+    +--------------+------------------+------+-----+-------------------+-----------------------------+
+    | page_id      | int(10) unsigned | YES  |     | NULL              |                             |
+    | page_title   | varbinary(255)   | YES  |     | NULL              |                             |
+    | request_time | timestamp        | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
+    +--------------+------------------+------+-----+-------------------+-----------------------------+
+
+"""
+
+class TrafficSamplesTableLoader(TableLoader):
+    
+    CREATE_TRAFFIC_SAMPLES_TABLE = 'create table traffic_samples (page_id int(10) unsigned, page_title varbinary(255), request_time timestamp);'
+    DROP_TABLE = 'drop table traffic_samples;'
+    CREATE_IDX_1 = "create index idx_page_id on rfaulk.traffic_samples (page_id);"
+    CREATE_IDX_2 = "create index idx_page_title on rfaulk.traffic_samples (page_title);"
+    CREATE_IDX_3 = "create index idx_request_time on rfaulk.traffic_samples (request_time);"
+    
+    def __init__(self):    
+        self.init_db()
+        
+    def __del__(self):
+        self.close_db()
+
+    def process_kwargs(self, kwargs_dict):
+        
+        page_id = -1
+        page_title = Hlp.stringify('')
+        request_time = Hlp.stringify('00000000000000')
+        
+        for key in kwargs_dict:
+            if key == 'page_id':           
+                page_id = kwargs_dict[key].__str__()
+            if key == 'page_title':           
+                page_title = Hlp.stringify(kwargs_dict[key])
+            elif key == 'request_time':
+                request_time = Hlp.stringify(kwargs_dict[key])
+
+        return page_id, page_title, request_time
+    
+    """
+        Insert a banner impression referrer sample
+    """
+    def insert_row(self, **kwargs):
+        
+        insert_stmnt = 'insert into traffic_samples values %s'
+        
+        page_id, page_title, request_time = self.process_kwargs(kwargs)
+        
+        val = '(' + page_id + ',' + page_title + ',' + 'convert(' + request_time + ', datetime)' + ');'
+        
+        insert_stmnt = insert_stmnt % val
+        
+        return self.execute_SQL(insert_stmnt)
+
+    """
+        Insert a banner impression referrer sample
+    """
+    def insert_multiple_rows(self, page_ids, page_titles, request_times):
+        
+        insert_stmnt = 'insert into traffic_samples values %s'
+        num_rows = len(page_ids)
+        
+        val = ''
+        for i in range(num_rows):
+            val = val + '(' + page_ids[i].__str__() + ',"' + page_titles[i] + '",' + 'convert(' + request_times[i] + ', datetime)' + '), '
+        val = val[:-2]
+         
+        insert_stmnt = insert_stmnt % val
+        
+        return self.execute_SQL(insert_stmnt)
+            
+        

@@ -14,7 +14,7 @@ __date__ = "April 25th, 2011"
 
 
 """ Import python base modules """
-import sys, urlparse as up, httpagentparser, commands, cgi, re, gzip, os, datetime, logging
+import sys, urlparse as up, httpagentparser, commands, cgi, re, gzip, os, datetime, logging, random, numpy as np
 
 """ Import Analytics modules """
 import Fundraiser_Tools.classes.DataLoader as DL
@@ -42,8 +42,8 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 class DataMapper(object):
     
-    _LP_LOG_PREFIX_ = 'bannerImpressions' 
-    _BANNER_LOG_PREFIX_ = 'landingpages'
+    _BANNER_LOG_PREFIX_ = 'bannerImpressions' 
+    _LP_LOG_PREFIX_ = 'landingpages'
     
     _log_copy_interval_ = 15
     _log_poll_interval_ = 1
@@ -129,7 +129,35 @@ class DataMapper(object):
                 logging.info('File: %s has already been loaded.' % filename)
                 
         return copied_logs
+    
+    """
+        Copies an individual log
+        
+        @param filename: string filename of file to copy
+        
+    """
+    def copy_log_by_filename(self, filename):
+                
+        cmd = 'sftp ' + projSet.__user__ + '@' + projSet.__squid_log_server__ + ':' + projSet.__squid_log_home__ + '%s ' + projSet.__squid_log_local_home__
+        cmd = cmd % filename
+        
+        logging.info('Executing >%s' % cmd)
+        os.system(cmd)
 
+    """
+        Deletes an individual log
+        
+        @param filename: string filename of file to copy
+        
+    """
+    def delete_log_by_filename(self, filename):
+                
+        cmd = 'rm ' + projSet.__squid_log_local_home__ + '%s'
+        cmd = cmd % filename
+        
+        logging.info('Executing >%s' % cmd)        
+        os.system(cmd)
+        
     """
         Determine file suffix
     """
@@ -262,7 +290,25 @@ class DataMapper(object):
         return [log_start, log_end]
         
         
+        """
+        Opens the logfile and counts the total number of lines
         
+        @param logFileName: the full name of the logfile.  The local squid log folder is stored in web_reporting/settings.py
+        @type logFileName: string
+        
+    """
+    def open_logfile(self, logFileName):        
+        
+        if (re.search('\.gz', logFileName)):
+            logFile = gzip.open(projSet.__squid_log_local_home__ + logFileName, 'r')
+            total_lines_in_file = float(commands.getstatusoutput('zgrep -c "" ' + projSet.__squid_log_local_home__ + logFileName)[1])
+        else:
+            logFile = open(projSet.__squid_log_local_home__ + logFileName, 'r')
+            total_lines_in_file = float(commands.getstatusoutput('grep -c "" ' + projSet.__squid_log_local_home__ + logFileName)[1])
+
+        return logFile, total_lines_in_file
+    
+    
 """
 
     CLASS :: FundraiserDataMapper
@@ -288,9 +334,7 @@ class FundraiserDataMapper(DataMapper):
         """ Initialize dataloaders and connections """
         self._DL_impressions_ = DL.ImpressionTableLoader()
         self._DL_LPrequests_ = DL.LandingPageTableLoader()
-        
-        self._DL_impressions_.init_db()
-        self._DL_LPrequests_.init_db()
+        self._DL_traffic_samples_ = DL.TrafficSamplesTableLoader()
         
     
     """
@@ -867,29 +911,6 @@ class FundraiserDataMapper(DataMapper):
         logFile.close()
         
         return first_time_stamp
-    
-
-
-    
-    """
-        Opens the logfile and counts the total number of lines
-        
-        @param logFileName: the full name of the logfile.  The local squid log folder is stored in web_reporting/settings.py
-        @type logFileName: string
-        
-    """
-    def open_logfile(self, logFileName):        
-        
-        if (re.search('\.gz', logFileName)):
-            logFile = gzip.open(projSet.__squid_log_local_home__ + logFileName, 'r')
-            total_lines_in_file = float(commands.getstatusoutput('zgrep -c "" ' + projSet.__squid_log_local_home__ + logFileName)[1])
-        else:
-            logFile = open(projSet.__squid_log_local_home__ + logFileName, 'r')
-            total_lines_in_file = float(commands.getstatusoutput('grep -c "" ' + projSet.__squid_log_local_home__ + logFileName)[1])
-
-        return logFile, total_lines_in_file
-
-
 
     """
         Parses the landing url and determines if its valid
@@ -907,7 +928,7 @@ class FundraiserDataMapper(DataMapper):
         @type path_pieces: list
         
     """
-    def evaluate_landing_url(self, landing_url, parsed_landing_url, query_fields, path_pieces, lp_patterns):        
+    def evaluate_landing_url(self, landing_url, parsed_landing_url, query_fields, path_pieces, lp_patterns):
         
         hostIndex = 1
         #queryIndex = 4
@@ -965,3 +986,113 @@ class FundraiserDataMapper(DataMapper):
             return [False, False]
 
     
+    """
+        Populates the traffic_samples table with random article samples from impression data over a given month
+        The goal is to produce a random sample of page visits for a given month
+                
+    """
+    def gather_random_traffic_samples(self):
+        
+        """ Get random month - between april and august """
+        month_index = 8 # random.randint(4,9)        
+        month_index = '0' + month_index.__str__()
+        
+        for day in range(18,31):            
+
+            if day < 10:
+                day_index = '0' + day.__str__()
+            else:
+                day_index = day.__str__()
+                
+            for iteration in range(5):
+                
+                logging.info('Select requests for day %s, iteration %s.' % (day, iteration))
+                
+                hour_index = random.randint(0,23)
+                
+                if hour_index == 12:
+                    day_part = 'PM'
+                elif hour_index > 12:
+                    hour_index = hour_index - 12
+                    day_part = 'PM'
+                elif hour_index == 0:
+                    hour_index = 12
+                    day_part = 'AM'
+                else:
+                    day_part = 'AM'
+                    
+                if hour_index < 10:
+                    hour_index = '0' + hour_index.__str__() + day_part
+                else:
+                    hour_index = hour_index.__str__() + day_part
+                    
+                log_minute_index = random.randint(1,3)
+                
+                if log_minute_index == 0:
+                    log_minute_index = '00'
+                elif log_minute_index == 1:
+                    log_minute_index = '15'
+                elif log_minute_index == 2:
+                    log_minute_index = '30'
+                elif log_minute_index == 3:
+                    log_minute_index = '45'
+                
+                """ Construct filename """
+                filename = self._BANNER_LOG_PREFIX_ + '-2011-' + month_index + '-' + day_index + '-' + hour_index + '--' + log_minute_index + '.log.gz'
+                # filename = 'bannerImpressions-2011-07-01-08PM--00.log.gz'
+                
+                """ Copy log """                
+                logging.info('Copying logfile: %s ...' % filename)
+                self.copy_log_by_filename(filename)
+                log_start_time = self.get_first_timestamp_from_log(filename)
+                
+                """ Select 10K random requests - Process log samples - extract referrer urls """
+
+                logFile = self.open_logfile(filename)[0]
+                total_samples = 10000
+                line = logFile.readline()
+                                                
+                logging.info('Processing log file, getting %s referrer urls...' % total_samples)
+                
+                all_referrers = list()
+                request_times = list()
+                while (line != ''):
+                    
+                    lineArgs = line.split()
+                    referrer = lineArgs[11]
+                    request_time = log_start_time
+
+                    if re.search('en.wikipedia.org/wiki/', referrer) and not(re.search('%', referrer)) and not(re.search('\+', referrer)):              
+                        all_referrers.append(referrer)                        
+                        request_times.append(request_time)
+                
+                    line = logFile.readline()
+                
+                ref_range = range(len(all_referrers))                
+                """ ensure there are enough samples """
+                try: 
+                    ref_list = random.sample(ref_range, total_samples)
+                except:
+                    continue
+                ref_list.sort()
+                
+                """ Gather random samples from the list of referrers """
+                
+                referrer_urls = np.array(all_referrers)[ref_list]
+                request_times = np.array(request_times)[ref_list]
+                
+                """ remove log """
+                self.delete_log_by_filename(filename)
+                
+                """ Find page ids """
+                logging.info('Retrieving referrer ids...')                
+                ref_ids, referrers = DL.LandingPageTableLoader().get_referrers(referrer_urls)
+                
+                """ Insert into traffic samples """
+                logging.info('Inserting into traffic_samples table ...')
+                
+                tstl = DL.TrafficSamplesTableLoader()
+                tstl.insert_multiple_rows(ref_ids, referrers, request_times)
+                
+                
+                
