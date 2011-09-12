@@ -3,6 +3,7 @@
 -- report_lp_running.sql
 --
 -- This query returns the landing page, language, and country running within the time frame provided 
+-- This is consumed by live landing page view /Fundraising_Tools/web_reporting/live_lps
 --
 
 select

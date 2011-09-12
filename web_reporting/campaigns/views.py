@@ -63,11 +63,8 @@ def index(request):
     
     crl = DL.CampaignReportingLoader('totals')
     
-    #end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=8), 1, hours=-24)
-    #start_time = '20101230130400'
-    #end_time = '20101230154400'
-    start_time = '20110630120000'
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
+    start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
     
     campaigns, all_data = crl.run_query({'metric_name':'earliest_timestamp','start_time':start_time,'end_time':end_time})
         

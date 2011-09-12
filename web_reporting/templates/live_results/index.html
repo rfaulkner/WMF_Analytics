@@ -3,7 +3,15 @@
 {% block content %}
 
 <h1>Live Results:</h1><br>
-<h4>The plots below are representative of the latest Fundraiser results:</h4><br>
+<div class="spacer"></div>
+
+<h2>Results over the last six hours:</h2><br>
+<div class="spacer"></div>
+{{ summary_table|safe }}
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<h2>The plots below are representative of the latest Fundraiser results:</h2><br>
 
 <!-- jscript for live plots -->
 

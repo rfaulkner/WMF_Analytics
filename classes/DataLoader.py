@@ -69,10 +69,8 @@ class DataLoader(object):
     """
     def __init__(self):
         
-        """ Database and Cursor objects """
-        #_db_ = None
-        #_cur_ = None
-    
+        self.init_db() 
+           
         """ State for all new dataloader objects is set to indicate that the associated SQL has yet to be run """
         self._was_run_ = False
         
@@ -291,7 +289,15 @@ class DataLoader(object):
 
 
 
-
+    def get_column_names(self):
+        
+        column_data = self._cur_.description
+        column_names = list()
+        
+        for elem in column_data:
+            column_names.append(elem[0])
+            
+        return column_names
 
 
 
