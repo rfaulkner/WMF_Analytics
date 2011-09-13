@@ -39,7 +39,14 @@ _bannerlp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTY
 _banner_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_]
 _lp_interval_reporting_col_types_ = [_COLTYPE_TIME_, _COLTYPE_KEY_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_AMOUNT_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_, _COLTYPE_RATE_] 
 
+column_types = {'ts' : _COLTYPE_TIME_, 'day_hr': _COLTYPE_TIME_, 'utm_campaign' : _COLTYPE_KEY_, 'utm_source' : _COLTYPE_KEY_, 'banner' : _COLTYPE_KEY_, 'landing_page' : _COLTYPE_KEY_, 'impressions' : _COLTYPE_AMOUNT_, \
+                    'imp' : _COLTYPE_AMOUNT_, 'views' : _COLTYPE_AMOUNT_, 'donations' : _COLTYPE_AMOUNT_, 'clicks' : _COLTYPE_AMOUNT_, 'total_clicks' : _COLTYPE_AMOUNT_, 'amount' : _COLTYPE_AMOUNT_,'amount50' : _COLTYPE_AMOUNT_, \
+                    'amount100' : _COLTYPE_AMOUNT_, 'avg_donation' : _COLTYPE_RATE_, 'avg_donation50' : _COLTYPE_RATE_, 'click_rate' : _COLTYPE_RATE_, 'conversion_rate' : _COLTYPE_RATE_, 'don_per_imp' : _COLTYPE_RATE_, \
+                    'amt_per_imp' : _COLTYPE_RATE_, 'amt50_per_imp' : _COLTYPE_RATE_, 'don_per_view' : _COLTYPE_RATE_, 'amt_per_view' : _COLTYPE_RATE_, 'amt50_per_view' : _COLTYPE_RATE_}
 
+"""
+    For a given query this defines the aggregate type of each column
+"""
 def get_col_types(query_type):
     
     if query_type == _TESTTYPE_BANNER_:
@@ -50,6 +57,14 @@ def get_col_types(query_type):
         return _bannerlp_interval_reporting_col_types_
     
     return []
+
+
+"""
+    For a given column name returns the aggregate type of each column
+"""
+def get_col_type(column_name):
+    
+    return column_types[column_name]
 
 """
     Get Test type from campaign.  The logic in this method will evolve as new ways to classify test types are developed
