@@ -267,7 +267,7 @@ def test(request):
         -> execute queries
     """
     
-    sample_interval = 2
+    sample_interval = 1
     
     start_time_obj = TP.timestamp_to_obj(start_time_var, 1)
     end_time_obj = TP.timestamp_to_obj(end_time_var, 1)
@@ -338,13 +338,6 @@ def test(request):
     html_string = html_string.replace('"', '\\"')
     html_string = Hlp.stringify(html_string)
 
-#    Strips out whitespace
-#    html_string_parts = html_string.split()
-#    html_string = ''
-#    for i in html_string_parts:
-#        html_string = html_string + i
-    
-    
     if ttl.record_exists(utm_campaign=utm_campaign_var):
         ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
     else:
@@ -432,8 +425,8 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         
         
     """ 
-        GENERATE A REPORT SUMMARY 
-        =========================
+        GENERATE A REPORT SUMMARY TABLE
+        ===============================
     """
     
     if ir._data_loader_.combine_rows() == 0: # Combine the interval data 
@@ -442,6 +435,9 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     else:
         table_data = copy.deepcopy(ir._data_loader_._summary_data_) # Ensure there are no recursive refs here
+        
+        """ INSERT BANNER / LP LINKS """
+        
         for item in table_data.keys()[:]:
             
             """ Check to see if the item was labelled """
@@ -454,6 +450,35 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
             table_data[new_key] =  table_data[item]
             del table_data[item]
 
+        
+        """ COMPOSE SUMMARY ROW """
+        
+        index = table_data.keys()[0]
+        num_cols = len(table_data.keys())
+        col_names = table_data[index].keys()
+        composite_row = dict()
+        
+        """ Initialize the composite row """
+        for column_name in col_names:
+            if FDH.get_col_type(column_name) == FDH._COLTYPE_RATE_:
+                composite_row[column_name] = 0.0
+            elif FDH.get_col_type(column_name) == FDH._COLTYPE_AMOUNT_:
+                composite_row[column_name] = 0.0
+            elif FDH.get_col_type(column_name) == FDH._COLTYPE_KEY_:
+                composite_row[column_name] = 'TOTAL'
+            elif FDH.get_col_type(column_name) == FDH._COLTYPE_TIME_:
+                composite_row[column_name] = '--'
+                
+        """ Compute the composite row  """
+        for item in table_data:    
+            for column_name in table_data[item]:
+                if FDH.get_col_type(column_name) == FDH._COLTYPE_RATE_:
+                    composite_row[column_name] = composite_row[column_name] + table_data[item][column_name] / num_cols
+                elif FDH.get_col_type(column_name) == FDH._COLTYPE_AMOUNT_:
+                    composite_row[column_name] = composite_row[column_name] + table_data[item][column_name]
+                
+        table_data['<b>Totals</b>'] = composite_row
+        
         html_table = ir._write_html_table(table_data, top_metric)
 
     
@@ -504,8 +529,6 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
 
 """
     Inserts a comment into an existing report
-    
-    !! FIXME - do this dynamically with AJAX !! 
         
 """
 def add_comment(request, utm_campaign):
