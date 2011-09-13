@@ -28,6 +28,8 @@ __date__ = "December 16th, 2010"
 
 
 """ Import python base modules """
+import matplotlib
+matplotlib.use('Agg') # disable plotting in the backend
 import sys, pylab, math, logging, matplotlib.pyplot as plt
 
 
@@ -981,7 +983,7 @@ class CategoryReporting(DataReporting):
         plt.xticks(tick_pos, category_names)
         plt.grid()
         plt.title(title)
-        plt.ylabel('Counts')
+        plt.ylabel('% CHANGE')
         
         bar_pos = list()
         for i in indices:
@@ -1042,13 +1044,13 @@ class CategoryReporting(DataReporting):
 
         logging.info('Getting referred pages between %s and %s ...' % (start_time_formatted, end_time_formatted))
         page_ids = list()
-        for ts in timestamps:            
-            page_ids.extend(self._LP_table_loader_.get_referrers(ts))
+        for ts in timestamps:                        
+            page_ids.extend(self._LP_table_loader_.get_lp_referrers_by_log_start_timestamp(TP.timestamp_from_obj(ts,1,3), campaign)[0])
             
         logging.info('%s Referred pages ...' % str(len(page_ids)))
         # category_counts = self._PC_table_loader_.get_article_vector_counts(page_ids)
         category_counts = self._PC_table_loader_.get_normalized_category_counts(page_ids)            
-        print category_counts
+        
         title = 'Histogram of Top Level Categories: %s - %s ' % (start_time_formatted, end_time_formatted)
         fname = 'referrer_categories_' + campaign
         

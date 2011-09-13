@@ -55,12 +55,6 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 class DataLoader(object):
  
-    _query_names_ = dict()
-    _data_handler_ = None   # class that will define how to process the query fields
-    _query_type_ = ''       # Stores the query type (dependent on the data handler definition)
-    _results_ = None
-    _col_names_ = None
-    _was_run_ = False
     
     """
         Constructor
@@ -69,6 +63,13 @@ class DataLoader(object):
     """
     def __init__(self):
         
+        self._query_names_ = dict()
+        self._data_handler_ = None   # class that will define how to process the query fields
+        self._query_type_ = ''       # Stores the query type (dependent on the data handler definition)
+        self._results_ = None
+        self._col_names_ = None
+        self._was_run_ = False        
+    
         self.init_db() 
            
         """ State for all new dataloader objects is set to indicate that the associated SQL has yet to be run """
@@ -288,7 +289,11 @@ class DataLoader(object):
             mapped_data.append(new_row)
 
 
-
+    """
+        Return the column names from the connection cursor
+        
+        @return: list of column names from stored results
+    """
     def get_column_names(self):
         
         column_data = self._cur_.description
@@ -317,6 +322,9 @@ class IntervalReportingLoader(DataLoader):
     """
     def __init__(self, query_type):
                     
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
+        
         self._query_names_[FDH._QTYPE_BANNER_] = 'report_banner_metrics_minutely'
         self._query_names_[FDH._QTYPE_LP_] = 'report_LP_metrics_minutely'
         # self._query_names_[FDH._QTYPE_LP_] = 'report_metrics_minutely'
@@ -332,9 +340,6 @@ class IntervalReportingLoader(DataLoader):
     
         """ hardcode the data handler for now """
         self._data_handler_ = FDH
-        
-        """ Call constructor of parent """
-        DataLoader.__init__(self)
         
         self._summary_data_ = None
     
@@ -582,6 +587,10 @@ class CampaignIntervalReportingLoader(DataLoader):
 
     
     def __init__(self):
+        
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
+        
         self._query_type_ = 'campaign'
         
         self._irl_artifacts_ = IntervalReportingLoader('campaign')
@@ -636,14 +645,14 @@ class HypothesisTestLoader(DataLoader):
     """
     def __init__(self):
         
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
+        
         self._results_ = list()
         self._results_.append(list())
         self._results_.append(list())
         
-        """ Call constructor of parent """
-        DataLoader.__init__(self)
-        
-        
+                
     """
         Execute data acquisition for hypothesis tester.  The idea is that data sampled identically over time for item 1 and item 2 will be generated on which analysis may be carried out.
         
@@ -776,6 +785,9 @@ class CampaignReportingLoader(DataLoader):
     
     def __init__(self, query_type):
         
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
+
         self.init_db()
         
         self._query_names_['totals'] = 'report_campaign_totals'
@@ -785,9 +797,7 @@ class CampaignReportingLoader(DataLoader):
         
         self._query_type_ = query_type
         
-        """ Call constructor of parent """
-        DataLoader.__init__(self)
-    
+            
     """ Close the connection """
     def __del__(self):
         self.close_db()
@@ -962,7 +972,8 @@ class DonorBracketsReportingLoader(DataLoader):
     """
     def __init__(self, query_type):
         
-        self.init_db()
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
         
         """ Use _query_names_ to store a single query name """
         self._query_names_ = 'report_donor_dollar_breakdown' # embed the query name in the class itself
@@ -1861,16 +1872,15 @@ class LandingPageTableLoader(TableLoader):
     """
         Retrieve the page ids for referrers from a given log start timestamp
     """
-    def get_lp_referrers_by_log_start_timestamp(self, start_timestamp):
+    def get_lp_referrers_by_log_start_timestamp(self, start_timestamp, campaign):
         
-        select_stmnt = "select referrer_url from landing_page_requests where start_timestamp = '%s';" % start_timestamp
-        
+        select_stmnt = "select referrer_url from landing_page_requests where start_timestamp = '%s' and utm_campaign = '%s';" % (start_timestamp, campaign)
         referrer_urls = list()
         results = self.execute_SQL(select_stmnt)
         
         for row in results:
             referrer_urls.append(row[0])
-        
+
         return self.get_referrers(referrer_urls)
     
     """
@@ -1889,6 +1899,7 @@ class LandingPageTableLoader(TableLoader):
             if (re.search('wikipedia.org/wiki/', ref_url)):
                 ref_title = ref_url.split('wikipedia.org/wiki/')[1]
                 # referrers.append(ref_title)
+                
                 page_title_str = page_title_str + 'page_title = \'%s\' or ' % ref_title
                 
         if len(page_title_str) > 2:
@@ -1897,16 +1908,17 @@ class LandingPageTableLoader(TableLoader):
             return [], []
                 
         """ Connect to 'enwiki' """    
-        self.establish_enwiki_conn()
+        #self.establish_enwiki_conn()
         
         """ Get the page ids for the referrers """
         results = self.execute_SQL(select_stmt_page_ids % page_title_str)
+        
         for row in results:
             ref_ids.append(int(row[0]))
             referrers.append(row[1])
             
         """ Restore connection to 'faulkner' """
-        self.establish_faulkner_conn()
+        #self.establish_faulkner_conn()
         
         return ref_ids, referrers
     
@@ -2393,12 +2405,13 @@ class PageCategoryTableLoader(TableLoader):
     """
     def get_normalized_category_counts(self, page_id_list):
         
-        sql = "select substring_index(category,',',1), round(count(*)/total, 6) as portion from page_category, (select count(*) as total from page_category) as tmp group by 1;"
-        results = self.execute_SQL(sql)
+        norm_results = NormalizedCategoryScoresTableLoader().get_all_rows()        
         norm_cats = dict()
         
-        for row in results:
-            norm_cats[row[0]] = float(row[1])
+        for row in norm_results:
+            category = NormalizedCategoryScoresTableLoader().get_record_field(row, 'category')
+            portion = NormalizedCategoryScoresTableLoader().get_record_field(row, 'portion')
+            norm_cats[category] = portion
         
         category_counts = self.get_article_vector_counts(page_id_list)
         cat_count_total = 0.0
@@ -2407,12 +2420,11 @@ class PageCategoryTableLoader(TableLoader):
             cat_count_total = cat_count_total + category_counts[category]
         for category in category_counts:
             category_counts[category] = float(category_counts[category]) / cat_count_total
-        print category_counts
-        print norm_cats
+
         category_score = dict()
         for category in norm_cats:
             try:
-                category_score[category] = (category_counts[category] - norm_cats[category]) / norm_cats[category]
+                category_score[category] = (category_counts[category] - norm_cats[category]) / norm_cats[category] * 100.0
             except:
                 category_score[category] = -1.0
                 pass
@@ -2438,7 +2450,7 @@ class PageCategoryTableLoader(TableLoader):
 
 class TrafficSamplesTableLoader(TableLoader):
     
-    CREATE_TRAFFIC_SAMPLES_TABLE = 'create table traffic_samples (page_id int(10) unsigned, page_title varbinary(255), request_time timestamp);'
+    CREATE_TABLE = 'create table traffic_samples (page_id int(10) unsigned, page_title varbinary(255), request_time timestamp);'
     DROP_TABLE = 'drop table traffic_samples;'
     CREATE_IDX_1 = "create index idx_page_id on rfaulk.traffic_samples (page_id);"
     CREATE_IDX_2 = "create index idx_page_title on rfaulk.traffic_samples (page_title);"
@@ -2497,5 +2509,75 @@ class TrafficSamplesTableLoader(TableLoader):
         insert_stmnt = insert_stmnt % val
         
         return self.execute_SQL(insert_stmnt)
+
+
+"""
+
+    CLASS :: NormalizedCategoryScoresTableLoader
+    
+    db42.pmtpa.wmnet.rfaulk.normalized_category_scores:
             
+    +----------------+----------------+------+-----+---------+-------+
+    | Field          | Type           | Null | Key | Default | Extra |
+    +----------------+----------------+------+-----+---------+-------+
+    | category       | varbinary(255) | YES  |     | NULL    |       |
+    | category_total | bigint(21)     | NO   |     | 0       |       |
+    | portion        | decimal(25,6)  | YES  |     | NULL    |       |
+    +----------------+----------------+------+-----+---------+-------+
+
+
+"""
+
+class NormalizedCategoryScoresTableLoader(TableLoader):
+    
+        
+    CREATE_TABLE = "create table normalized_category_scores " + \
+    "select category, category_total, round(category_total/total, 6) as portion " + \
+    "from " + \
+    "(select substring_index(category,',',1) as category, count(*) as category_total from page_category join traffic_samples on page_category.page_id = traffic_samples.page_id group by 1) as tmp1, " + \
+    "(select count(*) as total from traffic_samples) as tmp2;"
+    
+    DROP_TABLE = 'drop table normalized_category_scores;'
+
+    def __init__(self):    
+        self.init_db()
+        
+    def __del__(self):
+        self.close_db()
+    
+    """ Retrieve all rows """
+    def get_all_rows(self):
+        sql = 'select * from normalized_category_scores'
+        return self.execute_SQL(sql)
+    
+    """ Retrieve the relative frequency of a given category """
+    def get_category_portion(self, category):
+        sql = "select portion from normalized_category_scores where category = '%s'" % category
+        results = self.execute_SQL(sql)
+        return float(results[2])
+    
+    """ Retrieve the count of traffic samples for a given category """
+    def get_category_count(self, category):
+        sql = "select category_total from normalized_category_scores where category = '%s'" % category
+        results = self.execute_SQL(sql)
+        return int(results[1])
+    
+    """ This method handles mapping test row fields to col names """
+    def get_record_field(self, row, key):
+        
+        try:
+            if key == 'category':
+                return row[0]
+            elif key == 'category_total':
+                return int(row[1])
+            elif key == 'portion':           
+                return float(row[2])
+        
+        except Exception as inst:
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+            
+            return ''
         
