@@ -58,10 +58,10 @@ class DataMapper(object):
     def copy_logs(self, type, **kwargs):
         
         if type == FDH._TESTTYPE_BANNER_:
-            prefix = self._LP_LOG_PREFIX_
+            prefix = self._BANNER_LOG_PREFIX_
             
         elif type == FDH._TESTTYPE_LP_:
-            prefix = self._BANNER_LOG_PREFIX_
+            prefix = self._LP_LOG_PREFIX_
         
         filename = prefix
         
@@ -363,14 +363,14 @@ class FundraiserDataMapper(DataMapper):
                 copied_banner_logs = self.copy_logs('banner', **kwargs)
                 copied_lp_logs = self.copy_logs('lp', **kwargs)
                         
-            """ Mine the latest logs """
+            """ Mine the latest logs """ 
             for banner_imp_file in copied_banner_logs:
                 try:
                     self.mine_squid_impression_requests(banner_imp_file)
                 except IOError as inst:
                     logging.error(inst)
                     logging.error('Could not mine contents of %s, it appears that it does not exist. ' % banner_imp_file)
-                    
+
             for lp_view_file in copied_lp_logs:
                 try:
                     self.mine_squid_landing_page_requests(lp_view_file)
@@ -668,8 +668,10 @@ class FundraiserDataMapper(DataMapper):
                 http://wikimediafoundation.org/w/index.php?title=WMFJA085/en/US&utm_source=donate&utm_medium=sidebar&utm_campaign=20101204SB002&country_code=US&referrer=http%3A%2F%2Fen.wikipedia.org%2Fwiki%2FFile%3AMurphy_High_School.jpg CARP/208.80.152.83 text/html http://en.wikipedia.org/wiki/File:Murphy_High_School.jpg \
                 - Mozilla/4.0%20(compatible;%20MSIE%208.0;%20Windows%20NT%206.1;%20WOW64;%20Trident/4.0;%20FunWebProducts;%20GTB6.6;%20SLCC2;%20.NET%20CLR%202.0.50727;%20.NET%20CLR%203.5.30729;%20.NET%20CLR%203.0.30729;%20Media%20Center%20PC%206.0;%20HPDTDF;%20.NET4.0C)"
         """
+        count_qs = 0 
         line = logFile.readline()
         while (line != ''):
+            
             lineArgs = line.split()
     
             """ Get the IP Address of the donor """
@@ -796,6 +798,17 @@ class FundraiserDataMapper(DataMapper):
             
             if include_request:
                 
+                """ Extract the language from the query string 
+                        
+                    the language has already been read from the url path but if it
+                    exists in  the query string this setting should take precedence
+                """
+                try:
+                    count_qs = count_qs + 1
+                    source_lang = query_fields['language'][0]                            
+                except:
+                    pass
+                
                 """ Address cases where the query string contains the landing page - ...wikimediafoundation.org/w/index.php?... """
                 if index_str_flag:
                     try:
@@ -812,8 +825,8 @@ class FundraiserDataMapper(DataMapper):
                             if len(lp_country) == 3:
                                 country = lp_country[2]
                             else:
-                                country = lp_country[1]
-                            
+                                country = lp_country[1]                                                
+                        
                     except:
                         landing_page = 'NONE'
                         country = ipctl.localize_IP(ip_add) 
