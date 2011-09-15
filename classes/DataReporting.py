@@ -34,14 +34,13 @@ import sys, pylab, math, logging, matplotlib.pyplot as plt
 
 
 """ Import Analytics modules """
-import Fundraiser_Tools.settings as projSet
-import Fundraiser_Tools.classes.QueryData as QD
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.HypothesisTest as HT
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
-import Fundraiser_Tools.classes.DataFilters as DF
+import classes.QueryData as QD
+import classes.Helper as Hlp
+import classes.TimestampProcessor as TP
+import classes.DataLoader as DL
+import classes.HypothesisTest as HT
+import classes.FundraiserDataHandler as FDH
+import classes.DataFilters as DF
 
 
 """ CONFIGURE THE LOGGER """

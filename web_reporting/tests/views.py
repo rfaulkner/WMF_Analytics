@@ -33,13 +33,13 @@ from django.core.urlresolvers import reverse
 import sys, MySQLdb, logging, math, datetime, copy
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.DataReporting as DR
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.classes.QueryData as QD
-import Fundraiser_Tools.settings as projSet
+import classes.Helper as Hlp
+import classes.DataLoader as DL
+import classes.DataReporting as DR
+import classes.FundraiserDataHandler as FDH
+import classes.TimestampProcessor as TP
+import classes.QueryData as QD
+import config.settings as projSet
 
 
 """ CONFIGURE THE LOGGER """

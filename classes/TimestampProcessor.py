@@ -39,7 +39,7 @@ __date__ = "April 8th, 2011"
 
 
 import datetime, calendar as cal, math
-import Fundraiser_Tools.classes.Helper as mh
+import classes.Helper as mh
 
 """
     Get timestamps for interval

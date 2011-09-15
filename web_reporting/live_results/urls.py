@@ -1,5 +1,5 @@
 
-import Fundraiser_Tools.settings as projSet
+import config.settings as projSet
 from django.conf.urls.defaults import *
 
 urlpatterns = patterns('',

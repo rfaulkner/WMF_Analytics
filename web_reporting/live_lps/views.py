@@ -30,10 +30,10 @@ from django.template import RequestContext
 import sys, datetime, logging
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.classes.DataReporting as DR
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.settings as projSet
+import classes.TimestampProcessor as TP
+import classes.DataReporting as DR
+import classes.DataLoader as DL
+
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr

@@ -17,11 +17,11 @@ __date__ = "April 25th, 2011"
 import sys, urlparse as up, httpagentparser, commands, cgi, re, gzip, os, datetime, logging, random, numpy as np
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.settings as projSet
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
+import classes.DataLoader as DL
+import classes.Helper as Hlp
+import config.settings as projSet
+import classes.TimestampProcessor as TP
+import classes.FundraiserDataHandler as FDH
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr

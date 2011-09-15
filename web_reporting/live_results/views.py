@@ -27,17 +27,15 @@ from django.template import RequestContext
 
 
 """ Import python base modules """
-import sys, os, datetime, re
+import sys, datetime, re
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.classes.DataReporting as DR
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.DataMapper as DM
-import Fundraiser_Tools.classes.FundraiserDataThreading as FDT
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.settings as projSet
+import classes.Helper as Hlp
+import classes.DataReporting as DR
+import classes.DataLoader as DL
+import classes.FundraiserDataHandler as FDH
+import classes.TimestampProcessor as TP
+import config.settings as projSet
 
 
 """
@@ -52,7 +50,27 @@ def index(request):
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
     #start_time = '20110902150000'
     #end_time = '20110902210000'
+    
+    
+    """ 
+        Prepare Live Tables 
+        ===================
+    """
+    
+    sql_stmnt = Hlp.read_sql(projSet.__sql_home__ + 'report_live_results.sql')
+    sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time)
+    dl = DL.DataLoader()
+    
+    results = dl.execute_SQL(sql_stmnt)
+    column_names = dl.get_column_names()
 
+    summary_table = DR.DataReporting()._write_html_table(results, column_names)
+    
+    """ 
+        Prepare Live Plots 
+        ==================
+    """
+    
     """ compose a list of zero data """    
     empty_data = [[1.0, 0.0]] * (duration_hrs * 60 / sampling_interval + 1)
     for i in range(len(empty_data)):
@@ -76,6 +94,7 @@ def index(request):
          
     """ combine the separate data sets """
     dict_param = combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict])
+    dict_param['summary_table'] = summary_table
     
     return render_to_response('live_results/index.html', dict_param,  context_instance=RequestContext(request))
 

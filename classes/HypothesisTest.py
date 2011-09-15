@@ -14,21 +14,8 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "April 16th, 2011"
 
-
-import sys
-# sys.path.append('../')
-
-import math
-import datetime as dt
-import MySQLdb
-import pylab
-import matplotlib
-
-import Fundraiser_Tools.classes.Helper as mh
-import Fundraiser_Tools.classes.QueryData as QD
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-
+import math,  matplotlib
+import classes.DataLoader as DL
 matplotlib.use('Agg')
 
 
@@ -73,9 +60,6 @@ class HypothesisTest(object):
         means_2 = []
         vars_1 = []
         vars_2 = []
-        
-        m_tot = 0
-        sd_tot = 0
         
         # Compute the mean and variance for each group across all trials
         for i in range(num_trials):
@@ -169,47 +153,47 @@ class WaldTest(HypothesisTest):
             
         # determine the probability that the 
         if (W >= 1.9):
-            conf_str = '95% confident about the winner.'
             P = 0.95
+            conf_str = '%5.2f confident about the winner.' % (P * 100.0)
         elif (W >= 1.6):
-            conf_str = '89% confident about the winner.'
             P = 0.89
+            conf_str = '89% confident about the winner.' % (P * 100.0)
         elif (W >= 1.3):
-            conf_str = '81% confident about the winner.'
             P = 0.81
+            conf_str = '81% confident about the winner.' % (P * 100.0)
         elif (W >= 1.0):
-            conf_str = '73% confident about the winner.'
             P = 0.73
+            conf_str = '73% confident about the winner.' % (P * 100.0)
         elif (W >= 0.9):
-            conf_str = '68% confident about the winner.'
             P = 0.68
+            conf_str = '68% confident about the winner.' % (P * 100.0)
         elif (W >= 0.8):
-            conf_str = '63% confident about the winner.'
             P = 0.63
+            conf_str = '63% confident about the winner.' % (P * 100.0)
         elif (W >= 0.7):
-            conf_str = '52% confident about the winner.'
             P = 0.52
+            conf_str = '52% confident about the winner.' % (P * 100.0)
         elif (W >= 0.6):
-            conf_str = '45% confident about the winner.'
             P = 0.45
+            conf_str = '45% confident about the winner.' % (P * 100.0)
         elif (W >= 0.5):
-            conf_str = '38% confident about the winner.'
             P = 0.38
+            conf_str = '38% confident about the winner.' % (P * 100.0)
         elif (W >= 0.4):
-            conf_str = '31% confident about the winner.'
             P = 0.31
+            conf_str = '31% confident about the winner.' % (P * 100.0)
         elif (W >= 0.3):
-            conf_str = '24% confident about the winner.'
             P = 0.24
+            conf_str = '24% confident about the winner.' % (P * 100.0)
         elif (W >= 0.2):
-            conf_str = '16% confident about the winner.'
             P = 0.16
+            conf_str = '16% confident about the winner.' % (P * 100.0)
         elif (W >= 0.1):
-            conf_str = '8% confident about the winner.'
             P = 0.08
+            conf_str = '8% confident about the winner.' % (P * 100.0)
         else:
             conf_str = 'There is no clear winner.'
-            P = 0.08
+            
     
         
         return [means_1, means_2, std_devs_1, std_devs_2, conf_str]

@@ -33,7 +33,7 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "November 28th, 2010"
 
-import Fundraiser_Tools.classes.TimestampProcessor as TP
+import classes.TimestampProcessor as TP
 import datetime
 
 def format_query(query_name, sql_stmnt, args):

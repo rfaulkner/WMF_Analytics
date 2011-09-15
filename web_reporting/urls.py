@@ -1,5 +1,5 @@
 
-import Fundraiser_Tools.settings as projSet
+import config.settings as projSet
 
 # This also imports the include function
 from django.conf.urls.defaults import *

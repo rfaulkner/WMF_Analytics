@@ -13,14 +13,13 @@ __date__ = "July 13th, 2011"
 
 
 """ Import python base modules """
-import sys, datetime, settings, argparse, logging
-
-""" Modify the classpath to include local projects """
-sys.path.append(settings.__home__)
+import sys, argparse, logging
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.DataMapper as DM
-    
+import classes.DataMapper as DM
+import config.settings as projSet
+
+
 """
     Define script usage
 """
@@ -46,7 +45,7 @@ def main(args):
     LOGGING_STREAM = sys.stderr
     logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
     
-    logging.info('Looking for new logs on %s:%s' % (settings.__squid_log_server__, settings.__squid_log_home__))
+    logging.info('Looking for new logs on %s:%s' % (projSet.__squid_log_server__, projSet.__squid_log_home__))
        
     fdm = DM.FundraiserDataMapper()
     

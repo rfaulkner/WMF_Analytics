@@ -23,21 +23,17 @@ __date__ = "June 20th, 2011"
 """ Import django modules """
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
 """ Import python base modules """
 import re, datetime, MySQLdb, logging, sys
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.classes.DataReporting as DR
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.DataMapper as DM
-import Fundraiser_Tools.classes.FundraiserDataThreading as FDT
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.settings as projSet
+import classes.DataLoader as DL
+import classes.DataMapper as DM
+import classes.FundraiserDataThreading as FDT
+import classes.TimestampProcessor as TP
 
 
 

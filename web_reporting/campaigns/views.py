@@ -28,12 +28,13 @@ from django.http import HttpResponse
 import sys, datetime, operator, MySQLdb, logging
 
 """ Import Analytics modules """
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.classes.DataReporting as DR
-import Fundraiser_Tools.classes.DataLoader as DL
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.settings as projSet
+import classes.Helper as Hlp
+import classes.DataReporting as DR
+import classes.DataLoader as DL
+import classes.FundraiserDataHandler as FDH
+import classes.TimestampProcessor as TP
+import config.settings as projSet
+
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr

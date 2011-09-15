@@ -10,25 +10,25 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "June 10th, 2011"
 
-import threading
 import re
-import Fundraiser_Tools.classes.DataMapper as DM
+from multiprocessing import Process
+
+import classes.DataMapper as DM
 
 """
     This class handles executing a log mining process in a new thread
 """
-class MinerThread ( threading.Thread ):
-
-    _fdm_ = None
-    _log_name_ = None
-    
+class MinerThread ( object ):
+        
     def __init__(self, log_name):
-        threading.Thread.__init__(self)
+        
         self._fdm_ = DM.FundraiserDataMapper()
         self._log_name_ = log_name
-    
+        self._process_ = Process(target=self.call_mine_log())
+        
     def run( self ):
-       self.call_mine_log()
+        self._process_.start()
+        # self._process_.join()
     
     
     def call_copy_log(self, type, **kwargs):

@@ -19,11 +19,11 @@ __date__ = "April 8th, 2011"
 import sys, MySQLdb, math, datetime, re, logging, csv, operator, numpy as np
 
 """ Import Analytics modules """
-import Fundraiser_Tools.settings as projSet
-import Fundraiser_Tools.classes.QueryData as QD
-import Fundraiser_Tools.classes.TimestampProcessor as TP
-import Fundraiser_Tools.classes.Helper as Hlp
-import Fundraiser_Tools.classes.FundraiserDataHandler as FDH
+import config.settings as projSet
+import classes.QueryData as QD
+import classes.TimestampProcessor as TP
+import classes.Helper as Hlp
+import classes.FundraiserDataHandler as FDH
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr
