@@ -292,29 +292,29 @@ def test(request):
     if test_type_var == FDH._TESTTYPE_BANNER_:
         
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, html_table, \
-        html_table_pm_banner, html_table_pm_lp =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
+        html_table_pm_banner, html_table_pm_lp, html_table_language =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpi
         
         html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_ + '.html', {'winner_dpi' : winner_dpi, 'winner_api' : winner_api, 'winner_cr' : winner_cr, \
                                                                                        'percent_win_dpi' : '%.2f' % percent_win_dpi, 'percent_win_api' : '%.2f' % percent_win_api, 'percent_win_cr' : '%.2f' % percent_win_cr, \
                                                                                        'conf_dpi' : conf_dpi, 'conf_api' : conf_api, 'conf_cr' : conf_cr, 'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
-                                    'summary_table': html_table, 'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'sample_interval' : sample_interval}, context_instance=RequestContext(request))
+                                    'summary_table': html_table, 'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'sample_interval' : sample_interval, 'html_table_language' : html_table_language}, context_instance=RequestContext(request))
     elif test_type_var == FDH._TESTTYPE_LP_:
         
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, html_table, \
-        html_table_pm_banner, html_table_pm_lp =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
+        html_table_pm_banner, html_table_pm_lp, html_table_language =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpv
         
         html = render_to_response('tests/results_' + FDH._TESTTYPE_LP_ + '.html', {'winner' : winner_dpv, 'percent_win_dpv' : '%.2f' % percent_win_dpv, 'percent_win_apv' : '%.2f' % percent_win_apv, 'conf_dpv' : conf_dpv, 'conf_apv' : conf_apv, 'utm_campaign' : utm_campaign_var, \
-                                    'metric_names_full' : metric_types_full, 'summary_table': html_table, 'sample_interval' : sample_interval, 'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp}, context_instance=RequestContext(request))
+                                    'metric_names_full' : metric_types_full, 'summary_table': html_table, 'sample_interval' : sample_interval, 'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}, context_instance=RequestContext(request))
     
     elif test_type_var == FDH._TESTTYPE_BANNER_LP_:
         
         winner_dpi, percent_win_dpi, conf_dpi, winner_api, percent_win_api, conf_api, winner_cr, percent_win_cr, conf_cr, \
         winner_dpv, percent_win_dpv, conf_dpv, winner_apv, percent_win_apv, conf_apv, \
-        html_table, html_table_pm_banner, html_table_pm_lp =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
+        html_table, html_table_pm_banner, html_table_pm_lp, html_table_language =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, sample_interval, test_interval, test_type_var, metric_types)
         
         winner_var = winner_dpi
         
@@ -325,7 +325,7 @@ def test(request):
                                                                                           'percent_win_dpv' : '%.2f' % percent_win_dpv, 'percent_win_apv' : '%.2f' % percent_win_apv, \
                                                                                           'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
                                                                                           'summary_table': html_table, 'sample_interval' : sample_interval, \
-                                                                                          'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp}, context_instance=RequestContext(request))
+                                                                                          'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}, context_instance=RequestContext(request))
             
     
     
@@ -376,6 +376,15 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     if(0):
         DR.CategoryReporting(file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
         
+    
+    """ 
+        DETERMINE LANGUAGE BREAKDOWN 
+        ============================
+    """
+    html_language = ''
+    if(1):
+        columns, data = DL.CiviCRMLoader().get_donor_by_language(campaign, start_time, end_time)
+        html_language = DR.DataReporting()._write_html_table(data, columns)
         
     """ 
         DETERMINE PAYMENT METHODS 
@@ -502,14 +511,14 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_banner_confidence','amt50_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name,'report_banner_confidence','click_rate',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         
-        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, html_table, html_table_pm_banner, html_table_pm_lp]
+        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
     
     elif test_type == FDH._TESTTYPE_LP_:
         
         winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_LP_confidence','don_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_LP_confidence','amt50_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         
-        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, html_table, html_table_pm_banner, html_table_pm_lp]
+        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
     
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
         
@@ -520,7 +529,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         winner_apv, percent_increase_apv, confidence_apv = cr.run(test_name,'report_bannerLP_confidence','amt50_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
         
         return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, \
-                winner_dpv, percent_increase_dpv, confidence_dpv, winner_apv, percent_increase_apv, confidence_apv, html_table, html_table_pm_banner, html_table_pm_lp]
+                winner_dpv, percent_increase_dpv, confidence_dpv, winner_apv, percent_increase_apv, confidence_apv, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
         
     #winner_dpi, percent_increase_dpi, confidence_dpi = ['',0.0,'']
     #winner_api, percent_increase_api, confidence_api = ['',0.0,'']

@@ -1678,7 +1678,49 @@ class CiviCRMLoader(TableLoader):
                                 
         return banner_payment_methods, lp_payment_methods
 
-    
+
+    """
+        Extracts the portion of converted donations by banner and landing page and language
+        
+        @param start_timestamp, end_timestamp, campaign: Query parameters for civiCRM contributions
+        
+        @return nested dict storing portions for each method
+    """
+    def get_donor_by_language(self, campaign, start_timestamp, end_timestamp):
+        
+        sql_lp_langs = "select lang as language, utm_source as banner, landing_page, count(*) as views from faulkner.landing_page_requests " + \
+        "where request_time >= %s and request_time < %s and utm_campaign = '%s' group by 1,2,3" % (start_timestamp, end_timestamp, campaign)
+        
+        sql_civi_langs = "select substring_index(substring_index(utm_source, '.', 2),'.',1) as banner, substring_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, " + \
+        "substring_index(substring_index(referrer, '.', 1),'/',-1) as language, count(*) as donations " + \
+        "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
+        "where ts >= %s and ts < %s and utm_campaign = '%s' group by 1,2,3" \
+        % (start_timestamp, end_timestamp, campaign)
+        
+        sql_all = "select tmp1.banner, tmp1.landing_page, tmp1.language, round(tmp1.donations / tmp2.views, 4) as conversion " + \
+        "from (%s) as tmp1 join (%s) as tmp2 on tmp1.banner = tmp2.banner and tmp1.landing_page = tmp2.landing_page and tmp1.language = tmp2.language;" % (sql_civi_langs, sql_lp_langs)
+        
+        sql_totals = "select 'Total' as banner, '' as landing_page, tmp1.language, round(sum(tmp1.donations) / sum(tmp2.views), 4) as conversion " + \
+        "from (%s) as tmp1 join (%s) as tmp2 on tmp1.banner = tmp2.banner and tmp1.landing_page = tmp2.landing_page and tmp1.language = tmp2.language group by 3;" % (sql_civi_langs, sql_lp_langs)
+        
+        results_1 = self.execute_SQL(sql_all)
+        results_2 = self.execute_SQL(sql_totals)
+        
+        """ filter out non-language results """
+        
+        columns = self.get_column_names()
+        filtered_results = list()
+        for row in results_1:
+            """ Look at the length of the language field """
+            if len(row[2]) == 2:
+                filtered_results.append(row)
+                
+        for row in results_2:
+            """ Look at the length of the language field """
+            if len(row[2]) == 2:
+                filtered_results.append(row)
+                    
+        return columns, filtered_results
 
 """
 
