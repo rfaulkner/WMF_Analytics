@@ -668,7 +668,7 @@ class FundraiserDataMapper(DataMapper):
                 http://wikimediafoundation.org/w/index.php?title=WMFJA085/en/US&utm_source=donate&utm_medium=sidebar&utm_campaign=20101204SB002&country_code=US&referrer=http%3A%2F%2Fen.wikipedia.org%2Fwiki%2FFile%3AMurphy_High_School.jpg CARP/208.80.152.83 text/html http://en.wikipedia.org/wiki/File:Murphy_High_School.jpg \
                 - Mozilla/4.0%20(compatible;%20MSIE%208.0;%20Windows%20NT%206.1;%20WOW64;%20Trident/4.0;%20FunWebProducts;%20GTB6.6;%20SLCC2;%20.NET%20CLR%202.0.50727;%20.NET%20CLR%203.5.30729;%20.NET%20CLR%203.0.30729;%20Media%20Center%20PC%206.0;%20HPDTDF;%20.NET4.0C)"
         """
-        count_qs = 0 
+        
         line = logFile.readline()
         while (line != ''):
             
@@ -803,8 +803,7 @@ class FundraiserDataMapper(DataMapper):
                     the language has already been read from the url path but if it
                     exists in  the query string this setting should take precedence
                 """
-                try:
-                    count_qs = count_qs + 1
+                try:                    
                     source_lang = query_fields['language'][0]                            
                 except:
                     pass
