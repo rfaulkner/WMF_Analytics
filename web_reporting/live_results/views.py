@@ -63,7 +63,16 @@ def index(request):
     
     results = dl.execute_SQL(sql_stmnt)
     column_names = dl.get_column_names()
-
+    
+    """ Filtering -- remove rows with fewer than 5 donations """
+    donations_index = column_names.index('donations')
+    new_results = list()
+    min_donation = 5
+    
+    for row in results:
+        if row[donations_index] > min_donation:
+            new_results.append(row)
+    results = new_results
     summary_table = DR.DataReporting()._write_html_table(results, column_names)
     
     """ 
