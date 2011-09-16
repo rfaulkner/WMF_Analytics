@@ -80,11 +80,14 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader)
     
     if len(lp_list) > 1 and len(banner_list) > 1:
         
+        campaign_reporting_loader._query_type_ = _TESTTYPE_BANNER_LP_
+        banner_lp_list = campaign_reporting_loader.run_query({'utm_campaign' : utm_campaign, 'start_time' : start_time, 'end_time' : end_time})
+    
         """ In case of BannerLP test concatenate banner lp names """
         new_artifacts = list()
 
-        for i in range(len(banner_list)):
-            new_artifacts.append(banner_list[i] + '-' + lp_list[i])
+        for i in range(len(banner_lp_list)):
+            new_artifacts.append(banner_lp_list[i])
         
         return _TESTTYPE_BANNER_LP_, new_artifacts
     elif len(banner_list) > 1:

@@ -655,6 +655,7 @@ class CampaignReportingLoader(DataLoader):
         self._query_names_['times'] = 'report_campaign_times'
         self._query_names_[FDH._TESTTYPE_BANNER_] = 'report_campaign_banners'
         self._query_names_[FDH._TESTTYPE_LP_] = 'report_campaign_lps'
+        self._query_names_[FDH._TESTTYPE_BANNER_LP_] = 'report_campaign_bannerlps'
         
         self._query_type_ = query_type
         
@@ -677,7 +678,7 @@ class CampaignReportingLoader(DataLoader):
         
         if self._query_type_ == 'totals':
             data = self.query_totals(params)
-        elif self._query_type_ == FDH._TESTTYPE_BANNER_ or self._query_type_ == FDH._TESTTYPE_LP_:
+        elif self._query_type_ == FDH._TESTTYPE_BANNER_ or self._query_type_ == FDH._TESTTYPE_LP_ or FDH._TESTTYPE_BANNER_LP_:
             data = self.query_artifacts(params)
         
         return data
@@ -759,7 +760,7 @@ class CampaignReportingLoader(DataLoader):
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, utm_campaign])
         
         """ Get Indexes into Query """
-        key_index = QD.get_key_index(query_name)    
+        key_index = QD.get_key_index(query_name)     
         
         data = list()
         
@@ -771,7 +772,14 @@ class CampaignReportingLoader(DataLoader):
             results = self._cur_.fetchall()
             
             for row in results:
-                data.append(row[key_index])
+                if isinstance(key_index, list):
+                    artifact = ''
+                    for key in key_index:
+                        artifact = artifact + row[key] + ' - '
+                    artifact = artifact[:-3]
+                    data.append(artifact)
+                else:
+                    data.append(row[key_index])
                 # key_name = row[key_index]
                 
         except Exception as inst:
