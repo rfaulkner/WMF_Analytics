@@ -360,8 +360,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     """ Build reporting objects """
     ir_cmpgn = DR.IntervalReporting(use_labels=False,font_size=20,plot_type='line',query_type='campaign',file_path=projSet.__web_home__ + 'campaigns/static/images/')
-    cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test',file_path=projSet.__web_home__ + 'tests/static/images/')
-    
+        
     """ 
         DETERMINE DONOR DOLLAR BREAKDOWN 
         ================================
@@ -373,7 +372,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         DETERMINE CATEGORY DISTRIBUTION 
         ===============================
     """
-    if(0):
+    if(1):
         DR.CategoryReporting(file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
         
     
@@ -507,26 +506,32 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     if test_type == FDH._TESTTYPE_BANNER_:
         
-        winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_banner_confidence','don_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_banner_confidence','amt50_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name,'report_banner_confidence','click_rate',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
+        cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test', query_type=FDH._QTYPE_BANNER_, file_path=projSet.__web_home__ + 'tests/static/images/')
+        
+        winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name, campaign, 'don_per_imp', label_dict, start_time, end_time, sample_interval)
+        winner_api, percent_increase_api, confidence_api = cr.run(test_name, campaign, 'amt50_per_imp', label_dict, start_time, end_time, sample_interval)
+        winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name, campaign, 'click_rate', label_dict, start_time, end_time, sample_interval)
         
         return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
     
     elif test_type == FDH._TESTTYPE_LP_:
         
-        winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_LP_confidence','don_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_LP_confidence','amt50_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
+        cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test', query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
+        
+        winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name, campaign, 'don_per_view', label_dict, start_time, end_time, sample_interval)
+        winner_api, percent_increase_api, confidence_api = cr.run(test_name,campaign, 'amt50_per_view', label_dict, start_time, end_time, sample_interval)
         
         return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
     
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
         
-        winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name,'report_bannerLP_confidence','don_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_api, percent_increase_api, confidence_api = cr.run(test_name,'report_bannerLP_confidence','amt50_per_imp',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name,'report_bannerLP_confidence','click_rate',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_dpv, percent_increase_dpv, confidence_dpv = cr.run(test_name,'report_bannerLP_confidence','don_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
-        winner_apv, percent_increase_apv, confidence_apv = cr.run(test_name,'report_bannerLP_confidence','amt50_per_view',campaign, label_dict, start_time, end_time, sample_interval,test_interval)
+        cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test', query_type=FDH._QTYPE_BANNER_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
+        
+        winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name, campaign, 'don_per_imp', label_dict, start_time, end_time, sample_interval)
+        winner_api, percent_increase_api, confidence_api = cr.run(test_name, campaign, 'amt50_per_imp', label_dict, start_time, end_time, sample_interval)
+        winner_cr, percent_increase_cr, confidence_cr = cr.run(test_name, campaign, 'click_rate', label_dict, start_time, end_time, sample_interval)
+        winner_dpv, percent_increase_dpv, confidence_dpv = cr.run(test_name, campaign, 'don_per_view', label_dict, start_time, end_time, sample_interval)
+        winner_apv, percent_increase_apv, confidence_apv = cr.run(test_name, campaign, 'amt50_per_view', label_dict, start_time, end_time, sample_interval)
         
         return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, winner_cr, percent_increase_cr, confidence_cr, \
                 winner_dpv, percent_increase_dpv, confidence_dpv, winner_apv, percent_increase_apv, confidence_apv, html_table, html_table_pm_banner, html_table_pm_lp, html_language]

@@ -67,6 +67,17 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 class DataReporting(object):    
     
+    """
+        Exception class to handle missing query type on ConfidenceReporting obj creation
+    """
+    class KwargDefError(Exception):
+        
+        def __init__(self, value):
+            self.value = value
+        
+        def __str__(self):
+            return repr(self.value)
+
 
     def __init__(self, **kwargs):
         
@@ -526,9 +537,7 @@ class IntervalReporting(DataReporting):
 """
 class ConfidenceReporting(DataReporting):
     
-    _hypothesis_test_ = None
-    
-    
+        
     """
     
         Constructor for confidence reporting class
@@ -541,17 +550,25 @@ class ConfidenceReporting(DataReporting):
     """
     def __init__(self, **kwargs):
         
-        
-        for key in kwargs:
+        if not('query_type' in kwargs.keys()):
+            err_msg = 'ConfidenceReporting obj must be created with a query type.'
+            logging.error(err_msg)
+            raise self.KwargDefError(err_msg)
+        else:
+            self._data_loader_ = DL.IntervalReportingLoader(kwargs['query_type'])
             
-            if key == 'hyp_test':                          # Set the hypothesis test
-                if kwargs[key] == 't_test':
-                    self._hypothesis_test_ = HT.TTest()
-        
-        # print self._hypothesis_test_.__str__
-        
-        self._data_loader_ = DL.HypothesisTestLoader()
+        if not('hyp_test' in kwargs.keys()):
+            err_msg = 'ConfidenceReporting obj must be created with a hypothesis test type'
+            logging.error(err_msg)
+            raise self.KwargDefError(err_msg)
+        else:
+            # "Use only a ttest for now
+            self._hypothesis_test_ = HT.TTest()
+                                    
         DataReporting.__init__(self, **kwargs)
+        
+        
+        # self._data_loader_ = DL.HypothesisTestLoader()
         
     """
         Describes how to run a confidence report
@@ -671,10 +688,7 @@ class ConfidenceReporting(DataReporting):
         RETURN: the winner string, percent increase of the winner for the metric
         
     """
-    def print_metrics(self, filename, metric_name, means_1, means_2, std_devs_1, std_devs_2, times_indices, labels, test_call):
-        
-        filename += '.txt'
-        file = open(self._file_path_ + filename, 'w')
+    def summarize_results(self, means_1, means_2, std_devs_1, std_devs_2, times_indices, labels):                
         
         """ Compute % increase and report """
         try:
@@ -710,35 +724,7 @@ class ConfidenceReporting(DataReporting):
         
         win_str =  '\nThe winner "' + winner + '" had a %.2f%s increase.'
         win_str = win_str % (percent_increase, '%')
-        
-        file.write('\nCOMMAND = ' + test_call)
-                 
 
-        file.write('\n\n' +  metric_name)
-        file.write('\nitem 1  = ' + labels[0] + '\n')
-        file.write('\nitem 2  = ' + labels[1] + '\n')
-        file.write(win_str)
-        file.write('\n\ninterval\tmean1\t\tmean2\t\tstddev1\t\tstddev2\n\n')
-        
-        
-        """ Print out the parameters for each interval """
-        
-        for i in range(len(times_indices)):
-            line_args = str(i) + '\t\t' + '%.5f\t\t' + '%.5f\t\t' + '%.5f\t\t' + '%.5f\n'
-            line_str = line_args % (means_1[i], means_2[i], std_devs_1[i], std_devs_2[i])
-#            print  line_str
-            file.write(line_str)
-        
-        """ Print out the averaged parameters """
-        line_args = '%.5f\t\t' + '%.5f\t\t' + '%.5f\t\t' + '%.5f\n'
-        line_str = line_args % (av_means_1, av_means_2, av_std_dev_1, av_std_dev_2)
-
-        
-        file.write('\n\nOverall Parameters:\n')
-        file.write('\nmean1\t\tmean2\t\tstddev1\t\tstddev2\n')
-        file.write(line_str)
-                        
-        file.close()
         
         return [winner, percent_increase]
     
@@ -756,7 +742,7 @@ class ConfidenceReporting(DataReporting):
         
         
     """
-    def run(self, test_name, query_name, metric_name, campaign, items, start_time, end_time, interval, num_samples):
+    def run(self, test_name, campaign, metric_name, items, start_time, end_time, interval):
         
         """ TEMPORARY - map TODO : this should be more generalized """
         counter = 1
@@ -768,14 +754,24 @@ class ConfidenceReporting(DataReporting):
                 label_2 = items[key]
                 item_2 = key
             counter += 1
-                
+        
+        
         """ Retrieve values from database """
-        ret = self._data_loader_.run_query(query_name, metric_name, campaign, item_1, item_2, start_time, end_time, interval, num_samples)
-        metrics_1 = Hlp.convert_Decimal_list_to_float(ret[0])
-        metrics_2 = Hlp.convert_Decimal_list_to_float(ret[1])
-        times_indices = ret[2]
-
+        results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
+        metrics = results[0]
+        times_indices = results[1]
+        
+        try:
+            metrics_1 = metrics[item_1]
+            metrics_2 = metrics[item_2]
+            
+        except:
+            
+            logging.error('No data for confidence reporting.  Missing key.')
+            return ['-- ', '0.00', 'Inconclusive']
+        
         """ run the confidence test """
+        num_samples = len(metrics_1)
         ret = self._hypothesis_test_.confidence_test(metrics_1, metrics_2, num_samples)
         means_1 = ret[0]
         means_2 = ret[1]
@@ -783,10 +779,11 @@ class ConfidenceReporting(DataReporting):
         std_devs_2 = ret[3]
         confidence = ret[4]
         
+        print
         logging.debug(ret)
 
         """ plot the results """
-        xlabel = 'Hours'
+        # xlabel = 'Hours'
         subplot_index = 111
         fname = campaign + '_conf_' + metric_name
         
@@ -796,8 +793,8 @@ class ConfidenceReporting(DataReporting):
         max_sd = max(max(std_devs_1),max(std_devs_2))
         max_y = float(max_mean) + float(max_sd) 
         max_y = max_y + 0.5 * max_y
-        max_x = max(times_indices) + min(times_indices)
-        ranges = [0.0, max_x, 0, max_y]
+        # max_x = max(times_indices) + min(times_indices)
+        # ranges = [0.0, max_x, 0, max_y]
         
         ylabel = QD.get_metric_full_name(metric_name)
         labels = [label_1, label_2]
@@ -805,10 +802,8 @@ class ConfidenceReporting(DataReporting):
         # self._gen_plot(means_1, means_2, std_devs_1, std_devs_2, times_indices, title, xlabel, ylabel, ranges, subplot_index, labels, fname)
         self._gen_box_plot([metrics_1, metrics_2], title, ylabel, subplot_index, labels, fname)
         
-        """ Print out results """ 
-        test_call = "run('" + test_name + "', '" + query_name + "', '" + metric_name + "', '" + campaign + "', '" + \
-            item_1 + "', '" + item_2 + "', '" + start_time + "', '" + end_time + "', " + str(interval) + ", " + str(num_samples) + ")"
-        winner, percent_increase = self.print_metrics(fname, title, means_1, means_2, std_devs_1, std_devs_2, times_indices, labels, test_call)
+        """ Compose conclusions """ 
+        winner, percent_increase = self.summarize_results(means_1, means_2, std_devs_1, std_devs_2, times_indices, labels)
     
         return [winner, percent_increase, confidence]
 
