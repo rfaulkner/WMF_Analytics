@@ -775,8 +775,8 @@ class CampaignReportingLoader(DataLoader):
                 if isinstance(key_index, list):
                     artifact = ''
                     for key in key_index:
-                        artifact = artifact + row[key] + ' - '
-                    artifact = artifact[:-3]
+                        artifact = artifact + row[key] + '-'
+                    artifact = artifact[:-1]
                     data.append(artifact)
                 else:
                     data.append(row[key_index])
