@@ -223,6 +223,13 @@ def format_query(query_name, sql_stmnt, args):
         
         sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
     
+    elif query_name == 'report_campaign_bannerlps':
+        start_time = args[0]
+        end_time = args[1]
+        utm_campaign = args[2]
+        
+        sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
+    
     elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
         start_time = args[0]
         end_time = args[1]
@@ -266,6 +273,8 @@ def get_key_index(query_name):
         return 0
     elif query_name == 'report_campaign_lps':
         return 0
+    elif query_name == 'report_campaign_bannerlps':
+        return [0, 1]
     elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
         return 1
     else:
