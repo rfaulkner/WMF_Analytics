@@ -79,7 +79,6 @@ on ecomm.landing_page  = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_mi
 
 where lp.utm_campaign REGEXP '%s'
 group by 1,2
-having views > 50
 order by 1 asc;
 
 

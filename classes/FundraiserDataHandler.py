@@ -18,6 +18,7 @@ _QTYPE_LP_ = 'lp'
 _QTYPE_BANNER_LP_ = 'bannerlp'
 _QTYPE_CAMPAIGN_ = 'campaign'
 _QTYPE_TIME_ = 'minutely'
+_QTYPE_TOTAL_ = 'total'
 
 
 """ Test Types """

@@ -1,68 +1,73 @@
 
 select
 
-lp.hr as hr,
 lp.landing_page,
-null as total_impressions,
-null as impressions,
-views as views,
-total_clicks as clicks,
-donations as donations,
-amount as amount,
-null as click_rate,
-donations / total_clicks as completion_rate,
-null as don_per_imp,
-null as amt_per_imp,
+floor(impressions * (views / total_views)) as impressions,
+views,
+donations,
+amount,
+amount50,
 donations / views as don_per_view,
 amount / views as amt_per_view,
-amount / donations  as amt_per_donation,
-max_amt,
-pp_don,
-cc_don,
-pp_don / pp_clicks  as paypal_click_thru,
-cc_don / cc_clicks as credit_card_click_thru,
-'%s %s %s %s %s %s %s %s %s %s %s %s' as effluent
+amount50 / views as amt50_per_view,
+amount / donations as avg_donation,
+amount50 / donations as avg_donation50,
+views / floor(impressions * (views / total_views)) as click_rate 
 
 from
 
 (select 
-DATE_FORMAT(request_time,'%sY-%sm-%sd %sH') as hr,
-landing_page,
-count(*) as views
-
-from landing_page
-
-where request_time >=  '%s' and request_time < '%s'
-and utm_campaign REGEXP '%s'
-group by 1,2) as lp
+utm_source, 
+sum(counts) as impressions
+from banner_impressions 
+where on_minute > '%s' and on_minute < '%s' 
+group by 1) as imp
 
 join
 
 (select 
-DATE_FORMAT(ts,'%sY-%sm-%sd %sH') as hr,
+utm_source,
+landing_page,
+count(*) as views,
+utm_campaign
+
+from landing_page_requests
+
+where request_time >=  '%s' and request_time < '%s'
+and utm_campaign = '%s'
+group by 1,2) as lp
+
+on imp.utm_source =  lp.utm_source
+
+join 
+
+(select 
+utm_source, 
+count(*) as total_views
+
+from landing_page_requests
+
+where request_time >= '%s' and request_time < '%s'
+group by 1) as lp_tot
+
+on imp.utm_source = lp_tot.utm_source 
+
+left join
+
+(select 
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page,
-count(*) as total_clicks,
-sum(not isnull(contribution_tracking.contribution_id)) as donations,
-sum(converted_amount) AS amount,
-max(converted_amount) AS max_amt,
-sum(if(right(utm_source,2)='cc',1,0))  as cc_clicks,
-sum(if(right(utm_source,2)='cc' and contribution_tracking.contribution_id,1,0)) as cc_don,
-sum(if(right(utm_source,2)='pp',1,0))  as pp_clicks,
-sum(if(right(utm_source,2)='pp' and contribution_tracking.contribution_id,1,0)) as pp_don
+sum(not isnull(drupal.contribution_tracking.contribution_id)) as donations,
+sum(total_amount) as amount,
+sum(if(total_amount > 50, 50, total_amount)) as amount50
 from
-drupal.contribution_tracking LEFT JOIN civicrm.public_reporting 
-ON (contribution_tracking.contribution_id = civicrm.public_reporting.contribution_id)
-where ts >=  '%s' and ts < '%s'
+drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
+ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+where receive_date >=  '%s' and receive_date < '%s'
 and utm_campaign REGEXP '%s'
-group by 1,2) as ecomm
+group by 1) as ecomm
 
-on ecomm.landing_page  = lp.landing_page and ecomm.hr = lp.hr
+on ecomm.landing_page  = lp.landing_page
 
-group by 1,2,3,4
-having views > 1000 and donations > 10
+where lp.utm_campaign REGEXP '%s'
+group by 1
 order by 1 desc;
-
-
-
-
-

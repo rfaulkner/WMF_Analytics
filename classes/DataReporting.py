@@ -188,27 +188,70 @@ class DataReporting(object):
                 return_status        - integer, 0 indicates un-exceptional execution
     
     """
-    def _write_html_table(self, data, column_names):
+    def _write_html_table(self, data, column_names, **kwargs):
         
-        html = '<table border=\"1\" cellpadding=\"10\"><tr>'
+        """ PROCESS KWARGS"""
+        
+        if 'coloured_columns' in kwargs.keys():
+            coloured_cols = kwargs['coloured_columns']
+            coloured_idx = list()
+            
+            for col in coloured_cols:
+                try:
+                    coloured_idx.append(column_names.index(col))
+                except:
+                    pass
+        else:
+            coloured_cols = []
+            coloured_idx = []
+                    
+        html = '<table border=\"1\" cellpadding=\"10\">'
         
         """ Build headers """
-        for name in column_names:
-            html = html + '<th>' + name.__str__() + '</th>'
-        html = html + '</tr>'
+        if len(column_names) > 0:
+            html = html + '<tr>'            
+            
+            for name in column_names:
+                
+                if name in coloured_cols:
+                    html = html + '<th style="background-color:orange;">' + name + '</th>'
+                else:
+                    html = html + '<th>' + name.__str__() + '</th>'
+            html = html + '</tr>'
         
         """ Build rows """
         for row in data:
-            html = html + '<tr>'
-            for item in row:                                    
-                html = html + '<td>' + item.__str__() + '</td>'
-            html = html + '</tr>'
-        
+            html = html + self._write_html_table_row(row, coloured_columns=coloured_idx)
+           
         html = html + '</table>'        
-                
+        
         return html
-                
     
+    """
+        Compose a single table row
+    """
+    def _write_html_table_row(self, row, **kwargs):
+        
+        if 'coloured_columns' in kwargs.keys():
+            coloured_idx = kwargs['coloured_columns']
+        else:
+            coloured_idx = []
+
+        html = '<tr>'
+        idx = 0
+
+        for item in row: 
+                            
+            if idx in coloured_idx:
+                html = html + '<td style="background-color:yellow;">' + item.__str__() + '</td>'
+            else:
+                html = html + '<td>' + item.__str__() + '</td>'
+            
+            idx = idx + 1
+        
+        html = html + '</tr>'
+        
+        return html
     
     """
     
@@ -521,9 +564,7 @@ class IntervalReporting(DataReporting):
             
             """ Generate plots given data """
             self._gen_plot(self._counts_, self._times_, title, xlabel, ylabel, ranges, subplot_index, fname, labels)
-            
-        """ Generate table html """
-        # self._write_html_table()
+
 
     
     
@@ -779,8 +820,6 @@ class ConfidenceReporting(DataReporting):
         std_devs_2 = ret[3]
         confidence = ret[4]
         
-        print
-        logging.debug(ret)
 
         """ plot the results """
         # xlabel = 'Hours'

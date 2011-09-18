@@ -305,8 +305,42 @@ class DataLoader(object):
         return column_names
 
 
+"""
 
+    This Loader inherits the functionality of DaatLoader and handles SQL queries that group data by time intervals.  These are generally preferable for most
+    of the time dependent data analysis and also provides functionality that enables the raw results to be combined over all keys
+    
+"""
+class SummaryReportingLoader(DataLoader):
 
+    def __init__(self, query_type):
+        
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
+        
+        self._results_ = None
+        
+        if cmp(FDH._QTYPE_BANNER_, query_type) == 0:
+            self._query_name_ = 'report_banner_metrics'
+        elif cmp(FDH._QTYPE_LP_, query_type) == 0:
+            self._query_name_ = 'report_LP_metrics'
+        elif cmp(FDH._QTYPE_BANNER_LP_, query_type) == 0:
+            self._query_name_ = 'report_bannerLP_metrics'
+        elif cmp(FDH._QTYPE_TOTAL_, query_type) == 0:
+            self._query_name_ = 'report_total_metrics'
+            
+    def run_query(self, start_time, end_time, campaign):
+        
+        filename = projSet.__sql_home__+ self._query_name_ + '.sql'
+        sql_stmnt = Hlp.read_sql(filename)
+        sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
+                
+        logging.info('Using query: ' + self._query_name_)
+        self._results_ = self.execute_SQL(sql_stmnt)
+        
+    def get_results(self):
+        
+        return self._results_
 
 """
 
@@ -362,8 +396,6 @@ class IntervalReportingLoader(DataLoader):
     """
     def run_query(self, start_time, end_time, interval, metric_name, campaign):
 
-        self.init_db()
-                                                                                     
         query_name = self.get_sql_filename_for_query()
         logging.info('Using query: ' + query_name)
         
@@ -464,8 +496,6 @@ class IntervalReportingLoader(DataLoader):
                 times[key].append(end_time_obj)
                 metrics[key].append(0.0)
         
-        self.close_db()
-        
         """ Convert counts to float (from Decimal) to prevent exception when bar plotting
             Bbox::update_numerix_xy expected numerix array """
         for key in metrics.keys():
@@ -481,97 +511,6 @@ class IntervalReportingLoader(DataLoader):
         
         return [metrics, times, self._results_]
 
-
-    """
-        Post process raw data from query.  Combines data rows according to column type definitions.  This must be run *after* run_query.
-        
-        This allows aggregates of query data to be performed after the actual processing of the query.
-    """
-    def combine_rows(self):
-        
-        """ If the dataset is empty flag an error and set the summary data to empty """
-        if len(self._results_) == 0:
-            logging.error('Empty dataset.  Either no keys were found or the the queried data was empty')
-            self._summary_data_ = dict()            
-            return
-        
-        query_name = self.get_sql_filename_for_query()
-        logging.info('Using query: ' + query_name)
-        
-        col_types = self._data_handler_.get_col_types(self._query_type_)
-        key_index = QD.get_key_index(query_name)
-        
-        data_dict = dict()
-        num_data_points = Hlp.AutoVivification()
-        
-        """ Check that there are columns defined for the query type """
-        if len(col_types) == 0:
-            logging.info('No metric columns defined for this query type')
-            return 0
-            
-        """ Combine the rows of data according to the column type definition for the given query """
-        for row in self._results_:
-            
-            key = row[key_index]
-            
-            try:
-                data_dict[key] == None  # check for a Index Error
-            except KeyError:
-                data_dict[key] = dict()
-                
-            for i in range(len(row)):
-                
-                col_type = col_types[i]
-                field = row[i]
-                
-                """ Change null values to 0 """
-                null_sample = False    
-                if field == None or field == 'NULL':
-                    field = 0.0
-                    null_sample = True
-                
-                """ 
-                    COMBINE THE DATA FOR EACH KEY
-                    
-                    Based on the column type compile an aggregate (e.g. sum, average) 
-                    
-                """
-                
-                if col_type == self._data_handler_._COLTYPE_RATE_:
-                    
-                    try:
-                        data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] + float(field)
-                        if not(null_sample):                       
-                            num_data_points[key][self._col_names_[i]] = num_data_points[key][self._col_names_[i]] + 1
-                    except KeyError:
-                        data_dict[key][self._col_names_[i]] = float(field)
-                        if null_sample:
-                            num_data_points[key][self._col_names_[i]] = 0.001 # Initializr to a small positive value 
-                        else:
-                            num_data_points[key][self._col_names_[i]] = 1
-                        
-                elif col_type == self._data_handler_._COLTYPE_AMOUNT_:
-                    
-                    try:
-                        data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] + float(field)
-                    except KeyError:
-                        data_dict[key][self._col_names_[i]] = float(field)
-        
-            
-        """ 
-            POST PROCESSING
-            
-            Normalize rate columns 
-        """
-        for i in range(len(col_types)):
-            if col_types[i] == self._data_handler_._COLTYPE_RATE_:
-                for key in data_dict.keys():
-                    try:
-                        data_dict[key][self._col_names_[i]] = data_dict[key][self._col_names_[i]] / num_data_points[key][self._col_names_[i]]
-                    except ZeroDivisionError:
-                        data_dict[key][self._col_names_[i]] = -99.0
-        
-        self._summary_data_ = data_dict
         
 
 

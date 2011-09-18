@@ -372,7 +372,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         DETERMINE CATEGORY DISTRIBUTION 
         ===============================
     """
-    if(1):
+    if(0):
         DR.CategoryReporting(file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
         
     
@@ -411,17 +411,17 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     if test_type == FDH._TESTTYPE_BANNER_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_,file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        top_metric = ['don_per_imp'] 
+        top_metric = ['don_per_imp', 'amt50_per_imp'] 
                     
     elif test_type == FDH._TESTTYPE_LP_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        top_metric = ['don_per_view']
+        top_metric = ['don_per_view', 'amt_50_view']
         
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_LP_,file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        top_metric = ['don_per_imp']
+        top_metric = ['don_per_imp', 'amt50_per_imp','don_per_view', 'amt_50_view']
     
     
     """ 
@@ -436,60 +436,30 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         GENERATE A REPORT SUMMARY TABLE
         ===============================
     """
+    srl = DL.SummaryReportingLoader(test_type)
+    srl.run_query(start_time, end_time, campaign)    
     
-    if ir._data_loader_.combine_rows() == 0: # Combine the interval data 
-        logging.info('No summary data for this reporting object.')
-        html_table = '<br><p><b>Was unable to generate the summary data table.</b></p><br>'
+    columns = srl.get_column_names()
+    summary_results = srl.get_results()
     
-    else:
-        table_data = copy.deepcopy(ir._data_loader_._summary_data_) # Ensure there are no recursive refs here
-        
-        """ INSERT BANNER / LP LINKS """
-        
-        for item in table_data.keys()[:]:
-            
-            """ Check to see if the item was labelled """
-            if item in label_dict_full.keys():
-                new_key = link_item % (item, label_dict_full[item])
-            else:
-                new_key = link_item % (item, item)
-            
-            """ Replace the old key with the linked key """
-            table_data[new_key] =  table_data[item]
-            del table_data[item]
-
-        
-        """ COMPOSE SUMMARY ROW """
-        
-        index = table_data.keys()[0]
-        num_cols = len(table_data.keys())
-        col_names = table_data[index].keys()
-        composite_row = dict()
-        
-        """ Initialize the composite row """
-        for column_name in col_names:
-            if FDH.get_col_type(column_name) == FDH._COLTYPE_RATE_:
-                composite_row[column_name] = 0.0
-            elif FDH.get_col_type(column_name) == FDH._COLTYPE_AMOUNT_:
-                composite_row[column_name] = 0.0
-            elif FDH.get_col_type(column_name) == FDH._COLTYPE_KEY_:
-                composite_row[column_name] = 'TOTAL'
-            elif FDH.get_col_type(column_name) == FDH._COLTYPE_TIME_:
-                composite_row[column_name] = '--'
-                
-        """ Compute the composite row  """
-        for item in table_data:    
-            for column_name in table_data[item]:
-                if FDH.get_col_type(column_name) == FDH._COLTYPE_RATE_:
-                    composite_row[column_name] = composite_row[column_name] + table_data[item][column_name] / num_cols
-                elif FDH.get_col_type(column_name) == FDH._COLTYPE_AMOUNT_:
-                    composite_row[column_name] = composite_row[column_name] + table_data[item][column_name]
-                
-        table_data['<b>Totals</b>'] = composite_row
-        
-        html_table = ir._write_html_table(table_data, top_metric)
-
+    summary_results_list = list()
     
+    """ Add label links """
+    for row in summary_results:
+        artifact_name = row[0]
+        new_row = list(row)
+        new_row[0] = link_item % (artifact_name, label_dict_full[artifact_name])
+        summary_results_list.append(new_row)
+    
+    summary_results = summary_results_list
+    
+    html_table = DR.DataReporting()._write_html_table(summary_results, columns, coloured_columns=top_metric)    
+    
+    """ Generate totals """
+    srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
+    srl.run_query(start_time, end_time, campaign)
+    html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
+        
     
     """ 
         CHECK THE CAMPAIGN VIEWS AND DONATIONS 

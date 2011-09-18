@@ -1,17 +1,22 @@
-
+--
+-- Ryan Faulkner - September 12th, 2011
+-- report_live_results.sql
+--
+-- This query returns the results over campaigns, banners, and lps
+-- This is consumed by the live results view /Fundraising_Tools/web_reporting/live_results
+--
 
 select
 
-if(imp.dt_min < 10, concat(imp.dt_hr, '0', imp.dt_min,'00'), concat(imp.dt_hr, imp.dt_min,'00')) as day_hr,
-concat(imp.utm_source,'-', lp.landing_page) as utm_source,
+ecomm.utm_campaign,
+ecomm.banner,
+ecomm.landing_page,
 floor(impressions * (views / total_views)) as impressions, 
 views,
--- total_clicks,
 donations,
 amount,
 amount50,
 (views / impressions) * (total_views / views) as click_rate,
--- donations / total_clicks as completion_rate,
 round((donations / impressions) * (total_views / views), 6) as don_per_imp,
 (amount / impressions) * (total_views / views) as amt_per_imp,
 (amount50 / impressions) * (total_views / views) as amt50_per_imp,
@@ -24,63 +29,64 @@ amount50 / donations as avg_donation50
 from
 
 (select 
-DATE_FORMAT(on_minute,'%sY%sm%sd%sH') as dt_hr,
-FLOOR(MINUTE(on_minute) / %s) * %s as dt_min,
 utm_source, 
 sum(counts) as impressions
 from banner_impressions 
 where on_minute > '%s' and on_minute < '%s' 
-group by 1,2,3) as imp
+group by 1) as imp
+
+right outer join
+
+(select 
+utm_campaign,
+utm_source, 
+landing_page,
+count(*) as views
+
+from landing_page_requests
+
+where request_time >=  '%s' and request_time < '%s'
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
+group by 1,2,3) as lp
+
+on imp.utm_source =  lp.utm_source 
 
 join
 
-(select 
-DATE_FORMAT(request_time,'%sY%sm%sd%sH') as dt_hr,
-FLOOR(MINUTE(request_time) / %s) * %s as dt_min,
-utm_source, 
-landing_page,
-count(*) as views,
-utm_campaign
-from landing_page_requests
-where request_time >=  '%s' and request_time < '%s'
-and utm_campaign REGEXP '%s'
-group by 1,2,3,4) as lp
-
-on imp.utm_source =  lp.utm_source and imp.dt_hr =  lp.dt_hr and imp.dt_min =  lp.dt_min
-
-join 
+-- This temporary table is used to compute the total views for a banner
+-- from this the impressions can be normalized over several landing pages
 
 (select 
-DATE_FORMAT(request_time,'%sY%sm%sd%sH') as dt_hr,
-FLOOR(MINUTE(request_time) / %s) * %s as dt_min,
+utm_campaign,
 utm_source, 
 count(*) as total_views
+
 from landing_page_requests
-where request_time >= '%s' and request_time < '%s'
-group by 1,2,3) as lp_tot
+where request_time >=  '%s' and request_time < '%s'
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
+group by 1,2) as lp_tot
 
-on imp.utm_source =  lp_tot.utm_source and imp.dt_hr =  lp_tot.dt_hr and imp.dt_min =  lp_tot.dt_min
+on lp_tot.utm_campaign = lp.utm_campaign and lp_tot.utm_source = lp.utm_source
 
-left join
+right outer join
 
 (select 
-DATE_FORMAT(receive_date,'%sY%sm%sd%sH') as hr,
-FLOOR(MINUTE(receive_date) / %s) * %s as dt_min,
+utm_campaign,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page,
-count(*) as total_clicks,
 sum(not isnull(drupal.contribution_tracking.contribution_id)) as donations,
 sum(total_amount) as amount,
 sum(if(total_amount > 50, 50, total_amount)) as amount50
+
 from
 drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+
 where receive_date >=  '%s' and receive_date < '%s'
-and utm_campaign REGEXP '%s'
-group by 1,2,3,4) as ecomm
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
+group by 1,2,3) as ecomm
 
-on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
+on ecomm.utm_campaign = lp.utm_campaign and ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
 
-where lp.utm_campaign REGEXP '%s'
-group by 1,2
+group by 1,2,3
 order by 1 asc;
