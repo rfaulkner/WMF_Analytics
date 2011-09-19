@@ -28,7 +28,6 @@ from django.http import HttpResponse
 import sys, datetime, operator, MySQLdb, logging
 
 """ Import Analytics modules """
-import classes.Helper as Hlp
 import classes.DataReporting as DR
 import classes.DataLoader as DL
 import classes.FundraiserDataHandler as FDH
@@ -52,21 +51,35 @@ def index(request):
 
     """ Parse the filter fields """
     filter_data = True
+
     try:
         min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
         earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'])
-
+        
+        if len(earliest_utc_ts_var) == 0:
+            earliest_utc_ts_var = '0'
     except KeyError:
+        
         filter_data = False
     
-    
+        
     """ Interface with the DataLoader """
     
     crl = DL.CampaignReportingLoader('totals')
     
-    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
-    start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
+    start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-21)
+    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)    
+    start_time = TP.timestamp_from_obj(start_time_obj,1,3)
     
+    """ If the user timestamp is earlier than the default start time run the query for the earlier start time  """
+    ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
+    if ts_format > 0:
+        earliest_utc_obj = TP.timestamp_to_obj(earliest_utc_ts_var, ts_format)
+        
+        if earliest_utc_obj < start_time_obj:
+            start_time = earliest_utc_obj
+        
+    """ Execute query """
     campaigns, all_data = crl.run_query({'metric_name':'earliest_timestamp','start_time':start_time,'end_time':end_time})
         
     sorted_campaigns = sorted(campaigns.iteritems(), key=operator.itemgetter(1))
@@ -74,6 +87,7 @@ def index(request):
     
     if filter_data:
         try:
+            
             if min_donations_var == '':
                 min_donations = 0
             else:
@@ -130,7 +144,7 @@ def show_campaigns(request, utm_campaign):
     start_time = '20110531120000'  
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
     
-    interval = 2
+    interval = 1
         
     """ Estimate start/end time of campaign """
     """ This generates an image for campaign views """

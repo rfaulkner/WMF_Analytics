@@ -38,7 +38,7 @@ __revision__ = "$Rev$"
 __date__ = "April 8th, 2011"
 
 
-import datetime, calendar as cal, math
+import datetime, calendar as cal, math, re
 import classes.Helper as mh
 
 """
@@ -171,8 +171,8 @@ def find_latest_date_in_list(time_lists):
     
     for key in time_lists.keys():
         for date_obj in time_lists[key]:
-            if date_int > date_min:
-                date_min = date_obj
+            if date_obj > date_max:
+                date_max = date_obj
                 
     return date_max
 
@@ -605,3 +605,15 @@ def getPrevHour(year, month, day, hour):
             prev_day = day - 1
             
     return [prev_year, prev_month, prev_day, prev_hour]
+
+""" 
+    Given a timestamp infer it's format using regular expression matching
+"""
+def getTimestampFormat(timestamp):
+    
+    if re.search('[0-9]{14}', timestamp):
+        return 1
+    elif re.search('.*-.*-.* .*:.*:.*', timestamp):
+        return 2
+    else: 
+        return -1
