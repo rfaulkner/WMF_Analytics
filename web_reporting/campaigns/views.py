@@ -89,7 +89,7 @@ def index(request):
         try:
             
             if min_donations_var == '':
-                min_donations = 0
+                min_donations = -1
             else:
                 min_donations = int(min_donations_var)
             
