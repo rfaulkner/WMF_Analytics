@@ -82,80 +82,21 @@ def format_query(query_name, sql_stmnt, args):
         end_time = args[1]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '', start_time, end_time)
     
-    elif query_name == 'report_bannerLP_metrics':
+    elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics':
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time, end_time, '%', '%', '%', '%', start_time, end_time, '%', '%', '%', '%', start_time, end_time, campaign, '%', '%', '%', '%', start_time, end_time, campaign)
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, campaign)
     
     elif query_name == 'report_latest_campaign':
         start_time = args[0]
         sql_stmnt = sql_stmnt % (start_time)
-        
-    elif query_name == 'report_confidence_banner':
-        start = args[0]
-        end = args[1]
-        cmpgn = args[2]
-        banner = args[3]
-        sql_stmnt = sql_stmnt % ('%','%','%','%','10','10', start, end, banner, '%','%','%','%','10','10', start, end, cmpgn, banner, \
-        '%','%','%','%','10','10', start, end, cmpgn, banner)
-    
-    elif query_name == 'report_confidence_lp':
-        start = args[0]
-        end = args[1]
-        cmpgn = args[2]
-        banner = args[3]
-        sql_stmnt = sql_stmnt % ('%','%','%','%','10','10', start, end, cmpgn, banner, \
-        '%','%','%','%','10','10', start, end, cmpgn, banner)
-    
+            
     elif query_name == 'report_banner_impressions_by_hour':
         start = args[0]
         end = args[1]
         sql_stmnt = sql_stmnt % ('%','%','%','%', start, end)
-    
-    elif query_name == 'report_lp_views_by_hour':
-        start = args[0]
-        end = args[1]
-        sql_stmnt = sql_stmnt % ('%','%','%','%', start, end)
-    
-    elif query_name == 'report_banner_confidence':
-        
-        start = args[0]
-        end = args[1]
-        banner = args[2]
-        campaign = args[3]
-        
-        """ The start time for the impression portion of the query should be one second less"""
-        start_time_obj = TP.timestamp_to_obj(start,1)
-        imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
-        imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
-        
-        sql_stmnt = sql_stmnt % (imp_start_time_obj_str, end, banner, start, end, campaign, start, end, banner, start, end, campaign, banner)
-    
-    elif query_name == 'report_bannerLP_confidence':
-        
-        """ The artifact name is a composition of banner and landing page and must be split """
-        bannerlp_arg = args[2].split('-')
-        
-        start = args[0]
-        end = args[1]
-        utm_source = bannerlp_arg[0]
-        campaign = args[3]
-        
-        """ The start time for the impression portion of the query should be one second less"""
-        start_time_obj = TP.timestamp_to_obj(start,1)
-        imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
-        imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
-        
-        sql_stmnt = sql_stmnt % (imp_start_time_obj_str, end, utm_source, start, end, campaign, start, end, utm_source, start, end, campaign, utm_source)
-        
-    elif query_name == 'report_LP_confidence':
-        start = args[0]
-        end = args[1]
-        lp = args[2]
-        campaign = args[3]
-        sql_stmnt = sql_stmnt % (start, end, campaign, lp, start, end, campaign, lp)
-        
+                
     elif query_name == 'report_ecomm_by_amount':
         start_time = args[0]
         end_time = args[1]
@@ -178,14 +119,6 @@ def format_query(query_name, sql_stmnt, args):
         
         sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
                                 '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
-    
-    elif query_name == 'report_LP_metrics_minutely':
-        start_time = args[0]
-        end_time = args[1]
-        campaign = args[2]
-        interval = args[3]
-        
-        sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
     
     elif query_name == 'report_campaign_metrics_minutely':
         start_time = args[0]
