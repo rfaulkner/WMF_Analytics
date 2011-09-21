@@ -60,6 +60,8 @@ def index(request):
             earliest_utc_ts_var = '0'
     except KeyError:
         
+        min_donations_var = ''
+        earliest_utc_ts_var = ''
         filter_data = False
     
         
@@ -89,7 +91,7 @@ def index(request):
         try:
             
             if min_donations_var == '':
-                min_donations = -1
+                min_donations = 0
             else:
                 min_donations = int(min_donations_var)
             

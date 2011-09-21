@@ -303,6 +303,30 @@ class DataLoader(object):
             column_names.append(elem[0])
             
         return column_names
+    
+    
+    """
+        Determine one step banners for a given campaign
+
+        INPUT:
+
+            start_time        - start timestamp for reporting 
+            end_time          - end timestamp for reporting
+            campaign          - the campaign on which to select
+    """
+    def get_one_step_banners(self, start_time, end_time, campaign):
+        
+        sql_stmnt_1 = "(select utm_source from banner_impressions where on_minute >= '%s' and on_minute < '%s' and utm_source regexp '%s' group by 1) as bi" % (start_time, end_time, IntervalReportingLoader.ONE_STEP_PATTERN)
+        sql_stmnt_2 = "(select SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner from drupal.contribution_tracking where ts >= '%s' and ts < '%s' and utm_campaign = '%s' and SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) regexp '%s' group by 1) as lp" % (start_time, end_time, campaign, IntervalReportingLoader.ONE_STEP_PATTERN)
+        
+        sql_stmnt = "select bi.utm_source from %s join %s on bi.utm_source = lp.banner " % (sql_stmnt_1, sql_stmnt_2)
+        
+        results = self.execute_SQL(sql_stmnt)
+        one_step_banners = list()
+        for row in results:
+            one_step_banners.append(row[0])
+            
+        return one_step_banners
 
 
 """
@@ -330,13 +354,38 @@ class SummaryReportingLoader(DataLoader):
             self._query_name_ = 'report_total_metrics'
             
     def run_query(self, start_time, end_time, campaign):
+                        
+        if self.get_one_step_banners(start_time, end_time, campaign):
+            
+            filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
+            sql_stmnt = Hlp.read_sql(filename)
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
         
-        filename = projSet.__sql_home__+ self._query_name_ + '.sql'
-        sql_stmnt = Hlp.read_sql(filename)
-        sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
-                
-        logging.info('Using query: ' + self._query_name_)
-        self._results_ = self.execute_SQL(sql_stmnt)
+            logging.info('Using query: ' + self._query_name_)
+            results_1 = self.execute_SQL(sql_stmnt)
+            
+            filename = projSet.__sql_home__+ self._query_name_ + '.sql'
+            sql_stmnt = Hlp.read_sql(filename)
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
+
+            logging.info('Using query: ' + self._query_name_)
+            results_2 = self.execute_SQL(sql_stmnt)
+            
+            """ Combine the results from one and two step donation flows """
+             
+            results_1 = list(results_1)
+            results_1.extend(list(results_2))
+            
+            self._results_ = results_1
+            
+        else:
+            filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
+            sql_stmnt = Hlp.read_sql(filename )
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
+        
+            logging.info('Using query: ' + self._query_name_)
+            self._results_ = self.execute_SQL(sql_stmnt)
+            
         
     def get_results(self):
         
@@ -350,6 +399,9 @@ class SummaryReportingLoader(DataLoader):
 """
 class IntervalReportingLoader(DataLoader):
     
+    ONE_STEP_PATTERN = 'B_'
+    BANNER_PATTERN = 'B_'
+    
     """
         Setup query list
         
@@ -361,7 +413,6 @@ class IntervalReportingLoader(DataLoader):
         
         self._query_names_[FDH._QTYPE_BANNER_] = 'report_banner_metrics_minutely'
         self._query_names_[FDH._QTYPE_LP_] = 'report_LP_metrics_minutely'
-        # self._query_names_[FDH._QTYPE_LP_] = 'report_metrics_minutely'
         self._query_names_[FDH._QTYPE_BANNER_LP_] = 'report_bannerLP_metrics_minutely'
         self._query_names_['campaign'] = 'report_campaign_metrics_minutely'
         self._query_names_['campaign_total'] = 'report_campaign_metrics_minutely_total'
@@ -376,6 +427,47 @@ class IntervalReportingLoader(DataLoader):
         self._data_handler_ = FDH
         
         self._summary_data_ = None
+    
+    
+    """
+        Handles both one step and two step banners
+    """
+    def run_query(self, start_time, end_time, interval, metric_name, campaign):                
+            
+        query_name = self.get_sql_filename_for_query()
+        logging.info('Using query: ' + query_name)
+        
+        """ 
+            Determine if there are any one step banners
+            
+            If so execute both types of queries
+        """
+        if self.get_one_step_banners(start_time, end_time, campaign):
+            
+            logging.info('Using one-step query...')
+            metrics_1, times_1, results_1 = self.run_query_base(start_time, end_time, interval, metric_name, campaign, query_name + '_1S')
+            
+            self._was_run_ = False
+            metrics_2, times_2, results_2 = self.run_query_base(start_time, end_time, interval, metric_name, campaign, query_name)
+            
+            """ Combine the results from one and two step donation flows """
+            
+            metrics_1.update(metrics_2)
+            metrics = metrics_1
+             
+            times_1.update(times_2)
+            times = times_1
+             
+            results_1 = list(results_1)
+            results_1.extend(list(results_2))
+            
+            results = results_1
+            self._results_ = results
+            
+        else:
+            metrics, times, results = self.run_query_base(start_time, end_time, interval, metric_name, campaign, query_name)
+                
+        return metrics, times, results
     
     """
         Executes the query which generates interval metrics and sets _results_ and _col_names_
@@ -394,10 +486,7 @@ class IntervalReportingLoader(DataLoader):
                 times          - dict containing time index for each donation pipeline handle (e.g. banner names)
                 _results_      - list containing the rows generated by the query
     """
-    def run_query(self, start_time, end_time, interval, metric_name, campaign):
-
-        query_name = self.get_sql_filename_for_query()
-        logging.info('Using query: ' + query_name)
+    def run_query_base(self, start_time, end_time, interval, metric_name, campaign, query_name):
         
         metrics = Hlp.AutoVivification()
         times = Hlp.AutoVivification()        
@@ -425,7 +514,7 @@ class IntervalReportingLoader(DataLoader):
         key_index = QD.get_key_index(query_name)
         metric_index = QD.get_metric_index(query_name, metric_name)
         time_index = QD.get_time_index(query_name)
-        
+
         """ Compose the data for each separate donor pipeline artifact """
         try:
             """ ONLY EXECUTE THE QUERY IF IT HASN'T BEEN BEFORE """
@@ -512,8 +601,6 @@ class IntervalReportingLoader(DataLoader):
         return [metrics, times, self._results_]
 
         
-
-
 """
 
     This class inherits the IntrvalLoader functionality but utilizes the campaign DataLoader instead.  Also the results generated incorporate campaign totals also --
@@ -537,7 +624,6 @@ class CampaignIntervalReportingLoader(DataLoader):
         
         
     """
-        <DESCRIPTION>
         
         INPUT:
                 start_time        - start timestamp for reporting 
@@ -697,7 +783,7 @@ class CampaignReportingLoader(DataLoader):
         filename = projSet.__sql_home__+ query_name + '.sql'
         sql_stmnt = Hlp.read_sql(filename)        
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, utm_campaign])
-        
+        print sql_stmnt
         """ Get Indexes into Query """
         key_index = QD.get_key_index(query_name)     
         
@@ -709,7 +795,7 @@ class CampaignReportingLoader(DataLoader):
             self._cur_.execute(sql_stmnt)
             
             results = self._cur_.fetchall()
-            
+            print results
             for row in results:
                 if isinstance(key_index, list):
                     artifact = ''

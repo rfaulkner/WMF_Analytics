@@ -30,7 +30,7 @@ from django.core.urlresolvers import reverse
 
 
 """ Import python base modules """
-import sys, MySQLdb, logging, math, datetime, copy
+import sys, MySQLdb, logging, math, datetime
 
 """ Import Analytics modules """
 import classes.Helper as Hlp

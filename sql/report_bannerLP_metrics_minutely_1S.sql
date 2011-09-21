@@ -33,15 +33,16 @@ group by 1,2,3) as imp
 join
 
 (select 
-DATE_FORMAT(request_time,'%sY%sm%sd%sH') as dt_hr,
-FLOOR(MINUTE(request_time) / %s) * %s as dt_min,
-utm_source, 
-landing_page,
+DATE_FORMAT(ts,'%sY%sm%sd%sH') as dt_hr,
+FLOOR(MINUTE(ts) / %s) * %s as dt_min,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source, 
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, 
 count(*) as views,
 utm_campaign
-from landing_page_requests
-where request_time >=  '%s' and request_time < '%s'
-and utm_campaign REGEXP '%s'
+
+from drupal.contribution_tracking  
+where ts >= '%s' and ts < '%s' and utm_campaign = '%s'
+
 group by 1,2,3,4) as lp
 
 on imp.utm_source =  lp.utm_source and imp.dt_hr =  lp.dt_hr and imp.dt_min =  lp.dt_min
@@ -49,12 +50,15 @@ on imp.utm_source =  lp.utm_source and imp.dt_hr =  lp.dt_hr and imp.dt_min =  l
 join 
 
 (select 
-DATE_FORMAT(request_time,'%sY%sm%sd%sH') as dt_hr,
-FLOOR(MINUTE(request_time) / %s) * %s as dt_min,
-utm_source, 
+
+DATE_FORMAT(ts,'%sY%sm%sd%sH') as dt_hr,
+FLOOR(MINUTE(ts) / %s) * %s as dt_min,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source,
 count(*) as total_views
-from landing_page_requests
-where request_time >= '%s' and request_time < '%s'
+
+from drupal.contribution_tracking
+
+where ts >= '%s' and ts < '%s'
 group by 1,2,3) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source and imp.dt_hr =  lp_tot.dt_hr and imp.dt_min =  lp_tot.dt_min

@@ -34,7 +34,7 @@ __revision__ = "$Rev$"
 __date__ = "November 28th, 2010"
 
 import classes.TimestampProcessor as TP
-import datetime
+import datetime, re
 
 def format_query(query_name, sql_stmnt, args):
     
@@ -82,7 +82,8 @@ def format_query(query_name, sql_stmnt, args):
         end_time = args[1]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '', start_time, end_time)
     
-    elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics':
+    elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics' or \
+    query_name == 'report_banner_metrics_' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics':
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -106,7 +107,8 @@ def format_query(query_name, sql_stmnt, args):
         where_str = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', where_str)
     
-    elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_LP_metrics_minutely':
+    elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_LP_metrics_minutely' or \
+    query_name == 'report_banner_metrics_minutely_1S' or query_name == 'report_bannerLP_metrics_minutely_1S' or query_name == 'report_LP_metrics_minutely_1S':
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -120,7 +122,7 @@ def format_query(query_name, sql_stmnt, args):
         sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
                                 '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
     
-    elif query_name == 'report_campaign_metrics_minutely':
+    elif re.search('report_campaign_metrics_minutely', query_name):
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -190,13 +192,13 @@ def get_query_header(query_name):
     Returns the index of the key for the query data 
 """
 def get_key_index(query_name):
-    if query_name == 'report_banner_metrics_minutely':
+    if re.search('report_banner_metrics_minutely', query_name):
         return 1
-    elif query_name == 'report_bannerLP_metrics_minutely':
+    elif re.search('report_bannerLP_metrics_minutely', query_name):
         return 1
-    elif query_name == 'report_LP_metrics_minutely':
+    elif re.search('report_LP_metrics_minutely', query_name):
         return 1
-    elif query_name == 'report_campaign_metrics_minutely':
+    elif re.search('report_campaign_metrics_minutely', query_name):
         return 1
     elif query_name == 'report_campaign_metrics_minutely_total':
         return 1
@@ -233,13 +235,13 @@ def get_time_index(query_name):
         return 0
     elif query_name == 'report_lp_views_by_hour':
         return 0
-    elif query_name == 'report_banner_metrics_minutely':
+    elif re.search('report_banner_metrics_minutely', query_name):
         return 0
-    elif query_name == 'report_bannerLP_metrics_minutely':
+    elif re.search('report_bannerLP_metrics_minutely', query_name):
         return 0
-    elif query_name == 'report_LP_metrics_minutely':
+    elif re.search('report_LP_metrics_minutely', query_name):
         return 0
-    elif query_name == 'report_campaign_metrics_minutely':
+    elif re.search('report_campaign_metrics_minutely', query_name):
         return 0
     elif query_name == 'report_campaign_metrics_minutely_total':
         return 0
@@ -253,6 +255,7 @@ def get_time_index(query_name):
 
 
 def get_metric_index(query_name, metric_name):
+    
     if query_name == 'report_campaign_logs_by_min':
         if metric_name == 'click_rate':
             return 9
@@ -262,7 +265,9 @@ def get_metric_index(query_name, metric_name):
     elif query_name == 'report_contribution_tracking':
         if metric_name == 'converted_amount':
             return 4
+        
     elif query_name == 'report_bannerLP_metrics':
+        
         if metric_name == 'total_impressions':
             return 2
         elif metric_name == 'impressions':
@@ -301,59 +306,9 @@ def get_metric_index(query_name, metric_name):
             return 19
         else:
             return -1
-    elif query_name == 'report_banner_confidence':
-        if metric_name == 'click_rate':
-            return 7
-        elif metric_name == 'don_per_imp':
-            return 9
-        elif metric_name == 'amt_per_imp':
-            return 10
-        elif metric_name == 'amt50_per_imp':
-            return 14
-        elif metric_name == 'amt100_per_imp':
-            return 15
-        else:
-            return -1
-    elif query_name == 'report_LP_confidence':
-        if metric_name == 'completion_rate':
-            return 5
-        elif metric_name == 'don_per_view':
-            return 6
-        elif metric_name == 'amt_per_view':
-            return 7
-        elif metric_name == 'amt_per_donation':
-            return 8
-        elif metric_name == 'amt50_per_view':
-            return 9
-        elif metric_name == 'amt100_per_view':
-            return 10
-        else:
-            return -1
-    elif query_name == 'report_bannerLP_confidence':
-        if metric_name == 'click_rate':
-            return 7
-        elif metric_name == 'completion_rate':
-            return 8
-        elif metric_name == 'don_per_imp':
-            return 9
-        elif metric_name == 'amt_per_imp':
-            return 10
-        elif metric_name == 'don_per_view':
-            return 11
-        elif metric_name == 'amt_per_view':
-            return 12
-        elif metric_name == 'amt50_per_view':
-            return 16
-        elif metric_name == 'amt_per_donation':
-            return 13
-        elif metric_name == 'amt50_per_imp':
-            return 14
-        elif metric_name == 'amt100_per_imp':
-            return 15
-        else:
-            return -1
+ 
         
-    elif query_name == 'report_LP_metrics_minutely':
+    elif query_name == 'report_LP_metrics_minutely' or query_name == 'report_LP_metrics_minutely_1S':
         if metric_name == 'imp':
             return 2
         elif metric_name == 'views':
@@ -375,7 +330,7 @@ def get_metric_index(query_name, metric_name):
         else:
             return -1
         
-    elif query_name == 'report_banner_metrics_minutely':
+    elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_banner_metrics_minutely_1S':
         if metric_name == 'imp':
             return 2
         elif metric_name == 'donations':
@@ -394,7 +349,8 @@ def get_metric_index(query_name, metric_name):
             return 12
         else:
             return -1
-    elif query_name == 'report_campaign_metrics_minutely':
+        
+    elif re.search('report_campaign_metrics_minutely', query_name):
         if metric_name == 'donations':
             return 3
         elif metric_name == 'views':
@@ -426,7 +382,7 @@ def get_metric_index(query_name, metric_name):
         else:
             return -1
     
-    elif query_name == 'report_bannerLP_metrics_minutely':
+    elif query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely_1S':
         if metric_name == 'imp':
             return 2
         elif metric_name == 'views':
