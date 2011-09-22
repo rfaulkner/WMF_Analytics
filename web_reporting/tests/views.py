@@ -307,7 +307,7 @@ def test(request):
         
         winner_var = winner_dpv
         
-        html = render_to_response('tests/results_' + FDH._TESTTYPE_LP_ + '.html', {'winner' : winner_dpv, 'percent_win_dpv' : '%.2f' % percent_win_dpv, 'percent_win_apv' : '%.2f' % percent_win_apv, 'conf_dpv' : conf_dpv, 'conf_apv' : conf_apv, 'utm_campaign' : utm_campaign_var, \
+        html = render_to_response('tests/results_' + FDH._TESTTYPE_LP_ + '.html', {'winner_dpv' : winner_dpv, 'winner_apv' : winner_apv, 'percent_win_dpv' : '%.2f' % percent_win_dpv, 'percent_win_apv' : '%.2f' % percent_win_apv, 'conf_dpv' : conf_dpv, 'conf_apv' : conf_apv, 'utm_campaign' : utm_campaign_var, \
                                     'metric_names_full' : metric_types_full, 'summary_table': html_table, 'sample_interval' : sample_interval, 'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}, context_instance=RequestContext(request))
     
     elif test_type_var == FDH._TESTTYPE_BANNER_LP_:
@@ -416,7 +416,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     elif test_type == FDH._TESTTYPE_LP_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        top_metric = ['don_per_view', 'amt_50_view']
+        top_metric = ['don_per_view', 'amt50_per_view']
         
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_LP_,file_path=projSet.__web_home__ + 'tests/static/images/')
@@ -489,9 +489,9 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         cr = DR.ConfidenceReporting(use_labels=use_labels_var,font_size=20,plot_type='line',hyp_test='t_test', query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
         
         winner_dpi, percent_increase_dpi, confidence_dpi = cr.run(test_name, campaign, 'don_per_view', label_dict, start_time, end_time, sample_interval)
-        winner_api, percent_increase_api, confidence_api = cr.run(test_name,campaign, 'amt50_per_view', label_dict, start_time, end_time, sample_interval)
+        winner_apv, percent_increase_apv, confidence_apv = cr.run(test_name,campaign, 'amt50_per_view', label_dict, start_time, end_time, sample_interval)
         
-        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_api, percent_increase_api, confidence_api, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
+        return [winner_dpi, percent_increase_dpi, confidence_dpi, winner_apv, percent_increase_apv, confidence_apv, html_table, html_table_pm_banner, html_table_pm_lp, html_language]
     
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
         

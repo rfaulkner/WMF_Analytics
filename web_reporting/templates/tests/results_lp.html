@@ -5,8 +5,8 @@
 <h1><u>{{ utm_campaign }}: Test Report</u></h1>
 <h3><u>The winning landing page is <b>{{ winner }}</b>.</u></h3><br><br>
 {% if winner != 'inconclusive' %}
-	The winner, {{ winner }}, had a {{ percent_win_dpv }}% increase in donations / view on average. {{ conf_dpv }}<br>
-	The winner, {{ winner }}, had a {{ percent_win_apv }}% increase in amount50 / view on average. {{ conf_apv }}<br>
+	The winner, {{ winner_dpv }}, had a {{ percent_win_dpv }}% increase in donations / view on average. {{ conf_dpv }}<br>
+	The winner, {{ winner_apv }}, had a {{ percent_win_apv }}% increase in amount50 / view on average. {{ conf_apv }}<br>
 {% endif %}
 
 <br>
