@@ -54,7 +54,9 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
                
 """
 class DataLoader(object):
- 
+
+    ONE_STEP_PATTERN = '_1S'
+    BANNER_PATTERN = 'B_'
     
     """
         Constructor
@@ -337,6 +339,7 @@ class DataLoader(object):
 """
 class SummaryReportingLoader(DataLoader):
 
+    
     def __init__(self, query_type):
         
         """ Call constructor of parent """
@@ -352,9 +355,9 @@ class SummaryReportingLoader(DataLoader):
             self._query_name_ = 'report_bannerLP_metrics'
         elif cmp(FDH._QTYPE_TOTAL_, query_type) == 0:
             self._query_name_ = 'report_total_metrics'
-            
+    
     def run_query(self, start_time, end_time, campaign):
-                        
+        
         if self.get_one_step_banners(start_time, end_time, campaign):
             
             filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
@@ -379,14 +382,14 @@ class SummaryReportingLoader(DataLoader):
             self._results_ = results_1
             
         else:
-            filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
+            filename = projSet.__sql_home__+ self._query_name_ + '.sql'
             sql_stmnt = Hlp.read_sql(filename )
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
         
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             
-        
+                    
     def get_results(self):
         
         return self._results_
@@ -398,9 +401,6 @@ class SummaryReportingLoader(DataLoader):
     
 """
 class IntervalReportingLoader(DataLoader):
-    
-    ONE_STEP_PATTERN = 'B_'
-    BANNER_PATTERN = 'B_'
     
     """
         Setup query list
