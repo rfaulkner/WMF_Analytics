@@ -796,11 +796,43 @@ class ConfidenceReporting(DataReporting):
                 item_2 = key
             counter += 1
         
+        artifact_keys = items.keys()
         
         """ Retrieve values from database """
         results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
-        metrics = results[0]
-        times_indices = results[1]
+        self._counts_ = results[0]
+        self._times_ = results[1]
+        
+        """ TODO / FIX ME -- EVERYTHING AFTER THIS POINT SHOULD BE A FILTER """
+        
+        """ Select only the specified item keys """
+        if len(self._item_keys_) > 0:
+            self._counts_ = self.select_metric_keys(self._counts_)
+            self._times_ = self.select_metric_keys(self._times_)
+
+        """ Convert Times to Integers that indicate relative times AND normalize the intervals in case any are missing """
+        for key in self._times_.keys():
+            self._times_[key] = TP.normalize_timestamps(self._times_[key], False, 3)            
+            self._times_[key], self._counts_[key] = TP.normalize_intervals(self._times_[key], self._counts_[key], interval)
+        
+        """ If there are missing metrics add them as zeros """
+        for artifact_key in artifact_keys:
+
+            if not(artifact_key in self._times_.keys()):    
+                self._times_[artifact_key] = self._times_[self._times_.keys()[0]]
+                self._counts_[artifact_key] = [0.0] * len(self._times_[artifact_key])
+        
+        """  Remove artifacts not in the list if there are any labels specified """
+        if len(artifact_keys) > 0:
+            for key in self._counts_.keys():
+                if key not in artifact_keys:
+                    del self._counts_[key]
+                    del self._times_[key]
+        
+        """ Filter the data """
+        self._execute_filters()
+        metrics = self._counts_
+        times_indices = self._times_
         
         try:
             metrics_1 = metrics[item_1]
