@@ -79,7 +79,6 @@ group by 1,2,3) as ecomm
 
 on ecomm.banner = lp.utm_source and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
 
-where lp.utm_campaign REGEXP '%s'
+where lp.utm_campaign REGEXP '%s' and views > 10
 group by 1,2
--- having impressions > 100000 and donations > 10
 order by 1 asc;

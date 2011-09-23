@@ -83,6 +83,6 @@ group by 1,2,3,4) as ecomm
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
 
-where lp.utm_campaign REGEXP '%s'
+where lp.utm_campaign REGEXP '%s' and views > 10
 group by 1,2
 order by 1 asc;

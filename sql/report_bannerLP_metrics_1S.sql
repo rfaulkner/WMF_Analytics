@@ -73,6 +73,6 @@ group by 1,2) as ecomm
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
 
-where lp.utm_campaign REGEXP '%s'
+where lp.utm_campaign REGEXP '%s' and views > 1000
 group by 1
 order by 1 desc;

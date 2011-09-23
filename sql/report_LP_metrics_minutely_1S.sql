@@ -59,7 +59,7 @@ group by 1,2,3) as lp_tot
 
 on imp.utm_source = lp_tot.utm_source and imp.dt_hr = lp_tot.dt_hr and imp.dt_min = lp_tot.dt_min
 
-left join
+right join
 
 (select 
 DATE_FORMAT(receive_date,'%sY%sm%sd%sH') as hr,
@@ -77,11 +77,6 @@ group by 1,2,3) as ecomm
 
 on ecomm.landing_page  = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
 
-where lp.utm_campaign REGEXP '%s'
+where lp.utm_campaign REGEXP '%s' and views > 10
 group by 1,2
 order by 1 asc;
-
-
-
-
-
