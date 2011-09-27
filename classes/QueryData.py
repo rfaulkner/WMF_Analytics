@@ -39,77 +39,77 @@ import datetime, re
 
 def format_query(query_name, sql_stmnt, args):
     
-    if query_name == 'report_campaign_ecomm':
+    if cmp(query_name, 'report_campaign_ecomm') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % (start_time)
 
-    elif query_name == 'report_campaign_logs':
+    elif cmp(query_name, 'report_campaign_logs') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % (start_time, start_time, start_time)
 
-    elif query_name == 'report_campaign_ecomm_by_hr':
+    elif cmp(query_name, 'report_campaign_ecomm_by_hr') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time)
 
-    elif query_name == 'report_campaign_logs_by_hr':
+    elif cmp(query_name, 'report_campaign_logs_by_hr') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time, '%', '%', '%', '%', \
         start_time, '%', '%', '%', '%', start_time, '%')
 
-    elif query_name == 'report_impressions_country':
+    elif cmp(query_name, 'report_impressions_country') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', start_time)
 
-    elif query_name == 'report_campaign_logs_by_min':
+    elif cmp(query_name, 'report_campaign_logs_by_min') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time, '%', '%', '%', '%', \
         start_time, '%', '%', '%', '%', start_time)
     
-    elif query_name == 'report_non_US_clicks':
+    elif cmp(query_name, 'report_non_US_clicks') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', start_time, '%', '%', '%', start_time)
     
-    elif query_name == 'report_contribution_tracking':
+    elif cmp(query_name, 'report_contribution_tracking') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', '%',start_time)
     
-    elif query_name == 'report_total_amounts_by_hr':
+    elif cmp(query_name, 'report_total_amounts_by_hr') == 0:
         start_time = args[0]
         end_time = args[1]            
         sql_stmnt = sql_stmnt % ('%', '%', '%', ' %H', start_time, end_time)
     
-    elif query_name == 'report_total_amounts_by_day':
+    elif cmp(query_name, 'report_total_amounts_by_day') == 0:
         start_time = args[0]
         end_time = args[1]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '', start_time, end_time)
     
-    elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics' or \
-    query_name == 'report_banner_metrics_' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics':
+    elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
+    cmp(query_name, 'report_banner_metrics_') == 0 or cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0:
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, campaign)
     
-    elif query_name == 'report_latest_campaign':
+    elif cmp(query_name, 'report_latest_campaign') == 0:
         start_time = args[0]
         sql_stmnt = sql_stmnt % (start_time)
             
-    elif query_name == 'report_banner_impressions_by_hour':
+    elif cmp(query_name, 'report_banner_impressions_by_hour') == 0:
         start = args[0]
         end = args[1]
         sql_stmnt = sql_stmnt % ('%','%','%','%', start, end)
                 
-    elif query_name == 'report_ecomm_by_amount':
+    elif cmp(query_name, 'report_ecomm_by_amount') == 0:
         start_time = args[0]
         end_time = args[1]
         sql_stmnt = sql_stmnt % ('%', '%',  '%',  '%', start_time, end_time, end_time)
     
-    elif query_name == 'report_ecomm_by_contact':
+    elif cmp(query_name, 'report_ecomm_by_contact') == 0:
         where_str = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', where_str)
     
-    elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_LP_metrics_minutely' or \
-    query_name == 'report_banner_metrics_minutely_1S' or query_name == 'report_bannerLP_metrics_minutely_1S' or query_name == 'report_LP_metrics_minutely_1S':
+    elif cmp(query_name, 'report_banner_metrics_minutely') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely') == 0 or cmp(query_name, 'report_LP_metrics_minutely') == 0 or \
+    cmp(query_name, 'report_banner_metrics_minutely_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely_1S') == 0 or cmp(query_name, 'report_LP_metrics_minutely_1S') == 0:
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -123,7 +123,7 @@ def format_query(query_name, sql_stmnt, args):
         sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
                                 '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
     
-    elif re.search('report_campaign_metrics_minutely', query_name):
+    elif cmp(query_name, 'report_campaign_metrics_minutely') == 0:
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -131,7 +131,7 @@ def format_query(query_name, sql_stmnt, args):
         
         sql_stmnt = sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign)
     
-    elif query_name == 'report_campaign_metrics_minutely_total':
+    elif cmp(query_name, 'report_campaign_metrics_minutely_total') == 0:
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -139,34 +139,34 @@ def format_query(query_name, sql_stmnt, args):
         
         sql_stmnt = sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign)
     
-    elif query_name == 'report_campaign_totals':
+    elif cmp(query_name, 'report_campaign_totals') == 0:
         start_time = args[0]
         end_time = args[1]
         
         sql_stmnt = sql_stmnt % (start_time, end_time)
     
-    elif query_name == 'report_campaign_banners':
+    elif cmp(query_name, 'report_campaign_banners') == 0:
         start_time = args[0]
         end_time = args[1]
         utm_campaign = args[2]
         
         sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
         
-    elif query_name == 'report_campaign_lps':
-        start_time = args[0]
-        end_time = args[1]
-        utm_campaign = args[2]
-        
-        sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
-    
-    elif query_name == 'report_campaign_bannerlps':
+    elif cmp(query_name, 'report_campaign_lps') == 0:
         start_time = args[0]
         end_time = args[1]
         utm_campaign = args[2]
         
         sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
     
-    elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
+    elif cmp(query_name, 'report_campaign_bannerlps') == 0:
+        start_time = args[0]
+        end_time = args[1]
+        utm_campaign = args[2]
+        
+        sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
+    
+    elif cmp(query_name, 'report_campaign_metrics_minutely_all') == 0 or cmp(query_name, 'report_banner_metrics_minutely_all') == 0 or cmp(query_name, 'report_lp_metrics_minutely_all') == 0:
         start_time = args[0]
         end_time = args[1]
         interval = args[3]
