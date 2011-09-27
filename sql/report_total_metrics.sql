@@ -35,9 +35,9 @@ landing_page,
 count(*) as views,
 utm_campaign
 from landing_page_requests
-where request_time >=  '%s' and request_time < '%s'
-and utm_campaign REGEXP '%s'
-group by 1,2) as lp
+where request_time >= '%s' and request_time < '%s' and utm_campaign REGEXP '%s'
+group by 1,2
+having count(*) > 1000) as lp
 
 on imp.utm_source =  lp.utm_source
 

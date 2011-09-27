@@ -36,7 +36,8 @@ count(*) as views,
 utm_campaign
 from drupal.contribution_tracking  
 where ts >= '%s' and ts < '%s' and utm_campaign = '%s'
-group by 1,2) as lp
+group by 1,2
+having count(*) > 1000) as lp
 
 on imp.utm_source =  lp.utm_source
 

@@ -375,11 +375,37 @@ class SummaryReportingLoader(DataLoader):
             results_2 = self.execute_SQL(sql_stmnt)
             
             """ Combine the results from one and two step donation flows """
-             
-            results_1 = list(results_1)
-            results_1.extend(list(results_2))
+            aggregate_amounts = [[]]
+            if cmp('report_total_metrics', self._query_name_) == 0:
+                
+                col_types = QD.get_columnn_types('report_total_metrics')
+                col_names = self.get_column_names()
+                                
+                for index in range(len(col_types)):
+                    
+                    col_type = col_types[index]
+                    col_name = col_names[index]
+                    
+                    if cmp(col_type, FDH._COLTYPE_KEY_) == 0:
+                        elem = results_1[0][index]
+                        
+                    elif cmp(col_type, FDH._COLTYPE_AMOUNT_) == 0:
+                        elem = float(results_1[0][index]) + float(results_2[0][index])
+                        
+                    elif cmp(col_type, FDH._COLTYPE_RATE_) == 0:
+                        elem = (float(results_1[0][index]) + float(results_2[0][index])) / 2
+                        
+                    elem = QD.get_metric_data_type(col_name, elem)
+                    aggregate_amounts[0].append(elem)
+                    
+                self._results_ = aggregate_amounts
+                    
+            else:
+                
+                results_1 = list(results_1)
+                results_1.extend(list(results_2))
             
-            self._results_ = results_1
+                self._results_ = results_1
             
         else:
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
@@ -783,7 +809,7 @@ class CampaignReportingLoader(DataLoader):
         filename = projSet.__sql_home__+ query_name + '.sql'
         sql_stmnt = Hlp.read_sql(filename)        
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, utm_campaign])
-        print sql_stmnt
+        
         """ Get Indexes into Query """
         key_index = QD.get_key_index(query_name)     
         
@@ -795,7 +821,7 @@ class CampaignReportingLoader(DataLoader):
             self._cur_.execute(sql_stmnt)
             
             results = self._cur_.fetchall()
-            print results
+            
             for row in results:
                 if isinstance(key_index, list):
                     artifact = ''

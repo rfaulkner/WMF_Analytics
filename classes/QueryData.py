@@ -34,6 +34,7 @@ __revision__ = "$Rev$"
 __date__ = "November 28th, 2010"
 
 import classes.TimestampProcessor as TP
+import classes.FundraiserDataHandler as FDH
 import datetime, re
 
 def format_query(query_name, sql_stmnt, args):
@@ -480,7 +481,7 @@ def get_metric_full_name(metric_name):
 
 def get_metric_data_type(metric_name, elem):
     
-    if metric_name == 'ts' or metric_name == 'day_hr' or metric_name == 'utm_campaign' or metric_name == 'utm_source' or metric_name == 'landing_page':
+    if metric_name == 'ts' or metric_name == 'day_hr' or metric_name == 'utm_campaign' or metric_name == 'campaign' or metric_name == 'utm_source' or metric_name == 'landing_page':
         return elem
     elif metric_name == 'imp' or metric_name == 'impressions' or metric_name == 'views' or metric_name == 'donations' or metric_name ==  'clicks' or metric_name == 'total_clicks':
         return str(int(elem))
@@ -490,4 +491,18 @@ def get_metric_data_type(metric_name, elem):
         return "%.2f" % elem
     else:
         return'no such metric'
+
+
+"""
+    Given a qury return the types of each column for aggregation
     
+    @param query: string query name
+    
+    @return: list of column types for aggregation 
+"""
+def get_columnn_types(query):
+    
+    if cmp(query, 'report_total_metrics') == 0:
+                
+        return [FDH._COLTYPE_KEY_, FDH._COLTYPE_AMOUNT_, FDH._COLTYPE_AMOUNT_, FDH._COLTYPE_AMOUNT_, FDH._COLTYPE_AMOUNT_, FDH._COLTYPE_AMOUNT_, FDH._COLTYPE_RATE_, \
+                FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_, FDH._COLTYPE_RATE_]
