@@ -30,7 +30,7 @@ from
 drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >=  '%s' and receive_date < '%s' and utm_campaign REGEXP '%s'
+where receive_date >=  '%s' and receive_date < '%s' and utm_campaign = '%s'
 group by 1,2) as ecomm
 
 on ecomm.hr = lp_tot.dt_hr and ecomm.dt_min = lp_tot.dt_min

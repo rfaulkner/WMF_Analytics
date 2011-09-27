@@ -18,7 +18,7 @@ utm_source as banner,
 landing_page,
 count(*) as views
 from landing_page_requests
-where request_time >=  '%s' and request_time < '%s' and utm_campaign REGEXP '%s'
+where request_time >=  '%s' and request_time < '%s' and utm_campaign = '%s'
 group by 1,2,3,4) as lp
 
 left join
