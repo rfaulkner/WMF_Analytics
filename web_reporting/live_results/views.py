@@ -57,7 +57,7 @@ def index(request):
         ===================
     """
     
-    sql_stmnt = Hlp.read_sql(projSet.__sql_home__ + 'report_live_results.sql')
+    sql_stmnt = Hlp.read_sql(projSet.__sql_home__ + 'report_summary_results.sql')
     sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time)
     dl = DL.DataLoader()
     
@@ -99,7 +99,7 @@ def index(request):
     """ Extract data from interval reporting objects """        
     cmpgn_data_dict = get_data_lists(ir_cmpgn, ['C_', 'C11_'], empty_data)
     cmpgn_banner_dict = get_data_lists(ir_banner, ['B_', 'B11_'], empty_data)
-    cmpgn_lp_dict = get_data_lists(ir_lp, ['L11_'], empty_data)
+    cmpgn_lp_dict = get_data_lists(ir_lp, ['L11_', '^cc'], empty_data)
          
     """ combine the separate data sets """
     dict_param = combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict])
