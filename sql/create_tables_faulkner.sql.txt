@@ -1,0 +1,95 @@
+--
+-- Ryan Faulkner, Wikimedia Foundation - October 2010
+--
+-- This is meant to serve as a store for queries that will recreate the Fundraiser Database
+-- 
+
+use faulkner;
+
+drop table if exists impression;
+drop table if exists landing_page;
+drop table if exists ip_country;
+
+-- drop table if exists treatment;
+
+
+create table impression (
+	-- id int(10) unsigned NOT NULL auto_increment,
+	run_id int(10) unsigned default NULL,
+	utm_source varchar(128) default NULL,
+	referrer varchar(128) default NULL,
+	country varchar(128) default NULL,
+	counts int(10) unsigned default NULL,
+	on_minute timestamp,
+	-- primary key (id),
+	constraint imp_run_fk foreign key (run_id) references log_run (id) on delete cascade
+);
+
+create table landing_page (
+	id int(10) unsigned NOT NULL auto_increment,
+	-- run_id int(10) unsigned default NULL,
+	utm_source varchar(128) default NULL,
+	utm_campaign varchar(128) default NULL,
+	utm_medium varchar(128) default NULL,
+	landing_page varchar(128) default NULL,
+	page_url varchar(1000) default NULL,
+	referrer_url varchar(1000) default NULL,
+	browser varchar(50) default NULL,
+	lang varchar(20) default NULL, -- CHARACTER(2) NULL,
+	country varchar(20) default NULL, -- CHARACTER(2) NULL,
+	project varchar(128) default NULL,
+	ip varchar(20) default NULL,
+	request_time timestamp,
+	primary key (id)
+	-- constraint lp_tr_fk foreign key (test_run_id) references test_run (id) on delete cascade
+);
+
+
+create table ip_country (
+
+	ip_from varchar(50) default NULL,
+	ip_to varchar(50) default NULL,
+	registry varchar(50) default NULL,
+	assigned varchar(50) default NULL,
+	country_ISO_1 varchar(50) default NULL,
+	country_ISO_2 varchar(50) default NULL,
+	country_name varchar(50) default NULL,
+	primary key (ip_from)
+);
+
+create table donor_brackets (
+
+	bracket_name varchar(20) default NULL,
+	min_val int(10) default NULL,
+	max_val int(10) default NULL
+);
+
+
+insert into donor_brackets values 
+('00. < $1', 0, 1), 
+('01. $1 - $5', 1, 5), 
+('02. $5 - $10', 5, 10), 
+('03. $10 - $15', 10, 15), 
+('04. $15 - $20', 15, 20), 
+('05. $20 - $25', 20, 25), 
+('06. $25 - $30', 25, 30), 
+('07. $30 - $35', 30, 35), 
+('08. $35 - $40', 35, 40), 
+('09. $40 - $45', 40, 45), 
+('10. $45 - $50', 45, 50), 
+('11. > $50', 50, 100000);
+
+insert into donor_brackets values 
+('00. < $1', 0, 1), 
+('01. $1 - $4', 1, 5), 
+('02. $5 - $9', 5, 10), 
+('03. $10 - $14', 10, 15), 
+('04. $15 - $19', 15, 20), 
+('05. $20 - $24', 20, 25),
+('06. $25 - $34', 25,35),
+('07. $35 - $49', 25, 50), 
+('08. $50 - $99', 50, 100), 
+('09. $100 - $249', 100, 250), 
+('10. $250 - $499', 250, 500), 
+('11. $500 - $999', 500, 1000), 
+('12. > $1000', 1000, 100000);
