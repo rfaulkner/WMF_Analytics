@@ -2547,10 +2547,14 @@ class TrafficSamplesTableLoader(TableLoader):
         
         val = ''
         for i in range(num_rows):
+            
+            page_ids[i] = MySQLdb._mysql.escape_string(str(page_ids[i]))
+            page_titles[i] = MySQLdb._mysql.escape_string(str(page_titles[i])) 
+            request_times[i] = MySQLdb._mysql.escape_string(str(request_times[i]))
+            
             val = val + '(' + page_ids[i].__str__() + ',"' + page_titles[i] + '",' + 'convert(' + request_times[i] + ', datetime)' + '), '
         val = val[:-2]
          
-        val = MySQLdb._mysql.escape_string(val)
         insert_stmnt = insert_stmnt % val
         
         return self.execute_SQL(insert_stmnt)
