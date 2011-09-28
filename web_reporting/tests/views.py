@@ -162,13 +162,12 @@ def test(request):
         utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
         start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'])
         end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'])
-        test_type_override = request.POST['test_type_override']
+        test_type_override = MySQLdb._mysql.escape_string(request.POST['test_type_override'])
         
         try: 
-            test_type_var = request.POST['test_type']
-            labels = request.POST['artifacts']
-            
-                
+            test_type_var = MySQLdb._mysql.escape_string(request.POST['test_type'])
+            labels = MySQLdb._mysql.escape_string(request.POST['artifacts'])
+                            
         except KeyError:
 
             test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type           
@@ -177,8 +176,8 @@ def test(request):
         label_dict = dict()
         label_dict_full = dict()
         
-        labels = labels[1:-1].split(',')
-            
+        labels = labels[1:-1].split(',')        
+                                         
         for i in range(len(labels)):
             label = labels[i].split('\'')[1]
             label = label.strip()            
@@ -196,7 +195,8 @@ def test(request):
             artifacts_chosen =  request.POST.getlist('artifacts_chosen')
             
             for elem in artifacts_chosen:
-                label_dict[elem] = elem
+                esc_elem = MySQLdb._mysql.escape_string(str(elem))
+                label_dict[esc_elem] = esc_elem
         else:
             label_dict = label_dict_full
             
@@ -243,7 +243,7 @@ def test(request):
     for key in label_dict.keys():
         try:
             if not(request.POST[key] == ''):
-                label_dict[key] = request.POST[key]
+                label_dict[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
             else:
                 label_dict[key] = key
         except:
@@ -252,7 +252,7 @@ def test(request):
     for key in label_dict_full.keys():
         try:
             if not(request.POST[key] == ''):
-                label_dict_full[key] = request.POST[key]
+                label_dict_full[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
             else:
                 label_dict_full[key] = key
         except:
