@@ -1918,7 +1918,7 @@ class LandingPageTableLoader(TableLoader):
                 ref_title = ref_url.split('wikipedia.org/wiki/')[1]
                 # referrers.append(ref_title)
                 
-                page_title_str = page_title_str + 'page_title = \'%s\' or ' % ref_title
+                page_title_str = page_title_str + 'page_title = \'%s\' or ' % MySQLdb._mysql.escape_string(ref_title)
                 
         if len(page_title_str) > 2:
             page_title_str = page_title_str[:-4] + ') '
@@ -1929,7 +1929,6 @@ class LandingPageTableLoader(TableLoader):
         #self.establish_enwiki_conn()
         
         """ Get the page ids for the referrers """
-        page_title_str = MySQLdb._mysql.escape_string(page_title_str)
         results = self.execute_SQL(select_stmt_page_ids % page_title_str)
         
         for row in results:
