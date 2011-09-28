@@ -123,15 +123,8 @@ def format_query(query_name, sql_stmnt, args):
         sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
                                 '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
     
-    elif cmp(query_name, 'report_campaign_metrics_minutely') == 0:
-        start_time = args[0]
-        end_time = args[1]
-        campaign = args[2]
-        interval = args[3]
-        
-        sql_stmnt = sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign)
-    
-    elif cmp(query_name, 'report_campaign_metrics_minutely_total') == 0:
+    elif cmp(query_name, 'report_campaign_metrics_minutely') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_1S') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_total') == 0 \
+    or cmp(query_name, 'report_campaign_metrics_minutely_total_1S') == 0:
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
