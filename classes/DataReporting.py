@@ -35,7 +35,6 @@ import sys, pylab, math, logging, matplotlib.pyplot as plt
 
 """ Import Analytics modules """
 import classes.QueryData as QD
-import classes.Helper as Hlp
 import classes.TimestampProcessor as TP
 import classes.DataLoader as DL
 import classes.HypothesisTest as HT
