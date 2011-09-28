@@ -27,7 +27,7 @@ class DataFilter(object):
     """
     def __init__(self, **kwargs):
         
-        logging.info('Creating filter ' + self.__str__())
+        # logging.info('Creating filter ' + self.__str__())
         
         """ The mutable object will contain the data structures on which the filter will operate """
         for key in kwargs:    
