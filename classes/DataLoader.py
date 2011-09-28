@@ -2179,7 +2179,8 @@ class MiningPatternsTableLoader(TableLoader):
                 lp_patterns.append(self.get_mining_pattern_field(row, 'pattern'))
                 
         return banner_patterns, lp_patterns
-    
+
+
 
 """
 
