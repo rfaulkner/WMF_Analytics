@@ -245,8 +245,11 @@ def show_report(request, utm_campaign):
     
     row = ttl.get_test_row(utm_campaign)
     
-    html = row[7]
-
+    try:
+        html = row[7]
+    except:
+        html = '<br><br><center><p><b>Was unable to retrieve report</b></p><br><br><a href="/">Home</a></center>'
+        
     return HttpResponse(html)
 
     
