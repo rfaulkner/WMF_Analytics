@@ -54,12 +54,12 @@ def file_to_string(filename):
     file_str = ''
     line = file.readline()
     while (line != ''):
-        sql_stmnt = file_str +  ' ' + line
+        file_str = file_str +  ' ' + line
         line = file.readline()
     
     file.close()
     
-    return sql_stmnt
+    return file_str
 
     
 """
