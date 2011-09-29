@@ -55,7 +55,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 class DataLoader(object):
 
-    ONE_STEP_PATTERN = 'B_'
+    ONE_STEP_PATTERN = '_1S'
     BANNER_PATTERN = 'B_'
     
     """
@@ -361,14 +361,14 @@ class SummaryReportingLoader(DataLoader):
         if self.get_one_step_banners(start_time, end_time, campaign):
             
             filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
-            sql_stmnt = Hlp.read_sql(filename)
+            sql_stmnt = Hlp.file_to_string(filename)
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
         
             logging.info('Using query: ' + self._query_name_)
             results_1 = self.execute_SQL(sql_stmnt)
             
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
-            sql_stmnt = Hlp.read_sql(filename)
+            sql_stmnt = Hlp.file_to_string(filename)
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
 
             logging.info('Using query: ' + self._query_name_)
@@ -409,7 +409,7 @@ class SummaryReportingLoader(DataLoader):
             
         else:
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
-            sql_stmnt = Hlp.read_sql(filename )
+            sql_stmnt = Hlp.file_to_string(filename )
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
         
             logging.info('Using query: ' + self._query_name_)
@@ -532,7 +532,7 @@ class IntervalReportingLoader(DataLoader):
 
             """ Load the SQL File & Format """
             filename = projSet.__sql_home__+ query_name + '.sql'
-            sql_stmnt = Hlp.read_sql(filename)
+            sql_stmnt = Hlp.file_to_string(filename)
             
             sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, campaign, interval])
             
@@ -753,7 +753,7 @@ class CampaignReportingLoader(DataLoader):
         
         """ Load the SQL File & Format """
         filename = projSet.__sql_home__+ query_name + '.sql'
-        sql_stmnt = Hlp.read_sql(filename)
+        sql_stmnt = Hlp.file_to_string(filename)
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time])
         
         """ Get Indexes into Query """
@@ -807,7 +807,7 @@ class CampaignReportingLoader(DataLoader):
         
         """ Load the SQL File & Format """
         filename = projSet.__sql_home__+ query_name + '.sql'
-        sql_stmnt = Hlp.read_sql(filename)        
+        sql_stmnt = Hlp.file_to_string(filename)        
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, utm_campaign])
         
         """ Get Indexes into Query """
@@ -854,7 +854,7 @@ class CampaignReportingLoader(DataLoader):
     def query_live_landing_pages(self, start_time, end_time):
         
         filename = projSet.__sql_home__+ 'report_lp_running.sql'
-        sql_stmnt = Hlp.read_sql(filename)
+        sql_stmnt = Hlp.file_to_string(filename)
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time)
         
         logging.info('Using query:  report_lp_running -> get live landing pages')
@@ -914,7 +914,7 @@ class DonorBracketsReportingLoader(DataLoader):
         
         """ Load the SQL File & Format """
         filename = projSet.__sql_home__ + query_name + '.sql'
-        sql_stmnt = Hlp.read_sql(filename)
+        sql_stmnt = Hlp.file_to_string(filename)
 
         """ Place comments in the query string to"""
         if self._query_type_ == FDH._QTYPE_CAMPAIGN_:

@@ -57,7 +57,7 @@ def index(request):
         ===================
     """
     
-    sql_stmnt = Hlp.read_sql(projSet.__sql_home__ + 'report_summary_results.sql')
+    sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results.sql')
     sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time)
     dl = DL.DataLoader()
     
