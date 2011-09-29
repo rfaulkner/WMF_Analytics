@@ -30,7 +30,7 @@ __date__ = "December 16th, 2010"
 """ Import python base modules """
 import matplotlib
 matplotlib.use('Agg') # disable plotting in the backend
-import sys, pylab, math, logging, matplotlib.pyplot as plt
+import sys, pylab, math, logging, matplotlib.pyplot as plt, re
 
 
 """ Import Analytics modules """
@@ -567,6 +567,69 @@ class IntervalReporting(DataReporting):
 
     
     
+    """
+
+    Helper method that formats Reporting data (for consumption by javascript in live_results/index.html)
+    
+        @param ir: Interval Reporting object
+        @param pattern: A set of regexp patterns on which data keys are matched to filter
+        @param empty_data: A set of empty data to be used in case there is no usable data from the reporting object 
+        
+        @return: dictionary storing data for javascript processing
+    
+    """
+    def get_data_lists(self, patterns, empty_data):
+        
+        """ Get metrics """
+        data = list()
+        labels = '!'
+        counts = list()
+        max_data = 0
+        
+        """ Find the key with the highest count """
+        max = 0
+        for key in self._counts_.keys():
+            val = sum(self._counts_[key])
+            if val > max:
+                max = val
+        
+        """ Only add keys with enough counts """
+        data_index = 0
+        for key in self._counts_.keys():
+            
+            isFormed = False
+            for pattern in patterns:
+                if key == None:
+                    isFormed = isFormed or re.search(pattern, '')
+                else:
+                    isFormed = isFormed or re.search(pattern, key)
+                    
+            if sum(self._counts_[key]) > 0.01 * max and isFormed:
+                
+                data.append(list())
+                
+                if key == None or key == '':
+                    labels = labels + 'empty?'
+                else:
+                    labels = labels + key + '?'
+                
+                counts.append(len(self._counts_[key]))  
+                
+                for i in range(counts[data_index]):
+                    data[data_index].append([self._times_[key][i], self._counts_[key][i]])
+                    if self._counts_[key][i] > max_data:
+                        max_data = self._counts_[key][i]
+                        
+                data_index = data_index + 1
+            
+        labels = labels + '!'
+        
+        """ Use the default empty data if there is none """
+        if not data:
+            return {'num_elems' : 1, 'counts' : [len(empty_data)], 'labels' : '!no_data?!', 'data' : empty_data, 'max_data' : 0.0}
+        else:
+            return {'num_elems' : data_index, 'counts' : counts, 'labels' : labels, 'data' : data, 'max_data' : max_data}
+        
     
 """
 

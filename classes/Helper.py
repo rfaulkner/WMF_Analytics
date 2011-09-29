@@ -13,8 +13,14 @@ __revision__ = "$Rev$"
 __date__ = "May 3rd, 2011"
 
 
-import math
+import math, logging, sys
 import calendar as cal
+
+import config.settings as projSet
+
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
 
 def precede_with_backslash(string, char):
@@ -147,3 +153,33 @@ def convert_list_dict(collection):
 
     return new_collection
     
+    
+
+"""
+
+    Helper method that combines dictionaries for consumption by javascript in live_results/index.html
+    
+    @param dict_list: A list of dictionaries with identical keys 
+    
+    @return: a dict where the elements of each key for of the input is combined into a list of elements
+    
+"""
+def combine_data_lists(dict_list):
+    
+    try:
+        template_keys = dict_list[0].keys()
+        num_elems = len(dict_list)
+    except:
+        logging.error(projSet.__web_home__ + '/live_results/views.py: No template data found.')
+        return -1
+
+    combined_dict = dict()
+    
+    for key in template_keys:
+        key_list = list()
+        for i in range(num_elems):
+            key_list.append(dict_list[i][key])
+        combined_dict[key] = key_list
+        
+    return combined_dict
+
