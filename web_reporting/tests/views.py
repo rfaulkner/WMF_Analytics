@@ -166,7 +166,7 @@ def test(request):
         
         try: 
             test_type_var = MySQLdb._mysql.escape_string(request.POST['test_type'])
-            labels = MySQLdb._mysql.escape_string(request.POST['artifacts'])
+            labels = request.POST['artifacts']
                             
         except KeyError:
 
@@ -177,14 +177,19 @@ def test(request):
         label_dict_full = dict()
         
         labels = labels[1:-1].split(',')        
-                                         
+                                    
+        """ Parse the labels """     
         for i in range(len(labels)):
+            labels[i] = labels[i]
             label = labels[i].split('\'')[1]
             label = label.strip()            
             pieces = label.split(' ')
             label = pieces[0]
             for j in range(len(pieces) - 1):
                 label = label + '_' + pieces[j+1]
+            
+            """ Escape the label parameters """
+            label = MySQLdb._mysql.escape_string(label)
             label_dict_full[label] = label
                 
         """ Look at the artifact names and map them into a dict() 
@@ -241,8 +246,10 @@ def test(request):
     
     """ Finally parse the POST QueryDict for user inserted labels """
     for key in label_dict.keys():
+        print key
         try:
             if not(request.POST[key] == ''):
+                
                 label_dict[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
             else:
                 label_dict[key] = key
