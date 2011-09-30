@@ -443,10 +443,7 @@ class FundraiserDataMapper(DataMapper):
     
         counts = Hlp.AutoVivification()
         # insertStmt = 'INSERT INTO ' + self._impression_table_name_ + self._BANNER_FIELDS_ + ' values '
-    
-        min_log = -1
-        hr_change = 0
-        clamp = 0
+
         
         """ Clear the old records """
         self._clear_squid_records(start, self._BANNER_REQUEST_)
@@ -485,22 +482,15 @@ class FundraiserDataMapper(DataMapper):
                 time_stamp = lineArgs[2]
                 time_bits = time_stamp.split('T')
                 date_fields = time_bits[0].split('-')
-                time_fields = time_bits[1].split(':')
-                minute = int(time_fields[1])
+                time_fields = time_bits[1].split(':')                
+                time_stamp = date_fields[0] + date_fields[1] + date_fields[2] + time_fields[0] + time_fields[1]
+                
             except (ValueError, IndexError):
                 line = logFile.readline()
                 total_lines_in_file = total_lines_in_file - 1
                 continue
                 # pass
-            
-            """ Logic used to deal with logs that aren't sequential """
-    
-            if minute == 0 and not(hr_change) and not(clamp):
-                min_log = -1
-    
-            if minute == 1:
-                hr_change = 0
-                clamp = 1
+ 
     
             """ 
                 Parse the URL:
@@ -547,50 +537,10 @@ class FundraiserDataMapper(DataMapper):
     
             """ Group banner impression counts based on (banner, country, project, language) """
             try:
-                counts[banner][country][project][lang] = counts[banner][country][project][lang] + 1                
+                counts[banner][country][project][lang][time_stamp] = counts[banner][country][project][lang][time_stamp] + 1                
             except TypeError:
-                counts[banner][country][project][lang] = 1
+                counts[banner][country][project][lang][time_stamp] = 1
 
-            """ 
-                Break out impression data by minute.  This conditional detects when a request with a previously unseen minute in the timestamp appears.
-                
-            """
-            if min_log < minute and not(hr_change):
-                
-                if minute == 0:
-                    hr_change = 1
-    
-                min_log = minute
-                time_stamp_in = "convert(\'" + date_fields[0] + date_fields[1] + date_fields[2] + time_fields[0] + time_fields[1]  + "00\', datetime)"
-
-    
-                """ Run through the counts dictionary and insert a row into the banner impressions table for each entry """
-    
-                bannerKeys = counts.keys()
-                for banner_ind in range(len(bannerKeys)):
-                    banner = bannerKeys[banner_ind]
-                    countryCounts = counts[banner]
-                    countryKeys = countryCounts.keys()
-    
-                    for country_ind in range(len(countryKeys)):
-                        country = countryKeys[country_ind]
-                        projectCounts = countryCounts[country]
-                        projectKeys = projectCounts.keys()
-    
-                        for project_ind in range(len(projectKeys)):
-                            project = projectKeys[project_ind]
-                            langCounts = projectCounts[project]
-                            langKeys = langCounts.keys()
-    
-                            for lang_ind in range(len(langKeys)):
-                                lang = langKeys[lang_ind]
-                                count = langCounts[lang]
-                                
-                                itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=time_stamp_in, start_timestamp_arg=start_timestamp_in)
-
-    
-                # Re-initialize counts
-                counts = Hlp.AutoVivification()
 
             line = logFile.readline()
             line_count = line_count + 1
@@ -600,8 +550,44 @@ class FundraiserDataMapper(DataMapper):
                 completion = float(line_count / total_lines_in_file) * 100.0
                 sltl.update_table_row(type='banner_impression',log_copy_time=curr_time,start_time=start,end_time=end,log_completion_pct=completion.__str__(),total_rows=line_count.__str__())
 
-        
+        """ ====== FILE COMPLETE ====== """
         logFile.close()
+        
+        """ 
+            Break out impression data by minute.  This conditional detects when a request with a previously unseen minute in the timestamp appears.
+         
+            Run through the counts dictionary and insert a row into the banner impressions table for each entry 
+        """
+    
+        bannerKeys = counts.keys()
+        for banner_ind in range(len(bannerKeys)):
+            banner = bannerKeys[banner_ind]
+            countryCounts = counts[banner]
+            countryKeys = countryCounts.keys()
+    
+            for country_ind in range(len(countryKeys)):
+                country = countryKeys[country_ind]
+                projectCounts = countryCounts[country]
+                projectKeys = projectCounts.keys()
+    
+                for project_ind in range(len(projectKeys)):
+                    project = projectKeys[project_ind]
+                    langCounts = projectCounts[project]
+                    langKeys = langCounts.keys()
+    
+                    for lang_ind in range(len(langKeys)):
+                        lang = langKeys[lang_ind]
+                        timestampCounts = langCounts[lang]
+                        timestampKeys = timestampCounts.keys()
+                        
+                        for timestamp_ind in range(len(timestampKeys)):
+                            timestamp = timestampKeys[timestamp_ind]
+                            count = timestampCounts[timestamp]
+                        
+                            time_stamp_in = "convert(\'" + timestamp + "00\', datetime)"
+                            itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=time_stamp_in, start_timestamp_arg=start_timestamp_in)
+                            
+        
 
 
 
