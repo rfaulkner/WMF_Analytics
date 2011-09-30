@@ -1815,7 +1815,8 @@ class LandingPageTableLoader(TableLoader):
         country = 'NULL'
         project = 'NULL'
         ip = 'NULL'
-        
+        start_timestamp = 'NULL' 
+        timestamp = 'NULL'
         
         for key in kwargs_dict:
             if key == 'utm_source_arg':   
@@ -1892,8 +1893,9 @@ class LandingPageTableLoader(TableLoader):
         start_timestamp = params[0]
         campaign = params[3]
         
-        select_stmnt = "select referrer_url from landing_page_requests where start_timestamp = '%s' and utm_campaign = '%s';" % (start_timestamp, campaign)
+        select_stmnt = "select referrer_url from landing_page_requests where start_timestamp = %s and utm_campaign = %s;" % (start_timestamp, campaign)
         referrer_urls = list()
+        
         results = self.execute_SQL(select_stmnt)
         
         for row in results:
@@ -1918,7 +1920,7 @@ class LandingPageTableLoader(TableLoader):
                 ref_title = ref_url.split('wikipedia.org/wiki/')[1]
                 # referrers.append(ref_title)
                 
-                page_title_str = page_title_str + 'page_title = \'%s\' or ' % MySQLdb._mysql.escape_string(ref_title)
+                page_title_str = page_title_str + 'page_title = %s or ' % Hlp.stringify(MySQLdb._mysql.escape_string(ref_title))
                 
         if len(page_title_str) > 2:
             page_title_str = page_title_str[:-4] + ') '

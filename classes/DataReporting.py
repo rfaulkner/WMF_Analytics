@@ -981,7 +981,7 @@ class DonorBracketReporting(DataReporting):
         """ Generate a histogram for each artifact """
         subplot_index = 111
 
-        colours = ['r', 'b', 'y', 'g']
+        colours = ['r', 'b', 'y', 'g', 'c', 'm', 'k']
         iter_colours = iter(colours)
         indices = range(len(bracket_names))
         

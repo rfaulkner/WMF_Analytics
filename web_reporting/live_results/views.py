@@ -27,7 +27,7 @@ from django.template import RequestContext
 
 
 """ Import python base modules """
-import sys, datetime, re
+import datetime
 
 """ Import Analytics modules """
 import classes.Helper as Hlp
