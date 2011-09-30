@@ -115,16 +115,18 @@ class DataMapper(object):
             filename_key = filename  + '--' + minute    
             
             if not(self.log_exists(filename_key)):           
+
+                filematch = re.match(r"([0-9a-zA-Z_.-]+)", filename_key)
+                if filematch:
+                    fname_arg = filematch.group(0) + '*'
+
+                    logging.info(cmd % fname_arg)
+                    os.system(cmd % fname_arg)
                 
-                fname_arg = filename_key + '*'
-                
-                logging.info(cmd % fname_arg) 
-                os.system(cmd % fname_arg)
-                
-                """ Ensure the file exists based on the key and append to the list if so """
-                full_filename = self.get_full_filename(filename_key)
-                if full_filename != '':
-                    copied_logs.append(full_filename)
+                    """ Ensure the file exists based on the key and append to the list if so """
+                    full_filename = self.get_full_filename(filename_key)
+                    if full_filename != '':
+                        copied_logs.append(full_filename)
             else:
                 logging.info('File: %s has already been loaded.' % filename)
                 
