@@ -113,13 +113,16 @@ class LogFileHandler(object):
             self._log_file_.close()
         except:
             pass
-                        
-        if (re.search('\.gz', filename)):
-            self._log_file_ = gzip.open(self._log_dir_ + filename, 'r')
-            self._total_lines_in_file_ = float(commands.getstatusoutput('zgrep -c "" ' + self._log_dir_ + filename)[1])
-        else:
-            self._log_file_ = open(self._log_dir_ + filename, 'r')
-            self._total_lines_in_file_ = float(commands.getstatusoutput('grep -c "" ' + self._log_dir_ + filename)[1])
+
+        filematch = re.match(r"(-9a-zA-Z_.-]+)", filename)
+        if filematch:
+            filename = filematch.group(0)
+            if re.search('\.gz', filename):
+                self._log_file_ = gzip.open(self._log_dir_ + filename, 'r')
+                self._total_lines_in_file_ = float(commands.getstatusoutput('zgrep -c "" ' + self._log_dir_ + filename)[1])
+            else:
+                self._log_file_ = open(self._log_dir_ + filename, 'r')
+                self._total_lines_in_file_ = float(commands.getstatusoutput('grep -c "" ' + self._log_dir_ + filename)[1])
 
         
     """
