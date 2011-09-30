@@ -6,12 +6,10 @@ if(imp.dt_min < 10, concat(imp.dt_hr, '0', imp.dt_min,'00'), concat(imp.dt_hr, i
 imp.utm_source,
 floor(impressions * (views / total_views)) as impressions, 
 views,
--- total_clicks,
 donations,
 amount,
 amount50,
 (views / impressions) * (total_views / views) as click_rate,
--- donations / total_clicks as completion_rate,
 round((donations / impressions) * (total_views / views), 6) as don_per_imp,
 (amount / impressions) * (total_views / views) as amt_per_imp,
 (amount50 / impressions) * (total_views / views) as amt50_per_imp,
@@ -77,5 +75,5 @@ group by 1,2,3) as ecomm
 on ecomm.banner = lp.utm_source and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
 
 where lp.utm_campaign REGEXP '%s' and views > 10
-group by 1,20 
+group by 1,2
 order by 1 asc;
