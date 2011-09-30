@@ -114,7 +114,7 @@ class LogFileHandler(object):
         except:
             pass
 
-        filematch = re.match(r"(-9a-zA-Z_.-]+)", filename)
+        filematch = re.match(r"(0-9a-zA-Z_.-]+)", filename)
         if filematch:
             filename = filematch.group(0)
             if re.search('\.gz', filename):
