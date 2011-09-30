@@ -913,6 +913,10 @@ class DonorBracketsReportingLoader(DataLoader):
     """
     def run_query(self, start_time, end_time, campaign):
         
+        start_time = MySQLdb._mysql.escape_string(str(start_time))
+        end_time = MySQLdb._mysql.escape_string(str(end_time))
+        campaign = MySQLdb._mysql.escape_string(str(campaign))
+                                         
         query_name = self._query_names_
         logging.info('Using query: ' + query_name)
         
