@@ -318,6 +318,10 @@ class DataLoader(object):
     """
     def get_one_step_banners(self, start_time, end_time, campaign):
         
+        start_time = MySQLdb._mysql.escape_string(str(start_time))
+        end_time = MySQLdb._mysql.escape_string(str(end_time))
+        campaign = MySQLdb._mysql.escape_string(str(campaign))
+        
         sql_stmnt_1 = "(select utm_source from banner_impressions where on_minute >= '%s' and on_minute < '%s' and utm_source regexp '%s' group by 1) as bi" % (start_time, end_time, IntervalReportingLoader.ONE_STEP_PATTERN)
         sql_stmnt_2 = "(select SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner from drupal.contribution_tracking where ts >= '%s' and ts < '%s' and utm_campaign = '%s' and SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) regexp '%s' group by 1) as lp" % (start_time, end_time, campaign, IntervalReportingLoader.ONE_STEP_PATTERN)
         
