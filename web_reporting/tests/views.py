@@ -246,7 +246,7 @@ def test(request):
     
     """ Finally parse the POST QueryDict for user inserted labels """
     for key in label_dict.keys():
-        print key
+        
         try:
             if not(request.POST[key] == ''):
                 
@@ -343,7 +343,6 @@ def test(request):
     """ Format the html string """
     html_string = html.__str__()
     html_string = html_string.replace('"', '\\"')
-    html_string = Hlp.stringify(html_string)
 
     if ttl.record_exists(utm_campaign=utm_campaign_var):
         ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)

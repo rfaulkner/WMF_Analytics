@@ -1219,7 +1219,7 @@ class TestTableLoader(TableLoader):
                 is_conclusive = Hlp.stringify(is_conclusive)
             elif key == 'html_report':                
                 html_report = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                # html_report = kwargs_dict[key]
+                html_report = Hlp.stringify(html_report)
         
         return [test_name, test_type, utm_campaign, start_time, end_time, winner, is_conclusive, html_report]
             
