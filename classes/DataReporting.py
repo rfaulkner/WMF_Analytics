@@ -174,6 +174,7 @@ class DataReporting(object):
     def _gen_plot(self,x, y_lists, labels, title, xlabel, ylabel, subplot_index, fname):
         return 0
 
+    
     """
     
         General method for constructing html tables
@@ -190,19 +191,33 @@ class DataReporting(object):
     def _write_html_table(self, data, column_names, **kwargs):
         
         """ PROCESS KWARGS"""
+        column_colours = dict()
+        coloured_cols = list()
+        column_colours_idx = dict()
         
         if 'coloured_columns' in kwargs.keys():
-            coloured_cols = kwargs['coloured_columns']
-            coloured_idx = list()
             
-            for col in coloured_cols:
-                try:
-                    coloured_idx.append(column_names.index(col))
-                except:
-                    pass
-        else:
-            coloured_cols = []
-            coloured_idx = []
+            coloured_cols = kwargs['coloured_columns']            
+            
+            try:
+                if isinstance(coloured_cols, list):
+                    for col_name in coloured_cols:
+                        column_colours[col_name] = '#FFFF00'
+                
+                elif isinstance(coloured_cols, dict):
+                    column_colours = coloured_cols
+                
+                else:
+                    column_colours = {}
+                
+                for col_name in column_colours:                    
+                    column_colours_idx[column_names.index(col_name)] = column_colours[col_name]
+                    
+            except:
+                column_colours = {}
+                logging.error('Could not properly process column colouring.')
+                pass
+
                     
         html = '<table border=\"1\" cellpadding=\"10\">'
         
@@ -213,36 +228,36 @@ class DataReporting(object):
             for name in column_names:
                 
                 if name in coloured_cols:
-                    html = html + '<th style="background-color:orange;">' + name + '</th>'
+                    html = html + '<th style="background-color:' + column_colours[name] + ';">' + name + '</th>'
                 else:
                     html = html + '<th>' + name.__str__() + '</th>'
             html = html + '</tr>'
         
         """ Build rows """
-        for row in data:
-            html = html + self._write_html_table_row(row, coloured_columns=coloured_idx)
-           
+        for row in data:            
+            html = html + self._write_html_table_row(row, coloured_columns=column_colours_idx)
+                 
         html = html + '</table>'        
         
         return html
     
     """
-        Compose a single table row
+        Compose a single table row - used by _write_html_table
     """
     def _write_html_table_row(self, row, **kwargs):
         
         if 'coloured_columns' in kwargs.keys():
-            coloured_idx = kwargs['coloured_columns']
+            column_colours_idx = kwargs['coloured_columns']
         else:
-            coloured_idx = []
+            column_colours_idx = {}
 
         html = '<tr>'
-        idx = 0
+        idx = 0 
 
         for item in row: 
                             
-            if idx in coloured_idx:
-                html = html + '<td style="background-color:yellow;">' + item.__str__() + '</td>'
+            if idx in column_colours_idx:
+                html = html + '<td style="background-color:' + column_colours_idx[idx] + ';">' + item.__str__() + '</td>'
             else:
                 html = html + '<td>' + item.__str__() + '</td>'
             
@@ -913,7 +928,7 @@ class ConfidenceReporting(DataReporting):
         std_devs_1 = ret[2]
         std_devs_2 = ret[3]
         confidence = ret[4]
-        
+        colour_code = ret[5] 
 
         """ plot the results """
         # xlabel = 'Hours'
@@ -938,7 +953,7 @@ class ConfidenceReporting(DataReporting):
         """ Compose conclusions """ 
         winner, percent_increase = self.summarize_results(means_1, means_2, std_devs_1, std_devs_2, times_indices, labels)
     
-        return [winner, percent_increase, confidence]
+        return [winner, percent_increase, confidence, colour_code]
 
 
 

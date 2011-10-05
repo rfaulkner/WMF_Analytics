@@ -14,7 +14,7 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "April 16th, 2011"
 
-import math,  matplotlib
+import math,  matplotlib, re
 import classes.DataLoader as DL
 matplotlib.use('Agg')
 
@@ -292,6 +292,16 @@ class TTest(HypothesisTest):
             
             conf_str =  'Between ' + str((1 - lower_p) * 100) + '% and ' + str((1 - p) * 100) + '% confident about the winner.'
             
+            """ Generate a hexadecimal color code based on the confidence """
+            max_index = len(probs)
+            colour_index = str(hex(int(math.floor(float(min_index) / float(max_index - 1.0) * 256.0))))[-2:]
+            
+            """ treat corner case where colour_index = x0"""
+            if re.search('x', colour_index):
+                colour_index = '00'
+                
+            colour_index = '#' + colour_index  +  colour_index + 'ff'
+            
         except Exception as inst:
             
             print 'Unable to compute a valid p-value.'
@@ -302,7 +312,7 @@ class TTest(HypothesisTest):
             conf_str = 'A valid confidence score could not be computed.'
         
         
-        return [means_1, means_2, std_devs_1, std_devs_2, conf_str]
+        return [means_1, means_2, std_devs_1, std_devs_2, conf_str, colour_index]
         
 """
 
