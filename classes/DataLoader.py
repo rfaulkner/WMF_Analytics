@@ -1609,13 +1609,17 @@ class CiviCRMLoader(TableLoader):
                 banner_payment_methods[row[0]]['Paypal'] = int(row[2])
             elif cmp(row[1], 'cc') == 0:
                 banner_payment_methods[row[0]]['Credit Card'] = int(row[2])
-        
+            elif cmp(row[1], 'cc') == 0:
+                banner_payment_methods[row[0]]['Recurring'] = int(row[2])
+                
         lp_payment_methods = Hlp.AutoVivification()
         for row in results_lp:
             if cmp(row[1], 'pp') == 0:
                 lp_payment_methods[row[0]]['Paypal'] = int(row[2])
             elif cmp(row[1], 'cc') == 0:
                 lp_payment_methods[row[0]]['Credit Card'] = int(row[2])
+            elif cmp(row[1], 'rpp') == 0:
+                lp_payment_methods[row[0]]['Recurring'] = int(row[2])
                 
         for banner in banner_payment_methods:
             total = 0
