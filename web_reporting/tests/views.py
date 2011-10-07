@@ -311,7 +311,7 @@ def test(request):
               'summary_table': html_table, 'sample_interval' : sample_interval, \
               'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
     
-    html = render_to_response('tests/results_' + FDH._TESTTYPE_BANNER_LP_ + '.html', template_var_dict, context_instance=RequestContext(request))
+    html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
         
 
     
