@@ -143,7 +143,7 @@ def show_campaigns(request, utm_campaign):
     #start_time = '20101230130400'
     #end_time = '20101230154400' 
     """ currently the start time is hard coded to the beginning of FR testing """
-    start_time = '20110531120000'  
+    start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
     
     interval = 1
@@ -160,9 +160,10 @@ def show_campaigns(request, utm_campaign):
         ir.run(start_time, end_time, interval, 'views', utm_campaign, {})
     
     except Exception as inst:
-        print >> sys.stderr, type(inst)     # the exception instance
-        print >> sys.stderr, inst.args      # arguments stored in .args
-        print >> sys.stderr, inst           # __str__ allows args to printed directly
+        
+        logging.error(type(inst))
+        logging.error(inst.args)
+        logging.error(inst)
         
         """ !! FIXME / TODO - when reversing POST an error message also !! """
         # err_msg = 'There is insufficient data to analyze this campaign %s.' % utm_campaign
@@ -171,47 +172,31 @@ def show_campaigns(request, utm_campaign):
     """ search for start_time and end_time """
     # top_view_interval = max(ir._counts_[utm_campaign])
 
-    start_count = 0
-    end_count = len(ir._counts_[utm_campaign]) 
+    #start_count = 0
+    #end_count = len(ir._counts_[utm_campaign]) 
     
     """ 
         ESTIMATE THE START AND END TIME OF THE CAMAPIGN
         
-        Search for the first instance when more than 10 views are observed over a smapling period
+        Search for the first instance when more than 10 views are observed over a sampling period
     """
     
-    num_datapoints = len(ir._counts_[utm_campaign])
-    range_list = range(num_datapoints)
-    
-    for i in range_list:
-        # if i > (0.5 * top_view_interval) and not(begin_count):
-        if ir._counts_[utm_campaign][i] > 10:
-            start_count = i
-            start_count = ir._times_[utm_campaign][i]
-            break    
-    
-    range_list.reverse()
-    for i in range_list:
+    col_names = ir._data_loader_.get_column_names()
         
-        if ir._counts_[utm_campaign][i] > 10:
-            end_count = i
-            end_count = ir._times_[utm_campaign][i]
-            break    
-
-    """ Based on where the first and last number of views/interval are observed to be greater that 10, generate the associated timestamps """
+    views_index = col_names.index('views')
+    ts_index = col_names.index('ts')
     
-    start_time_est = TP.timestamp_to_obj(start_time, 1) + datetime.timedelta(minutes=start_count)
-    end_time_est = TP.timestamp_to_obj(start_time, 1) + datetime.timedelta(minutes=end_count)
-
-    """ Really bad hack for the moment - subtract a day from times """
-    """ use for campaigns: C_JMvJD_Junetest_EN, C_JMvJD_Junetest_US """
-    start_time_est = start_time_est + datetime.timedelta(days=-1)
-    end_time_est = end_time_est + datetime.timedelta(days=-1)
+    row_list = list(ir._data_loader_._results_) # copy the query results
+    for row in row_list:
+        if row[views_index] > 10:
+            start_time_est = row[ts_index]
+            break
+    row_list.reverse()
+    for row in row_list:
+        if row[views_index] > 10:
+            end_time_est = row[ts_index]
+            break
     
-    start_time_est = TP.timestamp_from_obj(start_time_est, 1, 2)
-    end_time_est = TP.timestamp_from_obj(end_time_est, 1, 2)
-    
-
     
     """ Read the test name """
     ttl = DL.TestTableLoader()

@@ -679,6 +679,7 @@ class CampaignIntervalReportingLoader(DataLoader):
         data = self._irl_totals_.run_query(start_time, end_time, interval, metric_name, campaign)
         metrics_total = data[0] 
         times_total = data[1]
+        self._results_ = data[2]
 
         """ Combine the results for the campaign totals with (banner, landing page, campaign) """
         for key in metrics_total.keys():
@@ -687,7 +688,16 @@ class CampaignIntervalReportingLoader(DataLoader):
                 
         return [metrics, times]
 
-
+    """
+        Customn for this class since it has no cursor object.
+        Return the column names from the connection cursor
+        
+        @return: list of column names from stored results
+    """
+    def get_column_names(self):
+        
+        return ['ts', 'pipeline_name', 'views', 'donations']
+        
 """
 
     CLASS :: CampaignReportingLoader
@@ -1609,7 +1619,7 @@ class CiviCRMLoader(TableLoader):
                 banner_payment_methods[row[0]]['Paypal'] = int(row[2])
             elif cmp(row[1], 'cc') == 0:
                 banner_payment_methods[row[0]]['Credit Card'] = int(row[2])
-            elif cmp(row[1], 'cc') == 0:
+            elif cmp(row[1], 'rpp') == 0:
                 banner_payment_methods[row[0]]['Recurring'] = int(row[2])
                 
         lp_payment_methods = Hlp.AutoVivification()
