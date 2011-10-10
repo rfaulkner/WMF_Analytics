@@ -59,7 +59,7 @@ group by 1,2,3) as lp_tot
 
 on imp.utm_source = lp_tot.utm_source and imp.dt_hr = lp_tot.dt_hr and imp.dt_min = lp_tot.dt_min
 
-right join
+left join
 
 (select 
 DATE_FORMAT(receive_date,'%sY%sm%sd%sH') as hr,
