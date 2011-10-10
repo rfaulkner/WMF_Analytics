@@ -89,9 +89,13 @@ class DataMapper(object):
             day = '0' + str(int(day))
             
         """ adjust the hour based on time of day """ 
-        if hour > 12:
-            hour = str(hour-12)
-            day_part = 'PM'
+        if hour > 11:
+            if hour == 12:
+                hour = str(hour)
+                day_part = 'PM'
+            else:
+                hour = str(hour-12)
+                day_part = 'PM'
         else:
             hour = str(hour)
             day_part = 'AM'
