@@ -1235,9 +1235,18 @@ class TestTableLoader(TableLoader):
             elif key == 'is_conclusive':
                 is_conclusive = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
                 is_conclusive = Hlp.stringify(is_conclusive)
-            elif key == 'html_report':                
-                html_report = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                html_report = Hlp.stringify(html_report)
+            elif key == 'html_report':                             
+                # html_report = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+
+                html_pieces = str(kwargs_dict[key]).split('\\"')                
+                html_report_new = ''
+                
+                """ Avoid escaping bits that are already escaped """
+                for piece in html_pieces:
+                    html_report_new = html_report_new + MySQLdb._mysql.escape_string(piece) + '\\"'
+                html_report_new = html_report_new[:-4]
+                
+                html_report = Hlp.stringify(html_report_new)
         
         return [test_name, test_type, utm_campaign, start_time, end_time, winner, is_conclusive, html_report]
             
