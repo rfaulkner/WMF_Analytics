@@ -41,47 +41,66 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 
 
 """
+    CAMPAIGNS INDEX VIEW - historic list of campaigns run
+    
     Index page for finding the latest camapigns.  Displays a list of recent campaigns with more than k donations over the last n hours. 
     Also if a report exists a link is provided.
     
 """
 def index(request):
     
-    err_msg = ''
-
-    """ Parse the filter fields """
+    crl = DL.CampaignReportingLoader('totals')
     filter_data = True
-
+    
+    """ 
+        PROCESS POST VARS 
+        =================
+        
+        Filter out rows based on POST vars
+        
+    """
+    
+    """ Process error message """
+    try:
+        err_msg = MySQLdb._mysql.escape_string(request.POST['err_msg'])
+    except KeyError:
+        err_msg = ''
+    
+    """ Process data filtering vars  """
     try:
         min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
         earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'])
         
         if len(earliest_utc_ts_var) == 0:
             earliest_utc_ts_var = '0'
+            
     except KeyError:
         
         min_donations_var = ''
         earliest_utc_ts_var = ''
         filter_data = False
-    
-        
-    """ Interface with the DataLoader """
-    
-    crl = DL.CampaignReportingLoader('totals')
-    
+            
     start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-21)
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)    
     start_time = TP.timestamp_from_obj(start_time_obj,1,3)
     
     """ If the user timestamp is earlier than the default start time run the query for the earlier start time  """
     ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
+    
     if ts_format > 0:
         earliest_utc_obj = TP.timestamp_to_obj(earliest_utc_ts_var, ts_format)
         
+        if ts_format != 1:
+            earliest_utc_ts_var = TP.timestamp_convert_format(earliest_utc_ts_var, ts_format, 1)
+             
         if earliest_utc_obj < start_time_obj:
             start_time = earliest_utc_obj
         
-    """ Execute query """
+    """ 
+        GENERATE CAMPAIGN DATA 
+        ======================
+        
+    """
     campaigns, all_data = crl.run_query({'metric_name':'earliest_timestamp','start_time':start_time,'end_time':end_time})
         
     sorted_campaigns = sorted(campaigns.iteritems(), key=operator.itemgetter(1))
@@ -131,25 +150,21 @@ def index(request):
 
 """
 
+    CAMPAIGNS DETAIL VIEW - View breakdown of campaigns and test generation form
+
     Shows view stats over the time range for which the campaign receives landing page hits.  A form is also generated from the associated template
     that allows a test report to be generated.
 
 """
 def show_campaigns(request, utm_campaign):
     
-    """ Look 10 hrs into the past? """
-    # end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=8), 1, hours=-24)
-    
-    #start_time = '20101230130400'
-    #end_time = '20101230154400' 
-    """ currently the start time is hard coded to the beginning of FR testing """
+    """ Frame the views over the last 3 weeks for the chosen campaign  """
     start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
-    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)
+    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3) # +8 hours for UTC
     
     interval = 1
         
-    """ Estimate start/end time of campaign """
-    """ This generates an image for campaign views """
+    """ Create reporting object to retrieve campaign data and write plots to image respo on disk """
     ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
     
     """ 
@@ -169,14 +184,10 @@ def show_campaigns(request, utm_campaign):
         # err_msg = 'There is insufficient data to analyze this campaign %s.' % utm_campaign
         # return HttpResponseRedirect(reverse('campaigns.views.index'))
     
-    """ search for start_time and end_time """
-    # top_view_interval = max(ir._counts_[utm_campaign])
 
-    #start_count = 0
-    #end_count = len(ir._counts_[utm_campaign]) 
-    
     """ 
         ESTIMATE THE START AND END TIME OF THE CAMAPIGN
+        ===============================================
         
         Search for the first instance when more than 10 views are observed over a sampling period
     """
@@ -197,6 +208,11 @@ def show_campaigns(request, utm_campaign):
             end_time_est = row[ts_index]
             break
     
+    
+    """
+        BUILD THE VISUALIZATION FOR THE TEST VIEWS OF THIS CAMAPAIGN
+        ============================================================        
+    """
     
     """ Read the test name """
     ttl = DL.TestTableLoader()
