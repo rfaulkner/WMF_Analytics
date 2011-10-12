@@ -27,7 +27,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
-
+from web_reporting.campaigns.views import show_campaigns, index as campaigns_index
 
 """ Import python base modules """
 import sys, MySQLdb, logging, math, datetime
@@ -146,18 +146,15 @@ def test_summaries(request):
 """
 def test(request):
     
-    """ check where the request came from """
-    """ redirect based on origin if there is an error """
-    """ check post data """
-    
-        
-    """ 
-        Process user POST data 
-        
-        Escape all user input that can be entered in text fields 
-    """
     try:
         
+        """ 
+            PROCESS POST DATA
+            ================= 
+            
+            Escape all user input that can be entered in text fields 
+            
+        """
         test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'])
         utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
         start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'])
@@ -204,131 +201,145 @@ def test(request):
                 label_dict[esc_elem] = esc_elem
         else:
             label_dict = label_dict_full
+                
+
+        
+        """
+            TEST TYPE OVERRIDE HANDLING
+            ===========================
             
+            if the user wishes to specify the test type then incorporate that request into the logic
+        
+        """
+                        
+        crl = DL.CampaignReportingLoader('')
+        artifact_list = list()
+        
+        if test_type_override == 'Banner':
+            test_type_var = FDH._TESTTYPE_BANNER_
+            crl._query_type_ = test_type_var
+            artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
+        elif test_type_override == 'Landing Page':
+            test_type_var = FDH._TESTTYPE_LP_
+            crl._query_type_ = test_type_var
+            artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
+        elif test_type_override == 'Banner and LP':
+            test_type_var = FDH._TESTTYPE_BANNER_LP_
+            crl._query_type_ = test_type_var
+            artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
+        
+        """ convert the artifact list into a label dictionary for the template """
+        if len(artifact_list) > 0:
+            label_dict = dict()
+            for elem in artifact_list:
+                label_dict[elem] = elem
+        
+        """ Finally parse the POST QueryDict for user inserted labels """
+        for key in label_dict.keys():
             
+            try:
+                if not(request.POST[key] == ''):
+                    
+                    label_dict[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
+                else:
+                    label_dict[key] = key
+            except:
+                logging.error('Could not find %s in the POST QueryDict.' % key)
+        
+        for key in label_dict_full.keys():
+            try:
+                if not(request.POST[key] == ''):
+                    label_dict_full[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
+                else:
+                    label_dict_full[key] = key
+            except:
+                logging.error('Could not find %s in the POST QueryDict.' % key)
+
+        
+        """ 
+            EXECUTE REPORT GENERATION
+            =========================
+        
+            setup time parameters
+            determine test metrics
+            execute queries
+        """
+        
+        sample_interval = 1
+        
+        start_time_obj = TP.timestamp_to_obj(start_time_var, 1)
+        end_time_obj = TP.timestamp_to_obj(end_time_var, 1)
+        
+        time_diff = end_time_obj - start_time_obj
+        time_diff_min = time_diff.seconds / 60.0
+        test_interval = int(math.floor(time_diff_min / sample_interval)) # 2 is the interval
+            
+        metric_types = FDH.get_test_type_metrics(test_type_var)
+        metric_types_full = dict()
+        
+        
+        """ Get the full (descriptive) version of the metric names 
+            !! FIXME / TODO -- order these properly !! """
+        
+        for i in range(len(metric_types)):
+            metric_types_full[metric_types[i]] = QD.get_metric_full_name(metric_types[i])
+        
+        
+        """ USE generate_reporting_objects() TO GENERATE THE REPORT DATA - dependent on test type """
+        
+        measured_metric, winner, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
+        =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
+                                      sample_interval, test_interval, test_type_var, metric_types)
+        
+        winner_var = winner[0]
+        
+        results = list()
+        for index in range(len(winner)):
+            results.append({'metric' : measured_metric[index], 'winner' : winner[index], 'percent_win' : percent_win[index], 'confidence' : confidence[index]})
+            
+        template_var_dict = {'results' : results,  \
+                  'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
+                  'summary_table': html_table, 'sample_interval' : sample_interval, \
+                  'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
+        
+        html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
+            
+    
+        
+        """ 
+            WRITE TO TEST TABLE
+            =================== 
+        
+        """
+        
+        ttl = DL.TestTableLoader()
+        
+        """ Format the html string """
+        html_string = html.__str__()
+        html_string = html_string.replace('"', '\\"')
+    
+        if ttl.record_exists(utm_campaign=utm_campaign_var):
+            ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
+        else:
+            ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
+        
+        return html
+    
     except Exception as inst:
         
-        logging.error(type(inst))     # the exception instance
-        logging.error(inst.args)      # arguments stored in .args
-        logging.error(inst)           # __str__ allows args to printed directly
-
-        """ flag an error here for the user """
-        return HttpResponseRedirect(reverse('tests.views.index'))
-        # pass
+        logging.error('Failed to correctly generate test report.')
+        logging.error(type(inst))
+        logging.error(inst.args)
+        logging.error(inst)
     
-    
-    crl = DL.CampaignReportingLoader('')
-    artifact_list = list()
-    
-    """
-        TEST TYPE OVERRIDE HANDLING:
-        
-        if the user wishes to specify the test type then incorporate that request into the logic
-    """
-    if test_type_override == 'Banner':
-        test_type_var = FDH._TESTTYPE_BANNER_
-        crl._query_type_ = test_type_var
-        artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
-    elif test_type_override == 'Landing Page':
-        test_type_var = FDH._TESTTYPE_LP_
-        crl._query_type_ = test_type_var
-        artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
-    elif test_type_override == 'Banner and LP':
-        test_type_var = FDH._TESTTYPE_BANNER_LP_
-        crl._query_type_ = test_type_var
-        artifact_list = crl.run_query({'utm_campaign' : utm_campaign_var, 'start_time' : start_time_var, 'end_time' : end_time_var})
-    
-    """ convert the artifact list into a label dictionary for the template """
-    if len(artifact_list) > 0:
-        label_dict = dict()
-        for elem in artifact_list:
-            label_dict[elem] = elem
-    
-    """ Finally parse the POST QueryDict for user inserted labels """
-    for key in label_dict.keys():
-        
+        """ Return to the index page with an error """
         try:
-            if not(request.POST[key] == ''):
-                
-                label_dict[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
-            else:
-                label_dict[key] = key
+            err_msg = 'Test Generation failed for: %s.  Check the fields submitted for generation. <br><br>ERROR:<br><br>%s' % (utm_campaign_var, inst.__str__())
         except:
-            logging.error('Could not find %s in the POST QueryDict.' % key)
-    
-    for key in label_dict_full.keys():
-        try:
-            if not(request.POST[key] == ''):
-                label_dict_full[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
-            else:
-                label_dict_full[key] = key
-        except:
-            logging.error('Could not find %s in the POST QueryDict.' % key)
-    # logging.debug(label_dict)
-    
-    """ 
-        EXECUTE REPORT 
-    
-        -> setup time parameters
-        -> determine test metrics
-        -> execute queries
-    """
-    
-    sample_interval = 1
-    
-    start_time_obj = TP.timestamp_to_obj(start_time_var, 1)
-    end_time_obj = TP.timestamp_to_obj(end_time_var, 1)
-    
-    time_diff = end_time_obj - start_time_obj
-    time_diff_min = time_diff.seconds / 60.0
-    test_interval = int(math.floor(time_diff_min / sample_interval)) # 2 is the interval
+            err_msg = 'Test Generation failed.  Check the fields submitted for generation. <br><br>ERROR:<br><br>%s' % inst.__str__()
+            return campaigns_index(request, kwargs={'err_msg' : err_msg})
         
-    metric_types = FDH.get_test_type_metrics(test_type_var)
-    metric_types_full = dict()
-    
-    
-    """ Get the full (descriptive) version of the metric names 
-        !! FIXME / TODO -- order these properly !! """
-    
-    for i in range(len(metric_types)):
-        metric_types_full[metric_types[i]] = QD.get_metric_full_name(metric_types[i])
-    
-    
-    """ USE generate_reporting_objects() TO GENERATE THE REPORT DATA - dependent on test type """
-    
-    measured_metric, winner, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
-    =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
-                                  sample_interval, test_interval, test_type_var, metric_types)
-    
-    winner_var = winner[0]
-    
-    results = list()
-    for index in range(len(winner)):
-        results.append({'metric' : measured_metric[index], 'winner' : winner[index], 'percent_win' : percent_win[index], 'confidence' : confidence[index]})
-        
-    template_var_dict = {'results' : results,  \
-              'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
-              'summary_table': html_table, 'sample_interval' : sample_interval, \
-              'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
-    
-    html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
-        
-
-    
-    """ WRITE TO TEST TABLE """
-    
-    ttl = DL.TestTableLoader()
-    
-    """ Format the html string """
-    html_string = html.__str__()
-    html_string = html_string.replace('"', '\\"')
-
-    if ttl.record_exists(utm_campaign=utm_campaign_var):
-        ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
-    else:
-        ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
-    
-    return html
+        return show_campaigns(request, utm_campaign_var, kwargs={'err_msg' : err_msg})
 
 
 """
@@ -508,7 +519,6 @@ def add_comment(request, utm_campaign):
     
     html_string = new_html
     html_string = html_string.replace('"', '\\"')
-    html_string = Hlp.stringify(html_string)
     
     # parse the html for <!-- Cbegin --> <!-- Cend -->
     # add the comment above this

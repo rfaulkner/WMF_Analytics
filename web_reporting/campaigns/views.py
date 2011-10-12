@@ -22,7 +22,8 @@ __date__ = "June 20th, 2011"
 """ Import django modules """
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect 
+from django.core.urlresolvers import reverse
 
 """ Import python base modules """
 import sys, datetime, operator, MySQLdb, logging
@@ -47,10 +48,20 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
     Also if a report exists a link is provided.
     
 """
-def index(request):
+def index(request, **kwargs):
     
     crl = DL.CampaignReportingLoader('totals')
     filter_data = True
+    
+    """ 
+        PROCESS POST KWARGS 
+        ===================
+    """
+    err_msg = ''
+    try:
+        err_msg = str(kwargs['kwargs']['err_msg'])
+    except:
+        pass
     
     """ 
         PROCESS POST VARS 
@@ -64,8 +75,8 @@ def index(request):
     try:
         err_msg = MySQLdb._mysql.escape_string(request.POST['err_msg'])
     except KeyError:
-        err_msg = ''
-    
+        pass
+
     """ Process data filtering vars  """
     try:
         min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
@@ -101,11 +112,18 @@ def index(request):
         ======================
         
     """
+    
     campaigns, all_data = crl.run_query({'metric_name':'earliest_timestamp','start_time':start_time,'end_time':end_time})
-        
+    
+    """ Sort campaigns by earliest access """    
     sorted_campaigns = sorted(campaigns.iteritems(), key=operator.itemgetter(1))
     sorted_campaigns.reverse()
     
+    """ 
+        FILTER CAMPAIGN DATA
+        ====================
+        
+    """
     if filter_data:
         try:
             
@@ -123,7 +141,6 @@ def index(request):
         min_donations_var = ''
         earliest_utc_ts_var = ''
 
-
     new_sorted_campaigns = list()
     for campaign in sorted_campaigns:
         key = campaign[0]
@@ -132,7 +149,7 @@ def index(request):
             name = all_data[key][0]
             if name  == None:
                 name = 'none'
-            # timestamp = TP.timestamp_from_obj(all_data[key][3], 2, 2)
+            
             timestamp = TP.timestamp_convert_format(all_data[key][3], 1, 2)
             
             if filter_data: 
@@ -156,83 +173,89 @@ def index(request):
     that allows a test report to be generated.
 
 """
-def show_campaigns(request, utm_campaign):
-    
-    """ Frame the views over the last 3 weeks for the chosen campaign  """
-    start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
-    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3) # +8 hours for UTC
-    
-    interval = 1
-        
-    """ Create reporting object to retrieve campaign data and write plots to image respo on disk """
-    ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
+def show_campaigns(request, utm_campaign, **kwargs):
     
     """ 
-        Try to produce analysis on the campaign view data  
-        If unsuccessful reverse to index view and emit error message
+        PROCESS POST KWARGS 
+        ===================
     """
+    err_msg = ''
     try:
+        err_msg = str(kwargs['kwargs']['err_msg'])
+    except:
+        pass
+    
+    try:
+        
+        """ Frame the views over the last 3 weeks for the chosen campaign  """
+        start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
+        end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3) # +8 hours for UTC
+        
+        interval = 1
+            
+        """ Create reporting object to retrieve campaign data and write plots to image respo on disk """
+        ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
+        
+        """ Produce analysis on the campaign view data """        
         ir.run(start_time, end_time, interval, 'views', utm_campaign, {})
+                                 
+        """ 
+            ESTIMATE THE START AND END TIME OF THE CAMAPIGN
+            ===============================================
+            
+            Search for the first instance when more than 10 views are observed over a sampling period
+        """
+        
+        col_names = ir._data_loader_.get_column_names()
+            
+        views_index = col_names.index('views')
+        ts_index = col_names.index('ts')
+        
+        row_list = list(ir._data_loader_._results_) # copy the query results
+        for row in row_list:
+            if row[views_index] > 10:
+                start_time_est = row[ts_index]
+                break
+        row_list.reverse()
+        for row in row_list:
+            if row[views_index] > 10:
+                end_time_est = row[ts_index]
+                break
+        
+        
+        """
+            BUILD THE VISUALIZATION FOR THE TEST VIEWS OF THIS CAMAPAIGN
+            ============================================================        
+        """
+        
+        """ Read the test name """
+        ttl = DL.TestTableLoader()
+        row = ttl.get_test_row(utm_campaign)
+        test_name = ttl.get_test_field(row ,'test_name')
+        
+        """ Regenerate the data using the estimated start and end times """
+        ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
+        ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, {})
+    
+            
+        """ determine the type of test """
+        """ Get the banners  """
+        test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(''))
+        
+        return render_to_response('campaigns/show_campaigns.html', {'utm_campaign' : utm_campaign, 'test_name' : test_name, 'start_time' : start_time_est, 'end_time' : end_time_est, 'artifacts' : artifact_name_list, 'test_type' : test_type, 'err_msg' : err_msg}, context_instance=RequestContext(request))    
     
     except Exception as inst:
-        
+            
+        logging.error('Failed to correctly produce campaign diagnostics.')
         logging.error(type(inst))
         logging.error(inst.args)
         logging.error(inst)
-        
-        """ !! FIXME / TODO - when reversing POST an error message also !! """
-        # err_msg = 'There is insufficient data to analyze this campaign %s.' % utm_campaign
-        # return HttpResponseRedirect(reverse('campaigns.views.index'))
     
+        """ Return to the index page with an error """
+        err_msg = 'There is insufficient data to analyze this campaign: %s.  Check to see if the <a href="/LML/">impressions have been loaded</a>. <br><br>ERROR:<br><br>%s' % (utm_campaign, inst.__str__())
+        
+        return index(request, kwargs={'err_msg' : err_msg})
 
-    """ 
-        ESTIMATE THE START AND END TIME OF THE CAMAPIGN
-        ===============================================
-        
-        Search for the first instance when more than 10 views are observed over a sampling period
-    """
-    
-    col_names = ir._data_loader_.get_column_names()
-        
-    views_index = col_names.index('views')
-    ts_index = col_names.index('ts')
-    
-    row_list = list(ir._data_loader_._results_) # copy the query results
-    for row in row_list:
-        if row[views_index] > 10:
-            start_time_est = row[ts_index]
-            break
-    row_list.reverse()
-    for row in row_list:
-        if row[views_index] > 10:
-            end_time_est = row[ts_index]
-            break
-    
-    
-    """
-        BUILD THE VISUALIZATION FOR THE TEST VIEWS OF THIS CAMAPAIGN
-        ============================================================        
-    """
-    
-    """ Read the test name """
-    ttl = DL.TestTableLoader()
-    row = ttl.get_test_row(utm_campaign)
-    test_name = ttl.get_test_field(row ,'test_name')
-    
-    """ Regenerate the data using the estimated start and end times """
-    ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
-    ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, {})
-
-        
-    """ determine the type of test """
-    """ Get the banners  """
-    test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(''))
-    
-    return render_to_response('campaigns/show_campaigns.html', {'utm_campaign' : utm_campaign, 'test_name' : test_name, 'start_time' : start_time_est, 'end_time' : end_time_est, 'artifacts' : artifact_name_list, 'test_type' : test_type}, context_instance=RequestContext(request))    
-    
-    # return HttpResponseRedirect(reverse('campaigns.views.index'))
-
-    """ return a form that displays estimates and allows a test to be generated """
 
 
 """

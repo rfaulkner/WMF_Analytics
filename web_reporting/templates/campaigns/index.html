@@ -5,7 +5,7 @@
 <h1><u>Choose a Campaign:</u></h1><br>
 
 {% if err_msg != '' %}
-	<br><span style="color:red">{{err_msg}}</span><br><br>
+	<br><font size="3" color="red">{{err_msg|safe}}</font><br><br>
 {% endif %}
 
 <!-- Table listing all campaigns running -->
