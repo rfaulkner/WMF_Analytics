@@ -819,8 +819,11 @@ class FundraiserDataMapper(DataMapper):
                                 country = lp_country[1]                                                
                         
                     except:
-                        landing_page = 'NONE'
-                        country = ipctl.localize_IP(ip_add) 
+                        
+                        logging.error('Could not insert landing page request log: %s', landing_url)
+                        continue
+                        # landing_page = 'NONE'
+                        # country = ipctl.localize_IP(ip_add) 
                         
                 else: 
                     """ Address cases where the query string does not contain the landing page - ...wikimediafoundation.org/wiki/... """
