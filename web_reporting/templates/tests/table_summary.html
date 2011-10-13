@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Table Summary for <u>{{ utm_campaign }}</u>:</h1><br><br>
+
+{{ html_table|safe }}<br>
+
+<u>Return to:</u>
+<br><br>
+<a href="/tests">Test Generation</a>
+<br><br>
+<a href="/">Home</a>
+<br>
+
+{% endblock %}

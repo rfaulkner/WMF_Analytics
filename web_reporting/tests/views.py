@@ -54,9 +54,15 @@ _end_time_ = '99990011223344'
 """
 def index(request):
     
-    err_msg = ''
     
-    """ Parse the filter fields """
+    
+    """ 
+        PROCESS POST DATA
+        ================= 
+    """
+    
+    err_msg = ''
+
     try:
         
         latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'])
@@ -488,6 +494,48 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
 
     return [measured_metric, winner, percent_increase, confidence, html_table_pm_banner, html_table_pm_lp, html_language, html_table]
 
+
+"""
+    Produces a tabular summary for a given campaign given the start and end times
+        
+"""
+def generate_summary(request):
+    
+    try:
+        """ 
+            PROCESS POST DATA
+            ================= 
+            
+            Escape all user input that can be entered in text fields 
+            
+        """
+        utm_campaign = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
+        start_time = MySQLdb._mysql.escape_string(request.POST['start_time'])
+        end_time = MySQLdb._mysql.escape_string(request.POST['end_time'])
+            
+        """ 
+            GENERATE A REPORT SUMMARY TABLE
+            ===============================
+        """
+        srl = DL.SummaryReportingLoader(FDH._TESTTYPE_BANNER_LP_)
+        srl.run_query(start_time, end_time, utm_campaign)    
+        
+        columns = srl.get_column_names()
+        summary_results = srl.get_results()
+            
+        html_table = DR.DataReporting()._write_html_table(summary_results, columns)    
+        
+        """ Generate totals """
+        srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
+        srl.run_query(start_time, end_time, utm_campaign)
+        html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
+        
+        return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))
+    
+    except:
+        
+        return render_to_response('tests/index.html', {'err_msg' : 'Could not generate campaign tabular results.'}, context_instance=RequestContext(request))
+    
 """
     Inserts a comment into an existing report
         
