@@ -1773,7 +1773,8 @@ class ImpressionTableLoader(TableLoader):
         insert_stmnt = 'insert into banner_impressions values '
         
         start_timestamp, utm_source, referrer, country, lang, counts, on_minute = self.process_kwargs(kwargs)
-    
+        
+        on_minute = "convert('" + on_minute + "00', datetime)"
         val = '(' + start_timestamp + ',' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' \
                                     + counts + ',' + on_minute + ');'
                                     

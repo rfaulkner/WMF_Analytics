@@ -589,9 +589,8 @@ class FundraiserDataMapper(DataMapper):
                         for timestamp_ind in range(len(timestampKeys)):
                             timestamp = timestampKeys[timestamp_ind]
                             count = timestampCounts[timestamp]
-                        
-                            time_stamp_in = "convert('" + timestamp + "00', datetime)"
-                            itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=time_stamp_in, start_timestamp_arg=start_timestamp_in)
+                                                    
+                            itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=timestamp, start_timestamp_arg=start_timestamp_in)
                             
         
 
