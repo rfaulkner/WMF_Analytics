@@ -8,9 +8,9 @@
 
 select
 
-lp.country, lp.language, 
+civi_data.country, civi_data.language, 
 concat(civi_data.language,'.wikipedia.org/wiki/Main_Page?Country=',civi_data.country) as live_banners,
-lp.landing_page as landing_page,
+civi_data.landing_page as landing_page,
 views, donations, amount
 	
 from
@@ -37,6 +37,6 @@ left join
 
 on civi_data.landing_page = lp.landing_page and civi_data.country = lp.country and civi_data.language = lp.language
 
-where views > 10
+-- where views > 10
 order by 5 desc;
 
