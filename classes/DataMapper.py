@@ -761,7 +761,7 @@ class FundraiserDataMapper(DataMapper):
                 
                 logging.error('Could not process user agent string.')
                 browser = 'NONE'
-                pass
+                
                 
             """
                  Process landing URL
@@ -809,7 +809,7 @@ class FundraiserDataMapper(DataMapper):
                         
                         """ URLs of the form ...?county_code=<iso_code> """
                         try:
-                            country = query_fields['country_code'][0]
+                            country = query_fields['country'][0]
                         except:
                             """ URLs of the form ...?title=<lp_name>/<lang>/<iso_code> """
                             if len(lp_country) == 3:
@@ -819,10 +819,9 @@ class FundraiserDataMapper(DataMapper):
                         
                     except:
                         
-                        logging.error('Could not insert landing page request log: %s', landing_url)
-                        continue
-                        # landing_page = 'NONE'
-                        # country = ipctl.localize_IP(ip_add) 
+                        logging.info('Could not parse landing page request from query string: %s', landing_url)
+                        landing_page = 'NONE'
+                        country = ipctl.localize_IP(ip_add) 
                         
                 else: 
                     """ Address cases where the query string does not contain the landing page - ...wikimediafoundation.org/wiki/... """
@@ -834,7 +833,7 @@ class FundraiserDataMapper(DataMapper):
                     
                     # URLs of the form ...?county_code=<iso_code>
                     try:
-                        country = query_fields['country_code'][0]
+                        country = query_fields['country'][0]
                     
                     # URLs of the form ...<path>/ <lp_name>/<lang>/<iso_code>
                     except:
@@ -846,10 +845,14 @@ class FundraiserDataMapper(DataMapper):
                                 country = landing_path[3]
                                 
                         except:
+                            
+                            logging.info('Could not parse country from landing path: %s', landing_url)
                             country = ipctl.localize_IP(ip_add)
                 
                 # If country is confused with the language use the ip
                 if country == country.lower():
+                    
+                    logging.info('Using geo-locator to set ip-address: %s', landing_url)
                     country = ipctl.localize_IP(ip_add) 
                                 
                 # ensure fields exist

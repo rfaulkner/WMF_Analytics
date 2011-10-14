@@ -2035,7 +2035,7 @@ class IPCountryTableLoader(TableLoader):
             
             ip_num = 16777216 * w + 65536 * x + 256 * y + z;
             
-            sql_stmnt = 'select country_ISO_1 from ip_country where ' + ip_num + ' >= ip_from and ' + ip_num + ' <= ip_to'
+            sql_stmnt = 'select country_ISO_1 from ip_country where ' + str(ip_num) + ' >= ip_from and ' + str(ip_num) + ' <= ip_to'
         
         except:
             
