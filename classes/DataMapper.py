@@ -70,6 +70,7 @@ class DataMapper(object):
         month = str(now.month)
         day = str(now.day)
         hour = now.hour
+        minute = None
         
         """ If specified change the timestamp  Assume each arg is a string """
         for key in kwargs:
@@ -82,6 +83,8 @@ class DataMapper(object):
                 day = kwargs[key]
             elif key == 'hour':
                 hour = int(kwargs[key])
+            elif key == 'minute':
+                minute = str(kwargs[key])
         
         if int(month) < 10:
             month = '0' + str(int(month))
@@ -107,19 +110,41 @@ class DataMapper(object):
         cmd = 'sftp ' + projSet.__user__ + '@' + projSet.__squid_log_server__ + ':' + projSet.__squid_log_home__ + '%s ' + projSet.__squid_log_local_home__ 
         
         copied_logs = list()
-        """ Try to load each log for that hour - only load gzipped logs for now """
-        for i in range(4):
-            minute = i * 15
+        
+        """ If the minute of the log timestamp has not been specified then load all logs for that hour """
+        if minute == None:
             
-            if minute >= 10:
-                minute = str(minute)
-            else:
-                minute = '0' + str(minute)
+            """ Try to load each log for that hour - only load gzipped logs for now """
+            for i in range(4):
+                minute = i * 15
+                
+                if minute >= 10:
+                    minute = str(minute)
+                else:
+                    minute = '0' + str(minute)
+                
+                filename_key = filename  + '--' + minute    
+                
+                if not(self.log_exists(filename_key)):           
+    
+                    filematch = re.match(r"([0-9a-zA-Z_.-]+)", filename_key)
+                    if filematch:
+                        fname_arg = filematch.group(0) + '*'
+    
+                        logging.info(cmd % fname_arg)
+                        os.system(cmd % fname_arg)
+                    
+                        """ Ensure the file exists based on the key and append to the list if so """
+                        full_filename = self.get_full_filename(filename_key)
+                        if full_filename != '':
+                            copied_logs.append(full_filename)
+                else:
+                    logging.info('File: %s has already been loaded.' % filename)
             
-            filename_key = filename  + '--' + minute    
-            
-            if not(self.log_exists(filename_key)):           
-
+        else:
+                
+                filename_key = filename  + '--' + minute
+                
                 filematch = re.match(r"([0-9a-zA-Z_.-]+)", filename_key)
                 if filematch:
                     fname_arg = filematch.group(0) + '*'
@@ -131,9 +156,7 @@ class DataMapper(object):
                     full_filename = self.get_full_filename(filename_key)
                     if full_filename != '':
                         copied_logs.append(full_filename)
-            else:
-                logging.info('File: %s has already been loaded.' % filename)
-                
+                    
         return copied_logs
     
     """
@@ -296,13 +319,12 @@ class DataMapper(object):
         return [log_start, log_end]
         
         
-        """
+    """
         Opens the logfile and counts the total number of lines
         
         @param logFileName: the full name of the logfile.  The local squid log folder is stored in web_reporting/settings.py
-        @type logFileName: string
         
-    """
+    """    
     def open_logfile(self, logFileName):        
         
         if (re.search('\.gz', logFileName)):
@@ -359,10 +381,23 @@ class FundraiserDataMapper(DataMapper):
             """ Copy over the latest logs """
             if not kwargs.keys():
                 
-                copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
-                copied_banner_logs.extend(self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
-                copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
-                copied_lp_logs.extend(self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
+                """ Determine the minute of the log timestamp to load based on the most recent from the current time """
+                if curr_time.minute < 15:
+                    minute_str = '00'
+                elif curr_time.minute < 30:
+                    minute_str = '15'
+                elif curr_time.minute < 45:
+                    minute_str = '30'
+                else:
+                    minute_str = '45'
+                    
+                copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
+                copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
+                
+                # copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
+                # copied_banner_logs.extend(self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
+                # copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
+                # copied_lp_logs.extend(self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
             
             else:
                 

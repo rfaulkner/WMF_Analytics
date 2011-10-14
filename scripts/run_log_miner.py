@@ -14,10 +14,12 @@ __date__ = "July 13th, 2011"
 
 """ Import python base modules """
 import sys, argparse, logging
+import settings as projSet
+sys.path.append(projSet.__project_home__)
 
 """ Import Analytics modules """
 import classes.DataMapper as DM
-import config.settings as projSet
+
 
 
 """
@@ -49,7 +51,7 @@ def main(args):
        
     fdm = DM.FundraiserDataMapper()
     
-    if args.year or args.month or args.day or args.hour:
+    if cmp(args.year,'') == 0 or cmp(args.month, '') == 0 or cmp(args.day, '') == 0 or cmp(args.hour, '') == 0:
         
         logging.info('Processing command line args ....')
         fdm.poll_logs(year=args.year, month=args.month, day=args.day, hour=args.hour)
