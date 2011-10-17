@@ -38,5 +38,5 @@ left join
 on civi_data.landing_page = lp.landing_page and civi_data.country = lp.country and civi_data.language = lp.language
 
 -- where views > 10
-order by 5 desc;
+order by 1,2,5 desc;
 
