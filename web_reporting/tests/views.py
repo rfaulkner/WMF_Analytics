@@ -293,7 +293,7 @@ def test(request):
         
         """ USE generate_reporting_objects() TO GENERATE THE REPORT DATA - dependent on test type """
         
-        measured_metric, winner, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
+        measured_metric, winner, loser, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
         =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
                                       sample_interval, test_interval, test_type_var, metric_types)
         
@@ -301,7 +301,7 @@ def test(request):
         
         results = list()
         for index in range(len(winner)):
-            results.append({'metric' : measured_metric[index], 'winner' : winner[index], 'percent_win' : percent_win[index], 'confidence' : confidence[index]})
+            results.append({'metric' : measured_metric[index], 'winner' : winner[index], 'loser': loser[index], 'percent_win' : percent_win[index], 'confidence' : confidence[index]})
             
         template_var_dict = {'results' : results,  \
                   'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
@@ -449,6 +449,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     column_colours = dict()
     winner = list()
+    loser = list()
     percent_increase = list()
     confidence = list()
     
@@ -460,6 +461,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         
         column_colours[metric] = ret[3]
         winner.append(ret[0])
+        loser.append(ret[4])
         percent_increase.append('%.2f' % ret[1])
         confidence.append(ret[2])
             
@@ -492,7 +494,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
         
 
-    return [measured_metric, winner, percent_increase, confidence, html_table_pm_banner, html_table_pm_lp, html_language, html_table]
+    return [measured_metric, winner, loser, percent_increase, confidence, html_table_pm_banner, html_table_pm_lp, html_language, html_table]
 
 
 """

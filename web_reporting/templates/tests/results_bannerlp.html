@@ -6,7 +6,7 @@
 <h3><u>The winning banner is <b>{{ results.0.winner }}</b>.</u></h3><br><br>
 {% if winner != 'inconclusive' %}
 	{% for item in results %}
-For <b><u>{{ item.metric }}</u> {{ item.winner }}</b> had a {{ item.percent_win }}% increase in donations / impression on average. {{ item.confidence }}<br>
+For <b><u>{{ item.metric }}</u>: {{ item.winner }}</b> had a {{ item.percent_win }}% increase over {{ item.loser }}. {{ item.confidence }}<br>
 	{% endfor %}
 {% endif %}
 

@@ -837,14 +837,13 @@ class ConfidenceReporting(DataReporting):
         """ Assign the winner """    
         if av_means_1 > av_means_2:
             winner = labels[0]
+            loser = labels[1]
         else:
             winner = labels[1]
+            loser = labels[0]
         
-        win_str =  '\nThe winner "' + winner + '" had a %.2f%s increase.'
-        win_str = win_str % (percent_increase, '%')
-
         
-        return [winner, percent_increase]
+        return [winner, percent_increase, loser]
     
     """ 
         Executes the test reporting.
@@ -951,9 +950,9 @@ class ConfidenceReporting(DataReporting):
         self._gen_box_plot([metrics_1, metrics_2], title, ylabel, subplot_index, labels, fname)
         
         """ Compose conclusions """ 
-        winner, percent_increase = self.summarize_results(means_1, means_2, std_devs_1, std_devs_2, times_indices, labels)
-    
-        return [winner, percent_increase, confidence, colour_code]
+        winner, percent_increase, loser = self.summarize_results(means_1, means_2, std_devs_1, std_devs_2, times_indices, labels)
+        
+        return [winner, percent_increase, confidence, colour_code, loser]
 
 
 
