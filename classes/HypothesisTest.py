@@ -14,10 +14,13 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "April 16th, 2011"
 
-import math,  matplotlib, re
+import math,  matplotlib, re, sys, logging
 import classes.DataLoader as DL
 matplotlib.use('Agg')
 
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
 """
 
@@ -294,20 +297,20 @@ class TTest(HypothesisTest):
             
             """ Generate a hexadecimal color code based on the confidence """
             max_index = len(probs)
-            colour_index = str(hex(int(math.floor(float(min_index) / float(max_index - 1.0) * 256.0))))[-2:]
+            colour_index = str(hex(240 - (int(math.floor(float(min_index + 1) / float(max_index) * 240.0) + 16))))[-2:]
             
             """ treat corner case where colour_index = x0"""
             if re.search('x', colour_index):
-                colour_index = '00'
+                colour_index = '10'
                 
-            colour_index = '#' + colour_index  +  colour_index + 'ff'
+            colour_index = '#' + 'ffff' + colour_index 
             
         except Exception as inst:
             
-            print 'Unable to compute a valid p-value.'
-            print type(inst)     # the exception instance
-            print inst.args      # arguments stored in .args
-            print inst           # __str__ allows args to printed directly
+            logging.info('Unable to compute a valid p-value.')
+            logging.info(type(inst))     # the exception instance
+            logging.info(inst.args)      # arguments stored in .args
+            logging.info(inst)     # __str__ allows args to printed directly
 
             conf_str = 'A valid confidence score could not be computed.'
         
