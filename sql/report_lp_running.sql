@@ -9,7 +9,7 @@
 select
 
 civi_data.country, civi_data.language, 
-concat(civi_data.language,'.wikipedia.org/wiki/Main_Page?Country=',civi_data.country) as live_banners,
+concat(civi_data.language,'.wikipedia.org/wiki/Main_Page?country=',civi_data.country) as live_banners,
 civi_data.landing_page as landing_page,
 views, donations, amount
 	
