@@ -84,11 +84,12 @@ def format_query(query_name, sql_stmnt, args):
         sql_stmnt = sql_stmnt % ('%', '%', '%', '', start_time, end_time)
     
     elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
-    cmp(query_name, 'report_banner_metrics_') == 0 or cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0:
+    cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_LP_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0:
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
-        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, campaign)
+        min_views = args[3]
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, campaign, min_views)
     
     elif cmp(query_name, 'report_latest_campaign') == 0:
         start_time = args[0]

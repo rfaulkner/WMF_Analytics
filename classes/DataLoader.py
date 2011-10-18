@@ -360,20 +360,39 @@ class SummaryReportingLoader(DataLoader):
         elif cmp(FDH._QTYPE_TOTAL_, query_type) == 0:
             self._query_name_ = 'report_total_metrics'
     
-    def run_query(self, start_time, end_time, campaign):
+    """
+        PROCESS OPTIONAL KWARGS
+        
+            Allow the minimum number of views to be specified
+    """
+    def process_kwargs(self, kwargs_dict):
+        
+        min_views = '1000' # filters no campaigns
+        
+        """ Process keys -- Escape parameters """
+        for key in kwargs_dict:
+            if key == 'min_views':       
+                min_views = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+        
+        return min_views
+    
+    
+    def run_query(self, start_time, end_time, campaign, **kwargs):
+        
+        min_views = self.process_kwargs(kwargs)
         
         if self.get_one_step_banners(start_time, end_time, campaign):
             
             filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
             sql_stmnt = Hlp.file_to_string(filename)
-            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views])        
         
             logging.info('Using query: ' + self._query_name_)
             results_1 = self.execute_SQL(sql_stmnt)
             
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
             sql_stmnt = Hlp.file_to_string(filename)
-            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views])        
 
             logging.info('Using query: ' + self._query_name_)
             results_2 = self.execute_SQL(sql_stmnt)
@@ -414,8 +433,8 @@ class SummaryReportingLoader(DataLoader):
         else:
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
             sql_stmnt = Hlp.file_to_string(filename )
-            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign])        
-        
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views])        
+            
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             

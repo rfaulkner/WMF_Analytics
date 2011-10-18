@@ -33,7 +33,6 @@ from web_reporting.campaigns.views import show_campaigns, index as campaigns_ind
 import sys, MySQLdb, logging, math, datetime
 
 """ Import Analytics modules """
-import classes.Helper as Hlp
 import classes.DataLoader as DL
 import classes.DataReporting as DR
 import classes.FundraiserDataHandler as FDH
@@ -520,7 +519,7 @@ def generate_summary(request):
             ===============================
         """
         srl = DL.SummaryReportingLoader(FDH._TESTTYPE_BANNER_LP_)
-        srl.run_query(start_time, end_time, utm_campaign)    
+        srl.run_query(start_time, end_time, utm_campaign, min_views=-1)    
         
         columns = srl.get_column_names()
         summary_results = srl.get_results()
@@ -529,7 +528,7 @@ def generate_summary(request):
         
         """ Generate totals """
         srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
-        srl.run_query(start_time, end_time, utm_campaign)
+        srl.run_query(start_time, end_time, utm_campaign, min_views=-1)
         html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
         
         return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))

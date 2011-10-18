@@ -68,11 +68,11 @@ from
 drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 where receive_date >= '%s' and receive_date < '%s'
-and utm_campaign REGEXP '%s'
+and utm_campaign = '%s'
 group by 1,2) as ecomm
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
 
-where lp.utm_campaign REGEXP '%s' and views > 1000
+where lp.utm_campaign = '%s' and lp.views > %s
 group by 1
 order by 1 desc;
