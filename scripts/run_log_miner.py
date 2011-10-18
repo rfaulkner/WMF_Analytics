@@ -51,7 +51,8 @@ def main(args):
        
     fdm = DM.FundraiserDataMapper()
     
-    if cmp(args.year,'') == 0 or cmp(args.month, '') == 0 or cmp(args.day, '') == 0 or cmp(args.hour, '') == 0:
+    """ Only process command line args if they are ALL specified """
+    if isinstance(args.year, int) and isinstance(args.month, int) and isinstance(args.day, int) and isinstance(args.hour, int):
         
         logging.info('Processing command line args ....')
         fdm.poll_logs(year=args.year, month=args.month, day=args.day, hour=args.hour)
