@@ -11,6 +11,7 @@ __revision__ = "$Rev$"
 __date__ = "July 5th, 2011"
 
 import sys, logging
+import classes.TimestampProcessor as TP
 
 
 """ CONFIGURE THE LOGGER """
@@ -115,4 +116,69 @@ class MatchKeysDataReporterFilter(DataFilter):
                 new_data_dict[key] = template_times_list
         
         self._mutable_obj_.set_times(new_data_dict)
+
+"""
+    This filter removes keys from a dictionary whose sum falls under a given value.  It is applied to DataReporting objects.
+"""    
+class TimeSeriesDataFilter(DataFilter):
     
+    """
+        The base constructor supplies all that is needed 
+    """
+    def __init__(self, **kwargs):       
+        
+        DataFilter.__init__(self, **kwargs)
+        
+        self._interval_ = 1
+        self._artifact_keys_ = list()
+        
+        for key in kwargs:    
+            if key == 'artifact_keys':
+                self._artifact_keys_ = kwargs[key]
+            if key == 'interval':
+                self._interval_ = kwargs[key]
+                
+    """
+        Removes all keys not in the key list and adds a default list of times for those keys missing (however this should generally not occur)
+    """
+    def execute(self):
+        
+        DataFilter.execute(self)
+        
+        counts = self._mutable_obj_._counts_
+        times = self._mutable_obj_._times_
+        item_keys = self._mutable_obj_._item_keys_
+
+        """ Select only the specified item keys """
+        if len(item_keys) > 0:
+            counts = self._mutable_obj_.select_metric_keys(counts)
+            times = self._mutable_obj_.select_metric_keys(times)
+        
+        """ Convert Times to Integers that indicate relative times AND normalize the intervals in case any are missing """
+        for key in times.keys():
+            times[key] = TP.normalize_timestamps(times[key], False, 3)        
+
+            """ BUG FIX - remove any repeated indices """
+            fixed_times = list()
+            for time_index in range(len(times[key]) - 1):
+                if times[key][time_index] != times[key][time_index + 1]:
+                    fixed_times.append(times[key][time_index])
+            if len(times[key]) > 0:
+                fixed_times.append(times[key][-1])
+            times[key] = fixed_times
+            times[key], counts[key] = TP.normalize_intervals(times[key], counts[key], self._interval_)                    
+            
+        """ If there are missing metrics add them as zeros """
+        for artifact_key in self._artifact_keys_:
+
+            if not(artifact_key in times.keys()):
+                times[artifact_key] = times[times.keys()[0]]
+                counts[artifact_key] = [0.0] * len(times[artifact_key])
+        
+        """  Remove artifacts not in the list if there are any labels specified """
+        if len(self._artifact_keys_) > 0:
+            for key in counts.keys():
+                if key not in self._artifact_keys_:
+                    del counts[key]
+                    del times[key]
+                    

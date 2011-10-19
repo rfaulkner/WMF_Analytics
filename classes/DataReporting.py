@@ -137,6 +137,25 @@ class DataReporting(object):
         self._filters_.append(DF.MatchKeysDataReporterFilter(mutable_obj=self))
 
     """
+        Add new filters at run time - ensure there are no duplicates in the list
+    """
+    def add_filters_runtime(self, **kwargs):
+        
+        """  Check Filter list """
+        contains_timeseries_filter = False
+        for filter in self._filters_:
+            if isinstance(filter, DF.TimeSeriesDataFilter):
+                contains_timeseries_filter = True
+
+        if kwargs['time_series'] and not(contains_timeseries_filter):    
+            
+            artifact_keys_var = kwargs['artifact_keys']
+            interval_var = kwargs['interval']
+                        
+            self._filters_.append(DF.TimeSeriesDataFilter(artifact_keys=artifact_keys_var, interval=interval_var, mutable_obj=self))
+
+
+    """
         Runs through he list of data reporting filters and executes each
     """        
     def _execute_filters(self):
@@ -482,9 +501,7 @@ class IntervalReporting(DataReporting):
         html = html + '</table>'        
         
         return html
-    
 
-        
     """
         Use dataloader to produce object state - counts and times.  
         
@@ -499,40 +516,16 @@ class IntervalReporting(DataReporting):
     def run(self, start_time, end_time, interval, metric_name, campaign, label_dict):
         
         """ Get the artifacts from label dictionary """
-        artifact_keys = label_dict.keys()
+        artifact_keys_var = label_dict.keys()
         
         """ Execute the query that generates interval reporting data """
         return_val = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
         self._counts_ = return_val[0]
         self._times_ = return_val[1]
         
-        """ TODO / FIX ME -- EVERYTHING AFTER THIS POINT SHOULD BE A FILTER """
-        
-        """ Select only the specified item keys """
-        if len(self._item_keys_) > 0:
-            self._counts_ = self.select_metric_keys(self._counts_)
-            self._times_ = self.select_metric_keys(self._times_)
-
-        """ Convert Times to Integers that indicate relative times AND normalize the intervals in case any are missing """
-        for key in self._times_.keys():
-            self._times_[key] = TP.normalize_timestamps(self._times_[key], False, 3)            
-            self._times_[key], self._counts_[key] = TP.normalize_intervals(self._times_[key], self._counts_[key], interval)
-        
-        """ If there are missing metrics add them as zeros """
-        for artifact_key in artifact_keys:
-
-            if not(artifact_key in self._times_.keys()):
-                self._times_[artifact_key] = self._times_[self._times_.keys()[0]]
-                self._counts_[artifact_key] = [0.0] * len(self._times_[artifact_key])
-        
-        """  Remove artifacts not in the list if there are any labels specified """
-        if len(artifact_keys) > 0:
-            for key in self._counts_.keys():
-                if key not in artifact_keys:
-                    del self._counts_[key]
-                    del self._times_[key]
         
         """ Filter the data """
+        self.add_filters_runtime(interval=interval, artifact_keys=artifact_keys_var, time_series=True)
         self._execute_filters()
         
         
@@ -569,7 +562,7 @@ class IntervalReporting(DataReporting):
             ranges.append(metrics_max * 1.5)
             
             """ Collect the labels into a list """
-            if len(artifact_keys) > 0:
+            if len(artifact_keys_var) > 0:
                 labels = list()
                 for key in self._counts_.keys():
                     labels.append(label_dict[key])
@@ -815,11 +808,11 @@ class ConfidenceReporting(DataReporting):
             percent_increase = math.fabs(av_means_1 - av_means_2) / min(av_means_1,av_means_2) * 100.0
         
         except Exception as inst:
-            
-            print 'Percent increase could not be computed.'
-            print type(inst)     # the exception instance
-            print inst.args      # arguments stored in .args
-            print inst           # __str__ allows args to printed directly
+
+            logging.error('Percent increase could not be computed.')
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
             
             percent_increase = 0.0
             
@@ -872,41 +865,17 @@ class ConfidenceReporting(DataReporting):
                 item_2 = key
             counter += 1
         
-        artifact_keys = items.keys()
+        artifact_keys_var = items.keys()
         
         """ Retrieve values from database """
         results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
         self._counts_ = results[0]
         self._times_ = results[1]
         
-        """ TODO / FIX ME -- EVERYTHING AFTER THIS POINT SHOULD BE A FILTER """
-        
-        """ Select only the specified item keys """
-        if len(self._item_keys_) > 0:
-            self._counts_ = self.select_metric_keys(self._counts_)
-            self._times_ = self.select_metric_keys(self._times_)
-
-        """ Convert Times to Integers that indicate relative times AND normalize the intervals in case any are missing """
-        for key in self._times_.keys():
-            self._times_[key] = TP.normalize_timestamps(self._times_[key], False, 3)            
-            self._times_[key], self._counts_[key] = TP.normalize_intervals(self._times_[key], self._counts_[key], interval)
-        
-        """ If there are missing metrics add them as zeros """
-        for artifact_key in artifact_keys:
-
-            if not(artifact_key in self._times_.keys()):    
-                self._times_[artifact_key] = self._times_[self._times_.keys()[0]]
-                self._counts_[artifact_key] = [0.0] * len(self._times_[artifact_key])
-        
-        """  Remove artifacts not in the list if there are any labels specified """
-        if len(artifact_keys) > 0:
-            for key in self._counts_.keys():
-                if key not in artifact_keys:
-                    del self._counts_[key]
-                    del self._times_[key]
-        
         """ Filter the data """
+        self.add_filters_runtime(interval=interval, artifact_keys=artifact_keys_var, time_series=True)
         self._execute_filters()
+        
         metrics = self._counts_
         times_indices = self._times_
         
