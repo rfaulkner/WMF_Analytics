@@ -179,14 +179,31 @@ def show_campaigns(request, utm_campaign, **kwargs):
         PROCESS POST KWARGS 
         ===================
     """
+    
     err_msg = ''
     try:
         err_msg = str(kwargs['kwargs']['err_msg'])
     except:
         pass
     
+    test_type_override = ''
     try:
+        test_type_override = MySQLdb._mysql.escape_string(request.POST['test_type_override'])
         
+        if test_type_override == 'Banner':
+            test_type_var = FDH._TESTTYPE_BANNER_
+        elif test_type_override == 'Landing Page':
+            test_type_var = FDH._TESTTYPE_LP_
+        elif test_type_override == 'Banner and LP':
+            test_type_var = FDH._TESTTYPE_BANNER_LP_
+            
+    except:
+        test_type_var = ''
+        pass
+    
+    
+    try:
+            
         """ Frame the views over the last 3 weeks for the chosen campaign  """
         start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
         end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3) # +8 hours for UTC
@@ -200,7 +217,7 @@ def show_campaigns(request, utm_campaign, **kwargs):
         ir.run(start_time, end_time, interval, 'views', utm_campaign, {})
                                  
         """ 
-            ESTIMATE THE START AND END TIME OF THE CAMAPIGN
+            ESTIMATE THE START AND END TIME OF THE CAMPAIGN
             ===============================================
             
             Search for the first instance when more than 10 views are observed over a sampling period
@@ -213,12 +230,12 @@ def show_campaigns(request, utm_campaign, **kwargs):
         
         row_list = list(ir._data_loader_._results_) # copy the query results
         for row in row_list:
-            if row[views_index] > 10:
+            if row[views_index] > 100:
                 start_time_est = row[ts_index]
                 break
         row_list.reverse()
         for row in row_list:
-            if row[views_index] > 10:
+            if row[views_index] > 100:
                 end_time_est = row[ts_index]
                 break
         
@@ -236,11 +253,9 @@ def show_campaigns(request, utm_campaign, **kwargs):
         """ Regenerate the data using the estimated start and end times """
         ir = DR.IntervalReporting(was_run=False, use_labels=False, font_size=20, plot_type='line', query_type='campaign', file_path=projSet.__web_home__ + 'campaigns/static/images/')
         ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, {})
-    
             
-        """ determine the type of test """
-        """ Get the banners  """
-        test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(''))
+        """ Determine the type of test (if not overridden) and retrieve the artifacts  """
+        test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(''), test_type_var)
         
         return render_to_response('campaigns/show_campaigns.html', {'utm_campaign' : utm_campaign, 'test_name' : test_name, 'start_time' : start_time_est, 'end_time' : end_time_est, 'artifacts' : artifact_name_list, 'test_type' : test_type, 'err_msg' : err_msg}, context_instance=RequestContext(request))    
     

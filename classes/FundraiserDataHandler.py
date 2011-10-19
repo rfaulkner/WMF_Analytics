@@ -71,7 +71,7 @@ def get_col_type(column_name):
     Get Test type from campaign.  The logic in this method will evolve as new ways to classify test types are developed
             
 """
-def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader):
+def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader, test_type_override):
     
     campaign_reporting_loader._query_type_ = _TESTTYPE_BANNER_
     banner_list = campaign_reporting_loader.run_query({'utm_campaign' : utm_campaign, 'start_time' : start_time, 'end_time' : end_time})
@@ -79,7 +79,7 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader)
     campaign_reporting_loader._query_type_ = _TESTTYPE_LP_
     lp_list = campaign_reporting_loader.run_query({'utm_campaign' : utm_campaign, 'start_time' : start_time, 'end_time' : end_time})
     
-    if len(lp_list) > 1 and len(banner_list) > 1:
+    if (len(lp_list) > 1 and len(banner_list) > 1 and test_type_override != _TESTTYPE_BANNER_ and test_type_override != _TESTTYPE_LP_) or test_type_override == _TESTTYPE_BANNER_LP_:
         
         campaign_reporting_loader._query_type_ = _TESTTYPE_BANNER_LP_
         banner_lp_list = campaign_reporting_loader.run_query({'utm_campaign' : utm_campaign, 'start_time' : start_time, 'end_time' : end_time})
@@ -91,14 +91,12 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader)
             new_artifacts.append(banner_lp_list[i])
         
         return _TESTTYPE_BANNER_LP_, new_artifacts
-    elif len(banner_list) > 1:
+    elif (len(banner_list) > 1 and test_type_override != _TESTTYPE_BANNER_LP_ and test_type_override != _TESTTYPE_LP_) or test_type_override == _TESTTYPE_BANNER_:
         return _TESTTYPE_BANNER_, banner_list
-    elif len(lp_list) > 1:
+    
+    elif (len(lp_list) > 1 and test_type_override != _TESTTYPE_BANNER_LP_ and test_type_override != _TESTTYPE_BANNER_) or test_type_override == _TESTTYPE_LP_:
         return _TESTTYPE_LP_, lp_list
-    elif len(lp_list) > len(banner_list):
-        return _TESTTYPE_LP_, lp_list
-    elif len(banner_list) > len(lp_list):
-        return _TESTTYPE_BANNER_, banner_list
+    
     else:
         """ default a banner test """         
         return _TESTTYPE_BANNER_, banner_list 

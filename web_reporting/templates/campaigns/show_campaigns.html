@@ -76,18 +76,31 @@
 </label>
 <input type="text" name="end_time" value="{{ end_time|escape }}"/>
 
-<label>Set test type  
-<span class="small">Overrride the Test Type? (leave blank if not)</span>
+<button type="submit">Test</button>
+
+<div class="spacer"></div>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+
+<!-- Test Type Form -->
+<div id="stylized" class="myform">
+<form action="/campaigns/{{ utm_campaign|escape }}" method="post">
+{% csrf_token %}
+
+<label>Change the test test type?  
+<span class="small">Override the Test Type? (leave blank if not)</span>
 </label>
 <select name="test_type_override">
 <option></option>
-<option>Banner</option>
-<option>Landing Page</option>
-<option>Banner and LP</option>
+<option selected="Banner">Banner</option>
+<option selected="Landing Page">Landing Page</option>
+<option selected="Banner and LP">Banner and LP</option>
 </select>
 
-<button type="submit">Test</button>
-
+<button type="submit">Set</button>
 <div class="spacer"></div>
 
 </form>
