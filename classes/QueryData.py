@@ -187,6 +187,7 @@ def get_query_header(query_name):
     Returns the index of the key for the query data 
 """
 def get_key_index(query_name):
+    
     if re.search('report_banner_metrics_minutely', query_name):
         return 1
     elif re.search('report_bannerLP_metrics_minutely', query_name):
@@ -207,6 +208,9 @@ def get_key_index(query_name):
         return [0, 1]
     elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
         return 1
+    elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics' \
+    or query_name == 'report_banner_metrics_1S' or query_name == 'report_LP_metrics_1S' or query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_total_metrics_1S':
+        return 0
     else:
         return 1
     
@@ -259,49 +263,7 @@ def get_metric_index(query_name, metric_name):
             return 8
     elif query_name == 'report_contribution_tracking':
         if metric_name == 'converted_amount':
-            return 4
-        
-    elif query_name == 'report_bannerLP_metrics':
-        
-        if metric_name == 'total_impressions':
-            return 2
-        elif metric_name == 'impressions':
-            return 3
-        elif metric_name == 'views':
-            return 4
-        elif metric_name == 'clicks':
-            return 5
-        elif metric_name == 'donations':
-            return 6
-        elif metric_name == 'amount':
-            return 7
-        elif metric_name == 'click_rate':
-            return 8
-        elif metric_name == 'completion_rate':
-            return 9
-        elif metric_name == 'don_per_imp':
-            return 10
-        elif metric_name == 'amt_per_imp':
-            return 11
-        elif metric_name == 'don_per_view':
-            return 12
-        elif metric_name == 'amt_per_view':
-            return 13
-        elif metric_name == 'amt_per_donation':
-            return 14
-        elif metric_name == 'max_amt':
-            return 15
-        elif metric_name == 'pp_don':
-            return 16
-        elif metric_name == 'cc_don':
-            return 17
-        elif metric_name == 'paypal_click_thru':
-            return 18
-        elif metric_name == 'creditcard_click_thru':
-            return 19
-        else:
-            return -1
- 
+            return 4 
         
     elif query_name == 'report_LP_metrics_minutely' or query_name == 'report_LP_metrics_minutely_1S':
         if metric_name == 'imp':
@@ -402,6 +364,48 @@ def get_metric_index(query_name, metric_name):
             return 15
         else:
             return -1
+    
+    elif query_name == 'report_LP_metrics_1S' or query_name == 'report_LP_metrics':
+        
+        if metric_name == 'don_per_view':
+            return 6
+        elif metric_name == 'amt50_per_view':
+            return 8
+    
+    elif query_name == 'report_banner_metrics_1S' or query_name == 'report_banner_metrics':
+        
+        if metric_name == 'click_rate':
+            return 6
+        elif metric_name == 'don_per_imp':
+            return 7
+        elif metric_name == 'amt50_per_imp':
+            return 9
+        
+    elif query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_bannerLP_metrics':
+        
+        if metric_name == 'click_rate':
+            return 6
+        elif metric_name == 'don_per_imp':
+            return 7
+        elif metric_name == 'amt50_per_imp':
+            return 9
+        elif metric_name == 'don_per_view':
+            return 10
+        elif metric_name == 'amt50_per_view':
+            return 12
+        
+    elif query_name == 'report_total_metrics' or query_name == 'report_total_metrics_1S':
+        
+        if metric_name == 'click_rate':
+            return 6
+        elif metric_name == 'don_per_imp':
+            return 7
+        elif metric_name == 'amt50_per_imp':
+            return 9
+        elif metric_name == 'don_per_view':
+            return 10
+        elif metric_name == 'amt50_per_view':
+            return 12
         
     else:
         return 'no such table'

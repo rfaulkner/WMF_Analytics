@@ -792,51 +792,6 @@ class ConfidenceReporting(DataReporting):
         pylab.title(title)
         pylab.savefig(self._file_path_ + fname + '.' + self._fig_file_format_, format=self._fig_file_format_)
         
-    """ 
-        Print in Tabular form the means and standard deviation of each group over each interval.  Provides a detailed numerical output 
-        of the analysis.
-        
-        RETURN: the winner string, percent increase of the winner for the metric
-        
-    """
-    def summarize_results(self, means_1, means_2, std_devs_1, std_devs_2, times_indices, labels):                
-        
-        """ Compute % increase and report """
-        try:
-            av_means_1 = sum(means_1) / len(means_1)
-            av_means_2 = sum(means_2) / len(means_2)
-            percent_increase = math.fabs(av_means_1 - av_means_2) / min(av_means_1,av_means_2) * 100.0
-        
-        except Exception as inst:
-
-            logging.error('Percent increase could not be computed.')
-            logging.error(type(inst))     # the exception instance
-            logging.error(inst.args)      # arguments stored in .args
-            logging.error(inst)           # __str__ allows args to printed directly
-            
-            percent_increase = 0.0
-            
-        """ Compute the average standard deviations """
-        av_std_dev_1 = 0
-        av_std_dev_2 = 0
-        
-        for i in range(len(std_devs_1)):
-            av_std_dev_1 = av_std_dev_1 + math.pow(std_devs_1[i], 2)
-            av_std_dev_2 = av_std_dev_2 + math.pow(std_devs_2[i], 2)
-        
-        av_std_dev_1 = math.pow(av_std_dev_1 / len(std_devs_1), 0.5) 
-        av_std_dev_2 = math.pow(av_std_dev_2 / len(std_devs_1), 0.5) 
-        
-        """ Assign the winner """    
-        if av_means_1 > av_means_2:
-            winner = labels[0]
-            loser = labels[1]
-        else:
-            winner = labels[1]
-            loser = labels[0]
-        
-        
-        return [winner, percent_increase, loser]
     
     """ 
         Executes the test reporting.
@@ -917,11 +872,8 @@ class ConfidenceReporting(DataReporting):
         
         # self._gen_plot(means_1, means_2, std_devs_1, std_devs_2, times_indices, title, xlabel, ylabel, ranges, subplot_index, labels, fname)
         self._gen_box_plot([metrics_1, metrics_2], title, ylabel, subplot_index, labels, fname)
-        
-        """ Compose conclusions """ 
-        winner, percent_increase, loser = self.summarize_results(means_1, means_2, std_devs_1, std_devs_2, times_indices, labels)
-        
-        return [winner, percent_increase, confidence, colour_code, loser]
+                
+        return [confidence, colour_code]
 
 
 

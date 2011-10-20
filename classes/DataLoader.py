@@ -438,11 +438,61 @@ class SummaryReportingLoader(DataLoader):
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             
-                    
+    """
+        GET method for query results
+    """
     def get_results(self):
         
         return self._results_
 
+    """
+        Compares two artifacts from the summary for a given metric and return the winner, loser, and difference
+    """
+    def compare_artifacts(self, item_list, metric, **kwargs):
+        
+        """
+            PROCESS KWARGS
+        """
+        if 'labels' in kwargs:
+            labels = kwargs['labels']
+        else:
+            labels = item_list
+        
+        try:
+            item_list = item_list[:2]
+            if len(item_list) != 2:
+                raise Exception()
+             
+        except:
+            logging.error('SummaryReportingLoader::compare_artifacts() - There should be exactly two items to compare.')
+            return '[Invalid items]', '[Invalid items]', 'null'
+        
+        """ Retrieve indices """
+        key_index = QD.get_key_index(self._query_name_)
+        metric_index = QD.get_metric_index(self._query_name_, metric)        
+        metric_list = list()
+        
+        """ Get rows for given metrics  """
+        for row in self._results_:
+            if row[key_index] in item_list:
+                metric_list.append(float(row[metric_index]))
+        
+        """ Compute ranking and increase """
+        winning_index = metric_list.index(max(metric_list))
+        
+        if winning_index == 1:
+            losing_index = 0
+        else:
+            losing_index = 1
+        
+        winner = labels[winning_index]
+        loser = labels[losing_index]
+        
+        percent_increase = (metric_list[winning_index] - metric_list[losing_index]) / metric_list[losing_index] * 100.0 
+        percent_increase = '%5.2f' % percent_increase
+        
+        return winner, loser, percent_increase
+    
 """
 
     This Loader inherits the functionality of DaatLoader and handles SQL queries that group data by time intervals.  These are generally preferable for most
