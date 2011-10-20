@@ -48,8 +48,8 @@ def index(request):
     sampling_interval = 10
     
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
-    #start_time = '20110902150000'
-    #end_time = '20110902210000'
+    # start_time = '20111014140000'
+    # end_time = '20111014210000'
     
     
     """ 
@@ -58,7 +58,7 @@ def index(request):
     """
     
     sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results.sql')
-    sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time)
+    sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time)
     dl = DL.DataLoader()
     
     results = dl.execute_SQL(sql_stmnt)
@@ -67,7 +67,7 @@ def index(request):
     """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')
     new_results = list()
-    min_donation = 5
+    min_donation = 0
     
     for row in results:
         if row[donations_index] > min_donation:
