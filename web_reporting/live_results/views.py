@@ -46,11 +46,20 @@ def index(request):
     """ Get the donations for all campaigns over the last n hours """
     duration_hrs = 6
     sampling_interval = 10
-    
+    dl = DL.DataLoader()
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
     # start_time = '20111014140000'
     # end_time = '20111014210000'
     
+    """ 
+        Retrieve th 
+    """
+    sql_stmnt = 'select max(end_time) as latest_ts from squid_log_record where log_completion_pct = 100.00'
+    
+    results = dl.execute_SQL(sql_stmnt)
+    latest_timestamp = results[0][0]
+    latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 2, 3)
+    latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
     
     """ 
         Prepare Live Tables 
@@ -58,8 +67,8 @@ def index(request):
     """
     
     sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results.sql')
-    sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time, start_time, end_time)
-    dl = DL.DataLoader()
+    sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, start_time, end_time, start_time, end_time, \
+                             start_time, latest_timestamp_flat, start_time, latest_timestamp_flat)    
     
     results = dl.execute_SQL(sql_stmnt)
     column_names = dl.get_column_names()
@@ -104,6 +113,8 @@ def index(request):
     """ combine the separate data sets """
     dict_param = Hlp.combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict])
     dict_param['summary_table'] = summary_table
+    dict_param['latest_log_end_time'] = latest_timestamp
+    dict_param['start_time'] = TP.timestamp_convert_format(start_time, 1, 2)
     
     return render_to_response('live_results/index.html', dict_param,  context_instance=RequestContext(request))
     

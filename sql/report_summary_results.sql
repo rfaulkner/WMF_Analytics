@@ -8,24 +8,24 @@
 
 select
 
-ecomm.utm_campaign,
-ecomm.banner,
-ecomm.landing_page,
+ecomm_full.utm_campaign,
+ecomm_full.banner,
+ecomm_full.landing_page,
 floor(impressions * (views / total_views)) as impressions, 
 views,
-donations,
-amount,
-amount50,
-amount_normal,
+ecomm_full.donations,
+ecomm_full.amount,
+ecomm_full.amount50,
+ecomm_full.amount_normal,
 (views / impressions) * (total_views / views) as click_rate,
-round((donations / impressions) * (total_views / views), 6) as don_per_imp,
-(amount / impressions) * (total_views / views) as amt_per_imp,
-(amount_normal / impressions) * (total_views / views) as amt_norm_per_imp,
-donations / views as don_per_view,
-amount / views as amt_per_view,
-amount_normal / views as amt_norm_per_view,
-amount / donations as avg_donation,
-amount_normal / donations as avg_donation_norm
+round((ecomm_truncated.donations / impressions) * (total_views / views), 6) as don_per_imp,
+(ecomm_truncated.amount / impressions) * (total_views / views) as amt_per_imp,
+(ecomm_truncated.amount_normal / impressions) * (total_views / views) as amt_norm_per_imp,
+ecomm_truncated.donations / views as don_per_view,
+ecomm_truncated.amount / views as amt_per_view,
+ecomm_truncated.amount_normal / views as amt_norm_per_view,
+avg(ecomm_truncated.amount) as avg_donation,
+avg(ecomm_truncated.amount_normal) as avg_donation_norm
 	
 from
 
@@ -119,9 +119,65 @@ and all_contributions.landing_page = avg_contributions.landing_page
 and all_contributions.utm_campaign = avg_contributions.utm_campaign
 
 group by 1,2
-) as ecomm
+) as ecomm_full
 
-on ecomm.utm_campaign = lp.utm_campaign and ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
+on ecomm_full.utm_campaign = lp.utm_campaign and ecomm_full.banner = lp.utm_source and ecomm_full.landing_page = lp.landing_page
+
+join
+
+(
+select 
+
+all_contributions.utm_campaign,
+all_contributions.banner,
+all_contributions.landing_page,
+count(*) as donations,
+sum(amount) as amount,
+sum(if(amount > 50, 50, amount)) as amount50,
+round(sum(if(amount > avg_amount, avg_amount, amount)),2) as amount_normal
+
+from 
+
+(
+select
+utm_campaign,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page,
+total_amount as amount
+
+from
+drupal.contribution_tracking join civicrm.civicrm_contribution
+ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+
+where receive_date >= '%s' and receive_date <'%s'
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')) as all_contributions
+
+join 
+
+(select
+utm_campaign,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page,
+avg(total_amount) as avg_amount
+
+from
+drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
+ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+
+where receive_date >= '%s' and receive_date < '%s'
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
+group by 1,2) as avg_contributions
+
+on all_contributions.banner = avg_contributions.banner 
+and all_contributions.landing_page = avg_contributions.landing_page 
+and all_contributions.utm_campaign = avg_contributions.utm_campaign
+
+group by 1,2
+) as ecomm_truncated
+
+on ecomm_full.utm_campaign = ecomm_truncated.utm_campaign 
+and ecomm_full.banner = ecomm_truncated.banner 
+and ecomm_full.landing_page = ecomm_truncated.landing_page
 
 group by 1,2,3
 order by 1 asc;
