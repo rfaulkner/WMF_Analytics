@@ -27,7 +27,7 @@ from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 
 """ Import python base modules """
-import re, datetime, MySQLdb, logging, sys
+import re, MySQLdb, logging, sys
 
 """ Import Analytics modules """
 import classes.DataLoader as DL
@@ -74,108 +74,6 @@ def index(request):
     completion_rate = sltl.get_completion_rate_of_latest_log()
     
     return render_to_response('LML/index.html', {'err_msg' : err_msg, 'squid_table' : squid_table, 'completion_rate' : completion_rate},  context_instance=RequestContext(request))
-
-
-"""
-    Display log on squid archive server with the option to copy
-    
-"""
-def copy_logs_form(request):
-    now = datetime.datetime.now() + datetime.timedelta(hours=7)
-    return render_to_response('LML/copy_logs.html', {'year': now.year, 'month': now.month, 'day': now.day, 'hour': now.hour},  context_instance=RequestContext(request))
-
-""" 
-    !! MODIFY -- integrate this into a new thread !!
-    
-    1 Show a full file listing of the logs on the log server
-    2 Enable selection of logs to copy over
-"""
-def copy_logs_process(request):
-
-    try:
-        
-        year_var = MySQLdb._mysql.escape_string(request.POST['year'])
-        month_var = MySQLdb._mysql.escape_string(request.POST['month'])
-        day_var = MySQLdb._mysql.escape_string(request.POST['day'])
-        hour_var = MySQLdb._mysql.escape_string(request.POST['hour'])
-                
-    except KeyError:
-        """ flag an error here for the user """
-        return HttpResponseRedirect(reverse('LML.views.index'))
-        # pass
-    
-    """ Initialize the datamapper and then copy the banner and lp logs """
-    dm = DM.DataMapper()
-    dm.copy_logs('banner', year=year_var, month=month_var, day=day_var, hour=hour_var)
-    dm.copy_logs('lp', year=year_var, month=month_var, day=day_var, hour=hour_var)
-    
-    
-    return render_to_response('LML/log_list.html', {'log_file_list' : dm.get_list_of_logs()},  context_instance=RequestContext(request))
-
-
-def log_list(request):
-    
-    err_msg, earliest_utc_ts_var, latest_utc_ts_var = process_filter_data(request)
-    
-    dm = DM.DataMapper()
-    log_file_list = dm.get_list_of_logs()
-    filtered_list = list()
-    
-    for log_file in log_file_list:
-        
-        log_start_time = dm.get_timestamps(log_file)[0]
-        
-        if int(log_start_time) > int(earliest_utc_ts_var) and int(log_start_time) < int(latest_utc_ts_var):
-            filtered_list.append(log_file)
-        
-        log_file_list = filtered_list
-    
-    log_file_list.reverse()
-    
-    return render_to_response('LML/log_list.html', {'err_msg' : err_msg, 'log_file_list' : log_file_list},  context_instance=RequestContext(request))
-
-
-""" 
-    Process mining logs for a given hour - linked from the mine logs form
-"""
-def mine_logs_process(request):
-
-    try:
-        
-        year_var = MySQLdb._mysql.escape_string(request.POST['year'])
-        month_var = MySQLdb._mysql.escape_string(request.POST['month'])
-        day_var = MySQLdb._mysql.escape_string(request.POST['day'])
-        hour_var = MySQLdb._mysql.escape_string(request.POST['hour'])
-                
-    except KeyError:
-        """ flag an error here for the user """
-        return HttpResponseRedirect(reverse('LML.views.index'))
-        # pass
-    
-    """ Initialize the datamapper and then copy the banner and lp logs """
-    fdm = DM.FundraiserDataMapper()
-    log_files_list = fdm.get_list_of_logs()
-            
-    date_string = year_var + '-' + month_var + '-' + day_var + '-' + hour_var
-    
-    for lf in log_files_list:
-        if re.search(date_string, lf):
-            FDT.MinerThread(lf).run()
-            
-    return HttpResponseRedirect(reverse('LML.views.index'))
-
-    
-"""
-    Executed when the user selects a log file to mine
-    
-    Kicks off a thread to load a squid log into the db
-
-"""
-def mine_logs_process_file(request, log_name):
-
-    FDT.MinerThread(log_name).run()
-            
-    return HttpResponseRedirect(reverse('LML.views.index'))
 
 
 """
