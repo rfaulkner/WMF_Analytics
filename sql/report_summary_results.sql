@@ -112,18 +112,18 @@ ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.
 
 where receive_date >= '%s' and receive_date <'%s'
 and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
-group by 1,2) as avg_contributions
+group by 1,2,3) as avg_contributions
 
 on all_contributions.banner = avg_contributions.banner 
 and all_contributions.landing_page = avg_contributions.landing_page 
 and all_contributions.utm_campaign = avg_contributions.utm_campaign
 
-group by 1,2
+group by 1,2,3
 ) as ecomm_full
 
 on ecomm_full.utm_campaign = lp.utm_campaign and ecomm_full.banner = lp.utm_source and ecomm_full.landing_page = lp.landing_page
 
-join
+left join
 
 (
 select 
@@ -166,13 +166,13 @@ ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.
 
 where receive_date >= '%s' and receive_date < '%s'
 and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
-group by 1,2) as avg_contributions
+group by 1,2,3) as avg_contributions
 
 on all_contributions.banner = avg_contributions.banner 
 and all_contributions.landing_page = avg_contributions.landing_page 
 and all_contributions.utm_campaign = avg_contributions.utm_campaign
 
-group by 1,2
+group by 1,2,3
 ) as ecomm_truncated
 
 on ecomm_full.utm_campaign = ecomm_truncated.utm_campaign 
