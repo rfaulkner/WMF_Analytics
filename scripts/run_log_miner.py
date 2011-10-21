@@ -55,12 +55,12 @@ def main(args):
     if isinstance(args.year, str) and isinstance(args.month, str) and isinstance(args.day, str) and isinstance(args.hour, str):
         
         logging.info('Processing command line args ....')
-        fdm.poll_logs(year=args.year, month=args.month, day=args.day, hour=args.hour)
+        fdm.process_logs(year=args.year, month=args.month, day=args.day, hour=args.hour)
     
     else:
 
         logging.info('No args command line args provided. Proceeding ...')
-        fdm.poll_logs()
+        fdm.process_logs()
         
     logging.info('Log polling complete.')
     

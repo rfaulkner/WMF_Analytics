@@ -368,55 +368,53 @@ class FundraiserDataMapper(DataMapper):
     """
         Determines if new logs may be waiting - if so they are copied and mined
     """
-    def poll_logs(self, **kwargs):
+    def process_logs(self, **kwargs):
         
         time_of_last_log = self.get_time_of_last_log()
         curr_time = datetime.datetime.now()
         
         logging.debug('Time of last log: %s' % str(time_of_last_log))
         logging.debug('Current Time: %s' % str(curr_time))
-        
-        if time_of_last_log + datetime.timedelta(minutes=self._log_copy_interval_) < curr_time:
-            
-            """ Copy over the latest logs """
-            if not kwargs.keys():
                 
-                """ Determine the minute of the log timestamp to load based on the most recent from the current time """
-                if curr_time.minute < 15:
-                    minute_str = '00'
-                elif curr_time.minute < 30:
-                    minute_str = '15'
-                elif curr_time.minute < 45:
-                    minute_str = '30'
-                else:
-                    minute_str = '45'
-                    
-                copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
-                copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
+        """ Copy over the latest logs """
+        if not kwargs.keys():
             
+            """ Determine the minute of the log timestamp to load based on the most recent from the current time """
+            if curr_time.minute < 15:
+                minute_str = '00'
+            elif curr_time.minute < 30:
+                minute_str = '15'
+            elif curr_time.minute < 45:
+                minute_str = '30'
             else:
+                minute_str = '45'
                 
-                copied_banner_logs = self.copy_logs('banner', **kwargs)
-                copied_lp_logs = self.copy_logs('lp', **kwargs)
-                        
-            """ Mine the latest logs """ 
-            for banner_imp_file in copied_banner_logs:
-                try:
-                    self.mine_squid_impression_requests(banner_imp_file)
-                    self.delete_log_by_filename(banner_imp_file)
+            copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
+            copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
+        
+        else:
+            
+            copied_banner_logs = self.copy_logs('banner', **kwargs)
+            copied_lp_logs = self.copy_logs('lp', **kwargs)
                     
-                except IOError as inst:
-                    logging.error(inst)
-                    logging.error('Could not mine contents of %s, it appears that it does not exist. ' % banner_imp_file)
+        """ Mine the latest logs """ 
+        for banner_imp_file in copied_banner_logs:
+            try:
+                self.mine_squid_impression_requests(banner_imp_file)
+                self.delete_log_by_filename(banner_imp_file)
+                
+            except IOError as inst:
+                logging.error(inst)
+                logging.error('Could not mine contents of %s, it appears that it does not exist. ' % banner_imp_file)
 
-            for lp_view_file in copied_lp_logs:
-                try:
-                    self.mine_squid_landing_page_requests(lp_view_file)
-                    self.delete_log_by_filename(lp_view_file)
-                    
-                except IOError as inst:
-                    logging.error(inst)
-                    logging.error('Could not mine contents of %s, it appears that it does not exist. ' % lp_view_file)
+        for lp_view_file in copied_lp_logs:
+            try:
+                self.mine_squid_landing_page_requests(lp_view_file)
+                self.delete_log_by_filename(lp_view_file)
+                
+            except IOError as inst:
+                logging.error(inst)
+                logging.error('Could not mine contents of %s, it appears that it does not exist. ' % lp_view_file)
     
      
     """
