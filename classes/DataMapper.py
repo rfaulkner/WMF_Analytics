@@ -393,11 +393,6 @@ class FundraiserDataMapper(DataMapper):
                     
                 copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
                 copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour), minute=minute_str)
-                
-                # copied_banner_logs = self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
-                # copied_banner_logs.extend(self.copy_logs('banner',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
-                # copied_lp_logs = self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str((curr_time + datetime.timedelta(hours=-1)).hour))
-                # copied_lp_logs.extend(self.copy_logs('lp',year=str(curr_time.year), month=str(curr_time.month), day=str(curr_time.day), hour=str(curr_time.hour)))
             
             else:
                 
@@ -408,6 +403,8 @@ class FundraiserDataMapper(DataMapper):
             for banner_imp_file in copied_banner_logs:
                 try:
                     self.mine_squid_impression_requests(banner_imp_file)
+                    self.delete_log_by_filename(banner_imp_file)
+                    
                 except IOError as inst:
                     logging.error(inst)
                     logging.error('Could not mine contents of %s, it appears that it does not exist. ' % banner_imp_file)
@@ -415,6 +412,8 @@ class FundraiserDataMapper(DataMapper):
             for lp_view_file in copied_lp_logs:
                 try:
                     self.mine_squid_landing_page_requests(lp_view_file)
+                    self.delete_log_by_filename(lp_view_file)
+                    
                 except IOError as inst:
                     logging.error(inst)
                     logging.error('Could not mine contents of %s, it appears that it does not exist. ' % lp_view_file)
