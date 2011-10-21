@@ -24,8 +24,8 @@ round((ecomm_truncated.donations / impressions) * (total_views / views), 6) as d
 ecomm_truncated.donations / views as don_per_view,
 ecomm_truncated.amount / views as amt_per_view,
 ecomm_truncated.amount_normal / views as amt_norm_per_view,
-avg(ecomm_truncated.amount) as avg_donation,
-avg(ecomm_truncated.amount_normal) as avg_donation_norm
+ecomm_full.amount / ecomm_full.donations as avg_donation,
+ecomm_full.amount_normal / ecomm_full.donations as avg_donation_norm
 	
 from
 
