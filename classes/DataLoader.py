@@ -472,14 +472,23 @@ class SummaryReportingLoader(DataLoader):
         metric_index = QD.get_metric_index(self._query_name_, metric)        
         metric_list = list()
         
-        """ Get rows for given metrics  """
+        """ Get rows for given metrics - use 'label_indices' to map metrics back to labels """
+        label_indices = list()
         for row in self._results_:
             if row[key_index] in item_list:
                 metric_list.append(float(row[metric_index]))
-        
+                label_indices.append(item_list.index(row[key_index]))
+                
         """ Compute ranking and increase """
         winning_index = metric_list.index(max(metric_list))
+        winning_index = label_indices[winning_index]
         
+        """ If the metric indices do not match up with the label indices swap them to synchronize the lists """
+        if label_indices[0] != 0:
+            tmp = metric_list[0]
+            metric_list[0] = metric_list[1]
+            metric_list[1] = tmp
+            
         if winning_index == 1:
             losing_index = 0
         else:
