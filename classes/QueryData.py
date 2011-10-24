@@ -83,12 +83,23 @@ def format_query(query_name, sql_stmnt, args):
         end_time = args[1]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '', start_time, end_time)
     
-    elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
-    cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_LP_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0:
+    elif cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_LP_metrics_1S') == 0:
+        
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
         min_views = args[3]
+        
+        sql_stmnt = sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, campaign, min_views)
+        
+    elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
+    cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0:
+        
+        start_time = args[0]
+        end_time = args[1]
+        campaign = args[2]
+        min_views = args[3]
+        
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, campaign, min_views)
     
     elif cmp(query_name, 'report_latest_campaign') == 0:
@@ -109,8 +120,22 @@ def format_query(query_name, sql_stmnt, args):
         where_str = args[0]
         sql_stmnt = sql_stmnt % ('%', '%', '%', '%', where_str)
     
-    elif cmp(query_name, 'report_banner_metrics_minutely') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely') == 0 or cmp(query_name, 'report_LP_metrics_minutely') == 0 or \
-    cmp(query_name, 'report_banner_metrics_minutely_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely_1S') == 0 or cmp(query_name, 'report_LP_metrics_minutely_1S') == 0:
+    elif cmp(query_name, 'report_LP_metrics_minutely') == 0 or cmp(query_name, 'report_LP_metrics_minutely_1S') == 0:
+        
+        start_time = args[0]
+        end_time = args[1]
+        campaign = args[2]
+        interval = args[3]
+        
+        """ The start time for the impression portion of the query should be one second less"""
+        start_time_obj = TP.timestamp_to_obj(start_time,1)
+        imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
+        imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
+        
+        sql_stmnt = sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
+    
+    elif cmp(query_name, 'report_banner_metrics_minutely') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely') == 0 or cmp(query_name, 'report_banner_metrics_minutely_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely_1S') == 0:
+    
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
@@ -266,24 +291,23 @@ def get_metric_index(query_name, metric_name):
             return 4 
         
     elif query_name == 'report_LP_metrics_minutely' or query_name == 'report_LP_metrics_minutely_1S':
-        if metric_name == 'imp':
+        
+        if metric_name == 'views':
             return 2
-        elif metric_name == 'views':
-            return 3
         elif metric_name == 'donations':
-            return 4
+            return 3
         elif metric_name == 'amount':
-            return 5
+            return 4
         elif metric_name == 'amount50':
-            return 6
+            return 5
         elif metric_name == 'don_per_view':
-            return 7
+            return 6
         elif metric_name == 'amt50_per_view':
-            return 9
+            return 8
         elif metric_name == 'avg_donation':
-            return 10
+            return 9
         elif metric_name == 'avg_donation50':
-            return 11
+            return 10
         else:
             return -1
         
@@ -368,10 +392,12 @@ def get_metric_index(query_name, metric_name):
     elif query_name == 'report_LP_metrics_1S' or query_name == 'report_LP_metrics':
         
         if metric_name == 'don_per_view':
-            return 6
+            return 5
         elif metric_name == 'amt50_per_view':
-            return 8
-    
+            return 7
+        else:
+            return -1
+        
     elif query_name == 'report_banner_metrics_1S' or query_name == 'report_banner_metrics':
         
         if metric_name == 'click_rate':
