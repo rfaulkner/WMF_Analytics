@@ -69,6 +69,9 @@ group by 1,2) as lp_tot
 
 on lp_tot.utm_campaign = lp.utm_campaign and lp_tot.utm_source = lp.utm_source
 
+-- use a right join here since we are interested in campaigns that are tallying donations
+-- 
+
 right outer join
 
 (

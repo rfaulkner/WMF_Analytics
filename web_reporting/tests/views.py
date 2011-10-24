@@ -150,8 +150,6 @@ def test_summaries(request):
 """
 def test(request):
     
-    print request.POST
-    
     """ 
         PROCESS POST DATA
         ================= 
@@ -367,17 +365,17 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     if test_type == FDH._TESTTYPE_BANNER_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_,file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        measured_metric = ['don_per_imp', 'amt50_per_imp', 'click_rate'] 
+        measured_metric = ['don_per_imp', 'amt_norm_per_imp', 'click_rate'] 
                     
     elif test_type == FDH._TESTTYPE_LP_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        measured_metric = ['don_per_view', 'amt50_per_view']
+        measured_metric = ['don_per_view', 'amt_norm_per_view']
         
     elif test_type == FDH._TESTTYPE_BANNER_LP_:
         ir = DR.IntervalReporting(use_labels=use_labels_var,font_size=20,plot_type='step',query_type=FDH._QTYPE_BANNER_LP_,file_path=projSet.__web_home__ + 'tests/static/images/')
         link_item = '<a href="http://meta.wikimedia.org/w/index.php?title=Special:NoticeTemplate/view&template=%s">%s</a>'
-        measured_metric = ['don_per_imp', 'amt50_per_imp','don_per_view', 'amt50_per_view', 'click_rate']
+        measured_metric = ['don_per_imp', 'amt_norm_per_imp','don_per_view', 'amt_norm_per_view', 'click_rate']
     
     
     """ 

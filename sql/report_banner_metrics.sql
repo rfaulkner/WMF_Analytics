@@ -1,4 +1,12 @@
 
+--
+-- Ryan Faulkner - October 24th, 2011
+-- report_banner_metrics.sql
+--
+-- This query returns aggregate banner results 
+-- This is consumed by the test view /Fundraising_Tools/web_reporting/tests
+--
+
 
 select
 
@@ -7,13 +15,13 @@ floor(impressions * (views / total_views)) as impressions,
 views,
 donations,
 amount,
-amount50,
+amount_normal,
 (views / impressions) * (total_views / views) as click_rate,
 round((donations / impressions) * (total_views / views), 6) as don_per_imp,
 (amount / impressions) * (total_views / views) as amt_per_imp,
-(amount50 / impressions) * (total_views / views) as amt50_per_imp,
+(amount_normal / impressions) * (total_views / views) as amt_norm_per_imp,
 amount / donations as avg_donation,
-amount50 / donations as avg_donation50
+amount_normal / donations as avg_donation_norm
 	
 from
 
@@ -50,17 +58,48 @@ on imp.utm_source =  lp_tot.utm_source
 
 left join
 
-(select 
+-- Temporary table that stores rows of donation data from civicrm and drupal tables
+-- 
+
+(
+select 
+
+all_contributions.banner,
+count(*) as donations,
+sum(amount) as amount,
+round(sum(if(amount > avg_amount, avg_amount, amount)),2) as amount_normal
+
+from 
+
+(
+select
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
-sum(not isnull(drupal.contribution_tracking.contribution_id)) as donations,
-sum(total_amount) as amount,
-sum(if(total_amount > 50, 50, total_amount)) as amount50
+total_amount as amount
+
 from
-drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
+drupal.contribution_tracking join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
-where receive_date >=  '%s' and receive_date < '%s'
-and utm_campaign = '%s'
-group by 1) as ecomm
+
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+) as all_contributions
+
+join 
+
+(select
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
+avg(total_amount) as avg_amount
+
+from
+drupal.contribution_tracking left join civicrm.civicrm_contribution
+ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+group by 1) as avg_contributions
+
+on all_contributions.banner = avg_contributions.banner
+
+group by 1
+) as ecomm
 
 on ecomm.banner = lp.utm_source
 

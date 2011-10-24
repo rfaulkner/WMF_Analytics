@@ -108,11 +108,11 @@ def get_test_type(utm_campaign, start_time, end_time, campaign_reporting_loader,
 def get_test_type_metrics(test_type):
     
     if test_type == _TESTTYPE_BANNER_:
-        test_metrics = ['imp', 'click_rate', 'donations', 'don_per_imp', 'amt50_per_imp']
+        test_metrics = ['imp', 'click_rate', 'donations', 'don_per_imp', 'amt_norm_per_imp']
     if test_type == _TESTTYPE_LP_:
-        test_metrics = ['views', 'donations', 'don_per_view', 'amt50_per_view']
+        test_metrics = ['views', 'donations', 'don_per_view', 'amt_norm_per_view']
     if test_type == _TESTTYPE_BANNER_LP_:
-        test_metrics = ['imp', 'views', 'click_rate', 'donations', 'don_per_imp', 'amt50_per_imp', 'don_per_view', 'amt50_per_view']
+        test_metrics = ['imp', 'views', 'click_rate', 'donations', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
         
     return test_metrics
 

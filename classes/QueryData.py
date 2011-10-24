@@ -90,17 +90,17 @@ def format_query(query_name, sql_stmnt, args):
         campaign = args[2]
         min_views = args[3]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, campaign, min_views)
+        sql_stmnt = sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, start_time, end_time, campaign, campaign, min_views)
         
     elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
-    cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0:
+    cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0 or cmp(query_name, 'report_total_metrics_1S') == 0:
         
         start_time = args[0]
         end_time = args[1]
         campaign = args[2]
         min_views = args[3]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, campaign, min_views)
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, start_time, end_time, campaign, campaign, min_views)
     
     elif cmp(query_name, 'report_latest_campaign') == 0:
         start_time = args[0]
@@ -132,7 +132,8 @@ def format_query(query_name, sql_stmnt, args):
         imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
         imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
         
-        sql_stmnt = sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
+        sql_stmnt = sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
+                                 start_time, end_time, campaign, campaign)
     
     elif cmp(query_name, 'report_banner_metrics_minutely') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely') == 0 or cmp(query_name, 'report_banner_metrics_minutely_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely_1S') == 0:
     
@@ -147,7 +148,7 @@ def format_query(query_name, sql_stmnt, args):
         imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
         
         sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
-                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, campaign)
+                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, start_time, end_time, campaign, campaign)
     
     elif cmp(query_name, 'report_campaign_metrics_minutely') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_1S') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_total') == 0 \
     or cmp(query_name, 'report_campaign_metrics_minutely_total_1S') == 0:
@@ -298,15 +299,15 @@ def get_metric_index(query_name, metric_name):
             return 3
         elif metric_name == 'amount':
             return 4
-        elif metric_name == 'amount50':
+        elif metric_name == 'amount_normal':
             return 5
         elif metric_name == 'don_per_view':
             return 6
-        elif metric_name == 'amt50_per_view':
+        elif metric_name == 'amt_norm_per_view':
             return 8
         elif metric_name == 'avg_donation':
             return 9
-        elif metric_name == 'avg_donation50':
+        elif metric_name == 'avg_donation_norm':
             return 10
         else:
             return -1
@@ -316,17 +317,17 @@ def get_metric_index(query_name, metric_name):
             return 2
         elif metric_name == 'donations':
             return 4
-        elif metric_name == 'amount50':
+        elif metric_name == 'amount_normal':
             return 6
         elif metric_name == 'don_per_imp':
             return 8
-        elif metric_name == 'amt50_per_imp':
+        elif metric_name == 'amt_norm_per_imp':
             return 10
         elif metric_name == 'click_rate':
             return 7
         elif metric_name == 'avg_donation':
             return 11
-        elif metric_name == 'avg_donation50':
+        elif metric_name == 'avg_donation_norm':
             return 12
         else:
             return -1
@@ -370,21 +371,21 @@ def get_metric_index(query_name, metric_name):
             return 3
         elif metric_name == 'donations':
             return 4
-        elif metric_name == 'amount50':
+        elif metric_name == 'amount_normal':
             return 6
         elif metric_name == 'don_per_imp':
             return 8
-        elif metric_name == 'amt50_per_imp':
+        elif metric_name == 'amt_norm_per_imp':
             return 10
         elif metric_name == 'don_per_view':
             return 11
-        elif metric_name == 'amt50_per_view':
+        elif metric_name == 'amt_norm_per_view':
             return 13
         elif metric_name == 'click_rate':
             return 7
         elif metric_name == 'avg_donation':
             return 14
-        elif metric_name == 'avg_donation50':
+        elif metric_name == 'avg_donation_norm':
             return 15
         else:
             return -1
@@ -393,7 +394,7 @@ def get_metric_index(query_name, metric_name):
         
         if metric_name == 'don_per_view':
             return 5
-        elif metric_name == 'amt50_per_view':
+        elif metric_name == 'amt_norm_per_view':
             return 7
         else:
             return -1
@@ -404,7 +405,7 @@ def get_metric_index(query_name, metric_name):
             return 6
         elif metric_name == 'don_per_imp':
             return 7
-        elif metric_name == 'amt50_per_imp':
+        elif metric_name == 'amt_norm_per_imp':
             return 9
         
     elif query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_bannerLP_metrics':
@@ -413,11 +414,11 @@ def get_metric_index(query_name, metric_name):
             return 6
         elif metric_name == 'don_per_imp':
             return 7
-        elif metric_name == 'amt50_per_imp':
+        elif metric_name == 'amt_norm_per_imp':
             return 9
         elif metric_name == 'don_per_view':
             return 10
-        elif metric_name == 'amt50_per_view':
+        elif metric_name == 'amt_norm_per_view':
             return 12
         
     elif query_name == 'report_total_metrics' or query_name == 'report_total_metrics_1S':
@@ -426,11 +427,11 @@ def get_metric_index(query_name, metric_name):
             return 6
         elif metric_name == 'don_per_imp':
             return 7
-        elif metric_name == 'amt50_per_imp':
+        elif metric_name == 'amt_norm_per_imp':
             return 9
         elif metric_name == 'don_per_view':
             return 10
-        elif metric_name == 'amt50_per_view':
+        elif metric_name == 'amt_norm_per_view':
             return 12
         
     else:
@@ -483,8 +484,14 @@ def get_metric_full_name(metric_name):
         return 'Amount50 per Impression'
     elif metric_name == 'amt50_per_view':
         return 'Amount50 per View'
+    elif metric_name == 'amt_norm_per_imp':
+        return 'Amount Normal per Impression'
+    elif metric_name == 'amt_norm_per_view':
+        return 'Amount Normal per View'
     elif metric_name == 'amount50':
         return 'Amount50'
+    elif metric_name == 'amount_normal':
+        return 'Amount Normal'
     elif metric_name == 'donations':
         return 'Donations'
     elif metric_name == 'amt_per_imp':
@@ -499,6 +506,8 @@ def get_metric_full_name(metric_name):
         return 'Average Donation'
     elif metric_name == 'avg_donation50':
         return 'Average Donation50'
+    elif metric_name == 'avg_donation_normal':
+        return 'Average Donation Normal'
     else:
         return'no such metric'
 
@@ -509,9 +518,10 @@ def get_metric_data_type(metric_name, elem):
         return elem
     elif metric_name == 'imp' or metric_name == 'impressions' or metric_name == 'views' or metric_name == 'donations' or metric_name ==  'clicks' or metric_name == 'total_clicks':
         return str(int(elem))
-    elif metric_name == 'amt50_per_view' or metric_name == 'amt50_per_imp' or metric_name == 'don_per_view' or metric_name == 'don_per_imp' or metric_name == 'amt_per_imp' or metric_name == 'amt_per_view' or metric_name == 'click_rate':
+    elif metric_name == 'amt50_per_view' or metric_name == 'amt50_per_imp' or metric_name == 'don_per_view' or metric_name == 'don_per_imp' or metric_name == 'amt_per_imp' or metric_name == 'amt_per_view' or metric_name == 'click_rate' \
+    or metric_name == 'amt_norm_per_view' or metric_name == 'amt_norm_per_imp':
         return "%.6f" % elem
-    elif metric_name == 'amount' or metric_name == 'amount50' or metric_name == 'amount100' or metric_name == 'avg_donation' or metric_name == 'avg_donation50':
+    elif metric_name == 'amount' or metric_name == 'amount50' or metric_name == 'amount100' or metric_name == 'avg_donation' or metric_name == 'avg_donation50' or metric_name == 'amount_normal' or metric_name == 'avg_donation_norm':
         return "%.2f" % elem
     else:
         return'no such metric'
