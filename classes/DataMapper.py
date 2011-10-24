@@ -100,7 +100,10 @@ class DataMapper(object):
                 hour = str(hour-12)
                 day_part = 'PM'
         else:
-            hour = str(hour)
+            if hour == 0:
+                hour = '12'
+            else:
+                hour = str(hour)
             day_part = 'AM'
         
         if int(hour) < 10:
