@@ -401,7 +401,7 @@ class SummaryReportingLoader(DataLoader):
             aggregate_amounts = [[]]
             if cmp('report_total_metrics', self._query_name_) == 0:
                 
-                col_types = QD.get_columnn_types('report_total_metrics')
+                col_types = QD.get_column_types('report_total_metrics')
                 col_names = self.get_column_names()
                                 
                 for index in range(len(col_types)):

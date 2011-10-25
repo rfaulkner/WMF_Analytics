@@ -506,8 +506,16 @@ def get_metric_full_name(metric_name):
         return 'Average Donation'
     elif metric_name == 'avg_donation50':
         return 'Average Donation50'
-    elif metric_name == 'avg_donation_normal':
+    elif metric_name == 'avg_donation_norm':
         return 'Average Donation Normal'
+    elif metric_name == 'utm_campaign':
+        return 'Campaign'
+    elif metric_name == 'utm_source':
+        return 'Banner'
+    elif metric_name == 'banner':
+        return 'Banner'
+    elif metric_name == 'landing_page':
+        return 'Landing Page'
     else:
         return'no such metric'
 
@@ -528,13 +536,13 @@ def get_metric_data_type(metric_name, elem):
 
 
 """
-    Given a qury return the types of each column for aggregation
+    Given a query return the types of each column for aggregation
     
     @param query: string query name
     
     @return: list of column types for aggregation 
 """
-def get_columnn_types(query):
+def get_column_types(query):
     
     if cmp(query, 'report_total_metrics') == 0:
                 
