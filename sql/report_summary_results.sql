@@ -15,7 +15,6 @@ floor(impressions * (views / total_views)) as impressions,
 views,
 ecomm_full.donations,
 ecomm_full.amount,
-ecomm_full.amount50,
 ecomm_full.amount_normal,
 (views / impressions) * (total_views / views) as click_rate,
 round((ecomm_truncated.donations / impressions) * (total_views / views), 6) as don_per_imp,
@@ -82,7 +81,6 @@ all_contributions.banner,
 all_contributions.landing_page,
 count(*) as donations,
 sum(amount) as amount,
-sum(if(amount > 50, 50, amount)) as amount50,
 round(sum(if(amount > avg_amount, avg_amount, amount)),2) as amount_normal
 
 from 
@@ -136,7 +134,6 @@ all_contributions.banner,
 all_contributions.landing_page,
 count(*) as donations,
 sum(amount) as amount,
-sum(if(amount > 50, 50, amount)) as amount50,
 round(sum(if(amount > avg_amount, avg_amount, amount)),2) as amount_normal
 
 from 
