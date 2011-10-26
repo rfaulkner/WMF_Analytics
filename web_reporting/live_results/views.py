@@ -48,11 +48,11 @@ def index(request):
     sampling_interval = 10
     dl = DL.DataLoader()
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
-    # start_time = '20111014140000'
-    # end_time = '20111014210000'
+    start_time = '20111014190000'
+    end_time = '20111014210000'
     
     """ 
-        Retrieve th 
+        Retrieve the latest time for which impressions have been loaded
     """
     sql_stmnt = 'select max(end_time) as latest_ts from squid_log_record where log_completion_pct = 100.00'
     
@@ -76,13 +76,17 @@ def index(request):
     """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')
     new_results = list()
-    min_donation = 0
+    min_donation = 10
     
     for row in results:
         if row[donations_index] > min_donation:
             new_results.append(row)
+    
     results = new_results
-    summary_table = DR.DataReporting()._write_html_table(results, column_names)
+    
+    summary_table = DR.DataReporting()._write_html_table(results, column_names, use_standard_metric_names=True)
+    metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
+    summary_table = '<h4><u>Metrics Legend:</u></h4><div class="spacer"></div>' + metric_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + summary_table
     
     """ 
         Prepare Live Plots 
