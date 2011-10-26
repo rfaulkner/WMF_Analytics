@@ -11,7 +11,6 @@ __revision__ = "$Rev$"
 __date__ = "May 8th, 2011"
 
 
-
 """ Query Types """
 _QTYPE_BANNER_ = 'banner'
 _QTYPE_LP_ = 'lp'
@@ -44,6 +43,8 @@ column_types = {'ts' : _COLTYPE_TIME_, 'day_hr': _COLTYPE_TIME_, 'utm_campaign' 
                     'imp' : _COLTYPE_AMOUNT_, 'views' : _COLTYPE_AMOUNT_, 'donations' : _COLTYPE_AMOUNT_, 'clicks' : _COLTYPE_AMOUNT_, 'total_clicks' : _COLTYPE_AMOUNT_, 'amount' : _COLTYPE_AMOUNT_,'amount50' : _COLTYPE_AMOUNT_, \
                     'amount100' : _COLTYPE_AMOUNT_, 'avg_donation' : _COLTYPE_RATE_, 'avg_donation50' : _COLTYPE_RATE_, 'click_rate' : _COLTYPE_RATE_, 'conversion_rate' : _COLTYPE_RATE_, 'don_per_imp' : _COLTYPE_RATE_, \
                     'amt_per_imp' : _COLTYPE_RATE_, 'amt50_per_imp' : _COLTYPE_RATE_, 'don_per_view' : _COLTYPE_RATE_, 'amt_per_view' : _COLTYPE_RATE_, 'amt50_per_view' : _COLTYPE_RATE_}
+
+
 
 """
     For a given query this defines the aggregate type of each column
@@ -135,3 +136,6 @@ def order_column_keys(keys):
             new_keys.append(order[i])
         
     return new_keys
+
+
+

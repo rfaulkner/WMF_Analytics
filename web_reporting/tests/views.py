@@ -451,12 +451,14 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         percent_increase.append(ret[2])
     
     """ Compose table for showing artifact """
-    html_table = DR.DataReporting()._write_html_table(summary_results, columns, coloured_columns=column_colours)    
+    html_table = DR.DataReporting()._write_html_table(summary_results, columns, coloured_columns=column_colours, use_standard_metric_names=True)    
+    metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
+    html_table = metric_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + html_table
     
     """ Generate totals """
     srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
     srl.run_query(start_time, end_time, campaign)
-    html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
+    html_table = '<h4><u>Metrics Legend:</u></h4><div class="spacer"></div>' + html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
         
 
     return [measured_metric, winner, loser, percent_increase, confidence, html_table_pm_banner, html_table_pm_lp, html_language, html_table]
@@ -495,7 +497,9 @@ def generate_summary(request):
         """ Generate totals """
         srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1)
-        html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
+        html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
+        metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
+        html_table = '<h4><u>Metrics Legend:</u></h4><div class="spacer"></div>' + metric_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + html_table
         
         return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))
     

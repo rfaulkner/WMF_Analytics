@@ -46,7 +46,11 @@ import classes.DataFilters as DF
 LOGGING_STREAM = sys.stderr
 logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
-        
+standard_metric_names = {'imp' : 'Bi', 'impressions' : 'Bi', 'views' : 'LPi', 'don_per_imp' : 'D / Bi', 'don_per_view' : 'D / LPi', 'amt_per_imp' : 'A / Bi', 'amt_per_view' : 'A / LPi', \
+                         'amt_norm_per_imp' : 'An / Bi', 'amt_norm_per_view' : 'An / LPi', 'click_rate' : 'LPi / Bi', 'avg_donation' : 'AVG A', 'avg_donation_norm' : 'AVG An', \
+                         'utm_campaign' : 'Campaign', 'utm_source' : 'B', 'banner' : 'B', 'landing_page' : 'LP', 'donations' : 'D', 'amount' : 'A', 'amount_normal' : 'An'}
+
+
 """
 
     BASE CLASS :: DataReporting
@@ -214,9 +218,13 @@ class DataReporting(object):
         coloured_cols = list()
         column_colours_idx = dict()
         
+        if 'use_standard_metric_names' in kwargs.keys():
+            column_names = self.get_standard_metrics_list(column_names)        
+        
         if 'coloured_columns' in kwargs.keys():
             
             coloured_cols = kwargs['coloured_columns']            
+            coloured_cols = self.get_standard_metrics_list(coloured_cols)
             
             try:
                 if isinstance(coloured_cols, list):
@@ -286,6 +294,50 @@ class DataReporting(object):
         
         return html
     
+        
+    """
+        Map general metrics to standard ones
+            
+        @param keys: list of column names
+        @type keys: list standard metric names    
+    
+    """
+    def get_standard_metrics_list(self, metrics_list):
+        
+        standard_list = list()
+         
+        for metric in metrics_list:
+            try:
+                standard_list.append(standard_metric_names[metric])
+            except:
+                standard_list.append(metric)
+                logging.error('Metric standard name not found: %s' % metric)
+                    
+        
+        return standard_list
+    
+    """
+        Map general metrics to standard ones
+            
+        @param keys: list of column names
+        @type keys: list standard metric names    
+    
+    """
+    def get_standard_metrics_legend(self):
+        
+        column_names = ['<b>Metric Name</b>']
+        rows = [['<b>Standard Name</b>']]
+        
+        for key in standard_metric_names:            
+            metric_full_name = QD.get_metric_full_name(key)
+            
+            """ Ensure there are no repeat columns """
+            if not(metric_full_name in column_names) and not(standard_metric_names[key] in rows[0]): 
+                column_names.append(metric_full_name)
+                rows[0].append(standard_metric_names[key])
+                
+        return self._write_html_table(rows, column_names) 
+
     """
     
         The access point of DataReporting and derived objects.  Will be used for executing and orchestrating the creation of plots, tables etc.

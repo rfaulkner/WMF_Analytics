@@ -474,6 +474,8 @@ def get_plot_ylabel(query_name):
 def get_metric_full_name(metric_name):
     if metric_name == 'imp':
         return 'Banner Impressions'
+    elif metric_name == 'imp':
+        return 'Banner Impressions'
     elif metric_name == 'views':
         return 'Landing Page Views'
     elif metric_name == 'don_per_imp':
