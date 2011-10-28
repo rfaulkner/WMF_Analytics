@@ -22,8 +22,7 @@ __date__ = "June 20th, 2011"
 """ Import django modules """
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.http import HttpResponse, HttpResponseRedirect 
-from django.core.urlresolvers import reverse
+from django.http import HttpResponse 
 
 """ Import python base modules """
 import sys, datetime, operator, MySQLdb, logging
@@ -90,8 +89,9 @@ def index(request, **kwargs):
         min_donations_var = ''
         earliest_utc_ts_var = ''
         filter_data = False
-            
-    start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-21)
+    
+    """ Look for campaigns over the last 7 days """ 
+    start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-7)
     end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)    
     start_time = TP.timestamp_from_obj(start_time_obj,1,3)
     
@@ -204,10 +204,10 @@ def show_campaigns(request, utm_campaign, **kwargs):
     
     try:
             
-        """ Frame the views over the last 3 weeks for the chosen campaign  """
-        start_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(days=-21),1,3)
-        end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3) # +8 hours for UTC
-        
+        """ Find the earliest and latest page views for a given campaign  """
+        start_time = DL.LandingPageTableLoader().get_earliest_campaign_view(utm_campaign)
+        end_time = DL.LandingPageTableLoader().get_latest_campaign_view(utm_campaign)
+
         interval = 1
             
         """ Create reporting object to retrieve campaign data and write plots to image respo on disk """

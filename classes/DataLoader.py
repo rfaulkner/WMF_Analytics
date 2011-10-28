@@ -2074,6 +2074,36 @@ class LandingPageTableLoader(TableLoader):
         
         return timestamps
         
+    """
+        Returns the earliest timestamp for a given campaign
+        
+        @param utm_campaign:  campaign to evaluate
+    """
+    def get_earliest_campaign_view(self, utm_campaign):
+        
+        sql = "select min(request_time) from landing_page_requests where utm_campaign = '%s'" % utm_campaign
+        results = self.execute_SQL(sql)
+        
+        earliest_timestamp = results[0][0]
+        earliest_timestamp = TP.timestamp_from_obj(earliest_timestamp, 1, 2)
+        
+        return earliest_timestamp
+    
+    """
+        Returns the latest timestamp for a given campaign
+        
+        @param utm_campaign:  campaign to evaluate
+    """
+    def get_latest_campaign_view(self, utm_campaign):
+        
+        sql = "select max(request_time) from landing_page_requests where utm_campaign = '%s'" % utm_campaign
+        results = self.execute_SQL(sql)
+        
+        latest_timestamp = results[0][0]
+        latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 1, 2)
+        
+        return latest_timestamp
+    
 """
 
     CLASS :: IPCountryTableLoader
