@@ -319,8 +319,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         DETERMINE DONOR DOLLAR BREAKDOWN 
         ================================
     """
-    if(1):
+    try:
         DR.DonorBracketReporting(query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
+    except:
+        pass
     
     """ 
         DETERMINE CATEGORY DISTRIBUTION 
