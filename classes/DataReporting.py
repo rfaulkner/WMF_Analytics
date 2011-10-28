@@ -313,7 +313,34 @@ class DataReporting(object):
         
         return html
     
+    
         
+    """
+        Enable table generation from data formatted a list of rows
+    """
+    def write_html_table_from_rowlists(self, data, column_names, key_type):
+        
+        html = '<table border=\"1\" cellpadding=\"10\"><tr>'
+        
+        """ mapped data stores autovivification structure as a list of rows """
+        
+        """ Build headers """
+        html = html + '<th>' + key_type + '</th>'
+        for name in column_names:
+            html = html + '<th>' + name + '</th>'
+        html = html + '</tr>'
+        
+        """ Build rows """
+        for row in data:
+            html = html + '<tr>'
+            for item in row:                                    
+                html = html + '<td>' + item + '</td>'
+            html = html + '</tr>'
+        
+        html = html + '</table>'        
+        
+        return html
+    
     """
         Map general metrics to standard ones
             
@@ -495,7 +522,8 @@ class IntervalReporting(DataReporting):
         
         _data_plot_ = pylab.savefig(self._file_path_ + fname + '.' + self._fig_file_format_, format=self._fig_file_format_)
 
-        
+
+
     """
         Use dataloader to produce object state - counts and times.  
         
