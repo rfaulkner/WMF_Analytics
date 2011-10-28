@@ -37,7 +37,7 @@ import sys, pylab, math, logging, matplotlib.pyplot as plt, re
 import classes.QueryData as QD
 import classes.TimestampProcessor as TP
 import classes.DataLoader as DL
-import classes.HypothesisTest as HT
+from classes.HypothesisTest import TTest
 import classes.FundraiserDataHandler as FDH
 import classes.DataFilters as DF
 
@@ -218,6 +218,14 @@ class DataReporting(object):
         coloured_cols = list()
         column_colours_idx = dict()
         
+        """ 
+            In the case that the markup was formatted before this method was called modify the flag 
+        """
+        if 'omit_cell_markup' in kwargs.keys():
+            omit_cell_markup = kwargs['omit_cell_markup']
+        else:
+            omit_cell_markup = False
+            
         if 'use_standard_metric_names' in kwargs.keys():
             column_names = self.get_standard_metrics_list(column_names)        
         
@@ -262,7 +270,7 @@ class DataReporting(object):
         
         """ Build rows """
         for row in data:            
-            html = html + self._write_html_table_row(row, coloured_columns=column_colours_idx)
+            html = html + self._write_html_table_row(row, coloured_columns=column_colours_idx, omit_cell_markup=omit_cell_markup)
                  
         html = html + '</table>'        
         
@@ -273,6 +281,15 @@ class DataReporting(object):
     """
     def _write_html_table_row(self, row, **kwargs):
         
+        """ 
+            In the case that the markup was formatted before this method was called modify the flag 
+        """        
+        if 'omit_cell_markup' in kwargs.keys():
+            omit_cell_markup = kwargs['omit_cell_markup']
+        else:
+            omit_cell_markup = False
+            
+            
         if 'coloured_columns' in kwargs.keys():
             column_colours_idx = kwargs['coloured_columns']
         else:
@@ -282,8 +299,10 @@ class DataReporting(object):
         idx = 0 
 
         for item in row: 
-                            
-            if idx in column_colours_idx:
+              
+            if omit_cell_markup:
+                html = html + item.__str__()
+            elif idx in column_colours_idx:
                 html = html + '<td style="background-color:' + column_colours_idx[idx] + ';">' + item.__str__() + '</td>'
             else:
                 html = html + '<td>' + item.__str__() + '</td>'
@@ -396,7 +415,7 @@ class IntervalReporting(DataReporting):
                 
         """ Call constructor of parent """
         DataReporting.__init__(self, **kwargs)
-        
+
 
     """
         Selecting a subset of the key items in a dictionary       
@@ -478,83 +497,6 @@ class IntervalReporting(DataReporting):
 
         
     """
-    
-        Protected method.  Turns a dictionary into an html table.
-        
-        @param data:
-        @param highlighted_col_index: 
-        
-        RETURN:
-            
-            html    - html text for the resulting table
-    """ 
-    def _write_html_table(self, data, highlighted_col_index):
-        
-        """ EXTRACT COLUMN NAMES AND ORDER THEM """
-        index = data.keys()[0]
-        col_names = data[index].keys()
-
-        col_names = FDH.order_column_keys(col_names)
-        
-        html = '<table border=\"1\" cellpadding=\"10\"><tr>'
-        
-        
-        """ Build headers """
-        html = html + '<th>' + self._data_loader_._query_type_ + '</th>'
-        for name in col_names:
-            if name in highlighted_col_index:
-                html = html + '<th style="background-color:orange;">' + name + '</th>'
-            else:
-                html = html + '<th>' + name + '</th>'
-        html = html + '</tr>'
-        
-        """ Build rows """
-        for item in data.keys():
-            html = html + '<tr>'
-            
-            html = html + '<td>' + item + '</td>'
-            
-            for elem in col_names:                
-                elem_formatted = QD.get_metric_data_type(elem, data[item][elem])
-                
-                if elem in highlighted_col_index:
-                    html = html + '<td style="background-color:yellow;">' + elem_formatted + '</td>'
-                else:
-                    html = html + '<td>' + elem_formatted + '</td>'
-            html = html + '</tr>'
-        
-        html = html + '</table>'        
-        
-        return html
-
-        
-    """
-    
-    """
-    def write_html_table_from_rowlists(self, data, column_names, key_type):
-        
-        html = '<table border=\"1\" cellpadding=\"10\"><tr>'
-        
-        """ mapped data stores autovivification structure as a list of rows """
-        
-        """ Build headers """
-        html = html + '<th>' + key_type + '</th>'
-        for name in column_names:
-            html = html + '<th>' + name + '</th>'
-        html = html + '</tr>'
-        
-        """ Build rows """
-        for row in data:
-            html = html + '<tr>'
-            for item in row:                                    
-                html = html + '<td>' + item + '</td>'
-            html = html + '</tr>'
-        
-        html = html + '</table>'        
-        
-        return html
-
-    """
         Use dataloader to produce object state - counts and times.  
         
         The general flow comprises of:
@@ -565,7 +507,7 @@ class IntervalReporting(DataReporting):
                 The inputs serve as query arguments to generate the data
          
     """        
-    def run(self, start_time, end_time, interval, metric_name, campaign, label_dict):
+    def run(self, start_time, end_time, interval, metric_name, campaign, label_dict, **kwargs):
         
         """ Get the artifacts from label dictionary """
         artifact_keys_var = label_dict.keys()
@@ -575,9 +517,16 @@ class IntervalReporting(DataReporting):
         self._counts_ = return_val[0]
         self._times_ = return_val[1]
         
+        if 'include_all_artifacts' in kwargs:
+            artifact_keys_var = self._counts_.keys()
+            for key in artifact_keys_var:
+                label_dict[key] = key
         
-        """ Filter the data """
-        self.add_filters_runtime(interval=interval, artifact_keys=artifact_keys_var, time_series=True)
+        if 'generate_plot' in kwargs:
+            self._generate_plot_ = kwargs['generate_plot']
+            
+        """ Filter the data """        
+        self.add_filters_runtime(interval=interval, artifact_keys=artifact_keys_var, time_series=True)            
         self._execute_filters()
         
         
@@ -726,7 +675,7 @@ class ConfidenceReporting(DataReporting):
             raise self.KwargDefError(err_msg)
         else:
             # "Use only a ttest for now
-            self._hypothesis_test_ = HT.TTest()
+            self._hypothesis_test_ = TTest()
                                     
         DataReporting.__init__(self, **kwargs)
         
@@ -928,7 +877,166 @@ class ConfidenceReporting(DataReporting):
         return [confidence, colour_code]
 
 
+    """ 
+        Build a legend table for confidence reporting
+        
+        @return: formatted table
+    """ 
+    def get_confidence_legend_table(self):
+        
+        logging.info('Generating confidence colour legend.')
+        
+        column_names = ['<b>Confidence Level</b>']
+        rows = [['<td><b>Colour Code</b></td>']]                
+        
+        max_index = len(TTest._probs_) 
+        for index in range(max_index):
+            
+            if index == 0:
+                conf_range = '0%s - %5.2f%s' % ('%', (1.0 - TTest._probs_[index]) * 100.0, '%')
+            else:
+                conf_range = '%5.2f%s - %5.2f%s' % ((1.0 - TTest._probs_[index-1]) * 100.0, '%', (1.0 - TTest._probs_[index]) * 100.0, '%')
+            
+            column_names.append(conf_range)
+            
+            intensity = float(index + 1) / float(max_index)  
+            colour_index = TTest().get_confidence_colour(intensity)
+            cell = '<td style="background-color:' + colour_index + ';"></td>'
+            
+            rows[0].append(cell)
+        
+        column_names.append('Winner')
+        rows[0].append('<td style="background-color:#0fff00;"></td>')
+        
+        return self._write_html_table(rows, column_names, omit_cell_markup=True) 
+    
+    """
+        Get minutely data and compute confidence 
+        
+        @param start_time, end_time: timestamp objects
+        
+        @return - colour indices of confidence on values
+        
+    """
+    def get_confidence_on_time_range(self, start_time, end_time):
+        
+        derived_metrics = ['don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
+        measured_metrics = ['impressions', 'views', 'donations', 'amount_normal']
+        measured_metrics_counts = dict()
+        derived_metrics_counts = dict()
+        conf_colour_code = dict()
+        
+        ir = IntervalReporting(query_type='bannerlp')
+        t_test = TTest()
+         
+        logging.info('Getting minutely live data for hypothesis testing ...')
+        for metric in measured_metrics:
+                            
+            ir.run(start_time, end_time, 1, metric, '^C|^C11_', {}, include_all_artifacts=True, generate_plot=False)
+            measured_metrics_counts[metric] = ir._counts_
+                
+        """ Generate the Table only if there is data available  """
+        if ir._counts_:
+            
+            artifact_key_list = measured_metrics_counts[metric].keys()
+            first_key = artifact_key_list[0]
+            num_samples_base = len(measured_metrics_counts[metric][first_key])
+            
+            """ 
+                Convert to measured metrics 
+                
+                Since many of the computed metrics in the SQL queries are subject to noise raw values are used to recompute only valid samples
+                Then the 
+            """
+            impression_threshold = 50000
+            view_threshold = 500
+            sample_threshold = 10
+            
+            for metric in derived_metrics:
+                
+                conf_colour_code[metric] = dict()
+                derived_metrics_counts[metric] = dict()
+                
+                """ Initialize sample list """
+                for artifact_key in artifact_key_list:
+                    derived_metrics_counts[metric][artifact_key] = list()
+                
+                min_sample_count = 100000
+                keys_to_remove = list()
+                for artifact_key in artifact_key_list:
+                    
+                    for index in range(num_samples_base):
+                        if metric == 'don_per_imp':
+                            if measured_metrics_counts['impressions'][artifact_key][index] > impression_threshold:
+                                derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['donations'][artifact_key][index] / measured_metrics_counts['impressions'][artifact_key][index])
+                        elif metric == 'don_per_view':
+                            if measured_metrics_counts['views'][artifact_key][index] > view_threshold:
+                                derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['donations'][artifact_key][index] / measured_metrics_counts['views'][artifact_key][index])
+                        elif metric == 'amt_norm_per_imp':
+                            if measured_metrics_counts['impressions'][artifact_key][index] > impression_threshold:
+                                derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['amount_normal'][artifact_key][index] / measured_metrics_counts['impressions'][artifact_key][index])
+                        elif metric == 'amt_norm_per_view':
+                            if measured_metrics_counts['views'][artifact_key][index] > view_threshold:
+                                derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['amount_normal'][artifact_key][index] / measured_metrics_counts['views'][artifact_key][index])
+            
+                    if len(derived_metrics_counts[metric][artifact_key]) < sample_threshold:
+                        keys_to_remove.append(artifact_key)
+                    elif len(derived_metrics_counts[metric][artifact_key]) < min_sample_count:
+                        min_sample_count = len(derived_metrics_counts[metric][artifact_key])
+                
+                logging.info('%s samples used in hypothesis testing for metric %s.' % (str(min_sample_count), metric))
+                
+                for artifact_key in keys_to_remove:
+                    del derived_metrics_counts[metric][artifact_key]
+                
+                for artifact_key in derived_metrics_counts[metric]:
+                    
+                    """ 
+                        If the number of samples for a given artifact and metric exceed the minimum then fold the extra samples into the  
+                        
+                        The folding is accomplished by averaging in the extra samples 
+                        
+                    """
+                    num_samples_curr = len(derived_metrics_counts[metric][artifact_key])
+                    if num_samples_curr > min_sample_count:
+                        # derived_metrics_counts[metric][artifact_key] = derived_metrics_counts[metric][artifact_key][:min_sample_count]
+                        
+                        weight = 1.0
+                        for index in range(min_sample_count, num_samples_curr):
+                            
+                            relative_index = index % min_sample_count
+                            
+                            if relative_index == 0:
+                                weight = weight + 1.0
+                                
+                            derived_metrics_counts[metric][artifact_key][relative_index] = derived_metrics_counts[metric][artifact_key][relative_index] * ((weight - 1) / weight) + \
+                            derived_metrics_counts[metric][artifact_key][index] * (1 / weight)
+                        
+                        derived_metrics_counts[metric][artifact_key] = derived_metrics_counts[metric][artifact_key][:min_sample_count]
+                
+        
+        
+                """ Find the winner for a given metric """
+                max = 0.0
+                for artifact_key in derived_metrics_counts[metric]:
+                    if sum(derived_metrics_counts[metric][artifact_key]) > max:
+                        winner = artifact_key
+                        max = sum(derived_metrics_counts[metric][artifact_key])
+                
+                conf_colour_code[metric][winner] = '#0fff00' # the winner cell is coloured accordinglt
+                for  artifact_key in derived_metrics_counts[metric]:
+                    
+                    if artifact_key != winner:
+                        num_samples = len(derived_metrics_counts[metric][winner])
+                        ret = t_test.confidence_test(derived_metrics_counts[metric][winner], derived_metrics_counts[metric][artifact_key], num_samples)
+                        
+                        """ ret[5] == colour_index - Get the colour coding for the winner """
+                        conf_colour_code[metric][artifact_key] = ret[5]
+                                                
+        return conf_colour_code
 
+"""
+"""
 class DonorBracketReporting(DataReporting):
         
     """    Constructor

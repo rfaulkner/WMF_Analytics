@@ -313,7 +313,7 @@ def get_metric_index(query_name, metric_name):
             return -1
         
     elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_banner_metrics_minutely_1S':
-        if metric_name == 'imp':
+        if metric_name == 'imp' or metric_name == 'impressions':
             return 2
         elif metric_name == 'donations':
             return 4
@@ -332,7 +332,7 @@ def get_metric_index(query_name, metric_name):
         else:
             return -1
         
-    elif re.search('report_campaign_metrics_minutely', query_name):
+    elif re.search('report_campaign_metrics_minutely', query_name) and not(query_name == 'report_campaign_metrics_minutely_all'):
         if metric_name == 'donations':
             return 3
         elif metric_name == 'views':
@@ -365,7 +365,7 @@ def get_metric_index(query_name, metric_name):
             return -1
     
     elif query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely_1S':
-        if metric_name == 'imp':
+        if metric_name == 'imp' or metric_name == 'impressions':
             return 2
         elif metric_name == 'views':
             return 3

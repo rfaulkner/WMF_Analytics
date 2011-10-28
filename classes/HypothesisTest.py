@@ -14,9 +14,8 @@ __author__ = "Ryan Faulkner"
 __revision__ = "$Rev$"
 __date__ = "April 16th, 2011"
 
-import math,  matplotlib, re, sys, logging
+import math, re, sys, logging
 import classes.DataLoader as DL
-matplotlib.use('Agg')
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr
@@ -214,26 +213,25 @@ http://en.wikipedia.org/wiki/Student%27s_t-test
 """
 class TTest(HypothesisTest):
     
-    _data_loader_ = None
+    """ The probabilties representing the ranges of p-values """
+    _probs_ = [0.400000, 0.250000, 0.100000, 0.050000, 0.025000, 0.010000, 0.005000, 0.000500]
     
     """ 
-        <description>
-        
-        INPUT:
-                        
-        RETURN:
+        Constructor for T-Test class - initializes the data loader
         
     """ 
     def __init__(self):
+        
         self._data_loader_ = DL.TTestLoaderHelp()
     
     """ 
-        <description>
+        Execute the student's t-test
         
         INPUT:
-                        
+               metrics_[1,2] - the sample sets to compare
+                
         RETURN:
-        
+            the parameters of the distribution and confidence
     """ 
     def confidence_test(self, metrics_1, metrics_2, num_samples):
         
@@ -284,26 +282,20 @@ class TTest(HypothesisTest):
             
             p = self._data_loader_.get_pValue(degrees_of_freedom, t)
             
-            """ Determine confidence range """
-            probs = [0.400000, 0.250000, 0.100000, 0.050000, 0.025000, 0.010000, 0.005000, 0.000500]
-            prob_diffs = [math.fabs(i-p) for i in probs]
+            """ Determine confidence range """            
+            prob_diffs = [math.fabs(i-p) for i in self._probs_]
             min_index = min((n, i) for i, n in enumerate(prob_diffs))[1]
             
             lower_p = 1
             if min_index > 0:
-                lower_p = probs[min_index - 1]
+                lower_p = self._probs_[min_index - 1]
             
             conf_str =  'Between ' + str((1 - lower_p) * 100) + '% and ' + str((1 - p) * 100) + '% confident about the winner.'
             
             """ Generate a hexadecimal color code based on the confidence """
-            max_index = len(probs)
-            colour_index = str(hex(240 - (int(math.floor(float(min_index + 1) / float(max_index) * 240.0) + 16))))[-2:]
-            
-            """ treat corner case where colour_index = x0"""
-            if re.search('x', colour_index):
-                colour_index = '10'
-                
-            colour_index = '#' + 'ffff' + colour_index 
+            max_index = len(self._probs_)
+            intesity = float(min_index + 1) / float(max_index)
+            colour_index = self.get_confidence_colour(intesity)
             
         except Exception as inst:
             
@@ -316,15 +308,30 @@ class TTest(HypothesisTest):
         
         
         return [means_1, means_2, std_devs_1, std_devs_2, conf_str, colour_index]
+            
+    """
         
+    """
+    def get_confidence_colour(self, intensity):
+        
+        colour_index = str(hex(240 - (int(math.floor(intensity * 240.0) + 16))))[-2:]
+            
+        """ treat corner case where colour_index = x0"""
+        if re.search('x', colour_index):
+            colour_index = '10'
+            
+        colour_index = '#ffff' + colour_index 
+        
+        return colour_index
+            
 """
 
-Class :: ChiSquareTest
-
-Implements a Chi Square test where the distribution of donations over a given period are 
-assumed to resemble those of a students t distribution
-
-http://en.wikipedia.org/wiki/Chi-square_test
+    Class :: ChiSquareTest
+    
+    Implements a Chi Square test where the distribution of donations over a given period are 
+    assumed to resemble those of a students t distribution
+    
+    http://en.wikipedia.org/wiki/Chi-square_test
 
 """
 class ChiSquareTest(HypothesisTest):

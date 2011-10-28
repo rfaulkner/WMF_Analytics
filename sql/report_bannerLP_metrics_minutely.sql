@@ -17,7 +17,7 @@ donations,
 amount,
 amount_normal,
 (views / impressions) * (total_views / views) as click_rate,
-round((donations / impressions) * (total_views / views), 6) as don_per_imp,
+round((donations / impressions) * (total_views / views), 8) as don_per_imp,
 (amount / impressions) * (total_views / views) as amt_per_imp,
 (amount_normal / impressions) * (total_views / views) as amt_norm_per_imp,
 donations / views as don_per_view,
@@ -48,7 +48,7 @@ count(*) as views,
 utm_campaign
 from landing_page_requests
 where request_time >=  '%s' and request_time < '%s'
-and utm_campaign = '%s'
+and utm_campaign regexp '%s'
 group by 1,2,3,4) as lp
 
 on imp.utm_source =  lp.utm_source and imp.dt_hr =  lp.dt_hr and imp.dt_min =  lp.dt_min
@@ -95,7 +95,7 @@ from
 drupal.contribution_tracking join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date < '%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date < '%s' and utm_campaign regexp '%s'
 ) as all_contributions
 
 join 
@@ -109,7 +109,7 @@ from
 drupal.contribution_tracking left join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign regexp '%s'
 group by 1,2) as avg_contributions
 
 on all_contributions.banner = avg_contributions.banner
@@ -119,6 +119,6 @@ group by 1,2,3,4
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
 
-where lp.utm_campaign = '%s' and views > 10
+where lp.utm_campaign regexp '%s' and views > 10
 group by 1,2
 order by 1 asc;

@@ -48,7 +48,7 @@ count(*) as views,
 utm_campaign
 
 from drupal.contribution_tracking  
-where ts >= '%s' and ts < '%s' and utm_campaign = '%s'
+where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s'
 
 group by 1,2,3,4) as lp
 
@@ -99,7 +99,7 @@ from
 drupal.contribution_tracking join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date < '%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date < '%s' and utm_campaign regexp '%s'
 ) as all_contributions
 
 join 
@@ -113,7 +113,7 @@ from
 drupal.contribution_tracking left join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign regexp '%s'
 group by 1,2) as avg_contributions
 
 on all_contributions.banner = avg_contributions.banner
@@ -123,6 +123,6 @@ group by 1,2,3,4
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min
 
-where lp.utm_campaign = '%s' and views > 10
+where lp.utm_campaign regexp '%s' and views > 10
 group by 1,2
 order by 1 asc;

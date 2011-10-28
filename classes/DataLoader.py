@@ -618,11 +618,12 @@ class IntervalReportingLoader(DataLoader):
             
             sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, campaign, interval])
             
+            
         """ Get Indexes into Query """
         key_index = QD.get_key_index(query_name)
         metric_index = QD.get_metric_index(query_name, metric_name)
         time_index = QD.get_time_index(query_name)
-
+        
         """ Compose the data for each separate donor pipeline artifact """
         try:
             """ ONLY EXECUTE THE QUERY IF IT HASN'T BEEN BEFORE """
