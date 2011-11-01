@@ -97,7 +97,8 @@ drupal.contribution_tracking join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
 where receive_date >= '%s' and receive_date <'%s'
-and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')) as all_contributions
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_')
+) as all_contributions
 
 join 
 
@@ -123,6 +124,26 @@ group by 1,2,3
 ) as ecomm_full
 
 on ecomm_full.utm_campaign = lp.utm_campaign and ecomm_full.banner = lp.utm_source and ecomm_full.landing_page = lp.landing_page
+
+join
+
+(
+select
+utm_campaign,
+min(receive_date) as min_date_cmgn
+
+from
+drupal.contribution_tracking join civicrm.civicrm_contribution
+ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+
+where receive_date >= '%s' and receive_date <'%s'
+and (utm_campaign REGEXP '^C_' or utm_campaign REGEXP '^C11_') group by 1 
+) as earliest_access
+
+on ecomm_full.utm_campaign = earliest_access.utm_campaign
+
+-- This temporary table computes civi_data up to the latest log only to be used for computing accurate rates
+-- 
 
 left join
 
@@ -180,4 +201,4 @@ and ecomm_full.banner = ecomm_truncated.banner
 and ecomm_full.landing_page = ecomm_truncated.landing_page
 
 group by 1,2,3
-order by 1 asc;
+order by earliest_access.min_date_cmgn desc;
