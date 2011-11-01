@@ -8,6 +8,7 @@
 
 select
 
+civi_data.utm_campaign,
 civi_data.country, civi_data.language, 
 concat(civi_data.language,'.wikipedia.org/wiki/Main_Page?country=',civi_data.country) as live_banners,
 civi_data.landing_page as landing_page,
@@ -16,6 +17,7 @@ views, donations, amount
 from
 
 (select 
+utm_campaign,
 civicrm.civicrm_country.iso_code as country,	
 drupal.contribution_tracking.language,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, 
@@ -29,14 +31,14 @@ join civicrm.civicrm_contribution on drupal.contribution_tracking.contribution_i
 join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
 join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
-where receive_date >=  '%s' and receive_date < '%s' group by 1,2,3) as civi_data
+where receive_date >=  '%s' and receive_date < '%s' group by 1,2,3,4) as civi_data
 
 left join
 
-(select landing_page, country, lang as language, count(*) as views  from faulkner.landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1,2,3) as lp
+(select utm_campaign, landing_page, country, lang as language, count(*) as views  from faulkner.landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1,2,3,4) as lp
 
-on civi_data.landing_page = lp.landing_page and civi_data.country = lp.country and civi_data.language = lp.language
+on civi_data.landing_page = lp.landing_page and civi_data.country = lp.country and civi_data.language = lp.language and civi_data.utm_campaign = lp.utm_campaign 
 
 -- where views > 10
-order by 1,2,5 desc;
+order by 1,2,3,5 desc;
 
