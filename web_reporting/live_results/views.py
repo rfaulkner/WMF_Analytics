@@ -66,7 +66,7 @@ def index(request):
     sampling_interval = 10
     dl = DL.DataLoader()
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
-    start_time = '20111028180000'
+    start_time = '20111028170000'
     end_time = '20111028210000'
     
     """ 
@@ -81,7 +81,7 @@ def index(request):
     latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
 
     try: 
-        conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time)
+        conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter)
         
     except:
         conf_colour_code = {}

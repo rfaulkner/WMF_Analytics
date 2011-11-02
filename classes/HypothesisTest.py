@@ -310,20 +310,35 @@ class TTest(HypothesisTest):
         return [means_1, means_2, std_devs_1, std_devs_2, conf_str, colour_index]
             
     """
-        
+        Returns a colour index based on an intensity derived from a p-value
     """
     def get_confidence_colour(self, intensity):
         
-        colour_index = str(hex(240 - (int(math.floor(intensity * 240.0) + 16))))[-2:]
+        pow = 2
+        
+        range_constraint = math.pow(16, pow) - math.pow(16, pow - 1) * 3.0
+        min_offset = math.pow(16, pow - 1) * 2.0
+        
+        intensity = intensity / 1.01 # to ensure intensity is never 1.0
+        hex_val = hex(int(math.floor(range_constraint * intensity) + min_offset))
+
+        colour_index = str(hex_val)[-pow:]
             
         """ treat corner case where colour_index = x0"""
         if re.search('x', colour_index):
             colour_index = '10'
             
-        colour_index = '#ffff' + colour_index 
+        colour_index = '#' + colour_index + colour_index + colour_index
         
         return colour_index
-            
+
+    """
+        Returns a colour index to indicate a test winner
+    """
+    def get_confidence_winner_colour(self):
+         
+        return '#0099ff'
+        
 """
 
     Class :: ChiSquareTest

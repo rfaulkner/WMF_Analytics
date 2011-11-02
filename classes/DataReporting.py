@@ -934,7 +934,8 @@ class ConfidenceReporting(DataReporting):
             rows[0].append(cell)
         
         column_names.append('Winner')
-        rows[0].append('<td style="background-color:#0fff00;"></td>')
+        winning_colour_index = TTest().get_confidence_winner_colour()
+        rows[0].append('<td style="background-color:' + winning_colour_index + ';"></td>')
         
         return self._write_html_table(rows, column_names, omit_cell_markup=True) 
     
@@ -946,9 +947,9 @@ class ConfidenceReporting(DataReporting):
         @return - colour indices of confidence on values
         
     """
-    def get_confidence_on_time_range(self, start_time, end_time):
+    def get_confidence_on_time_range(self, start_time, end_time, campaign):
         
-        derived_metrics = ['don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
+        derived_metrics = ['click_rate', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
         measured_metrics = ['impressions', 'views', 'donations', 'amount_normal']
         measured_metrics_counts = dict()
         derived_metrics_counts = dict()
@@ -960,7 +961,7 @@ class ConfidenceReporting(DataReporting):
         logging.info('Getting minutely live data for hypothesis testing ...')
         for metric in measured_metrics:
                             
-            ir.run(start_time, end_time, 1, metric, '^C|^C11_', {}, include_all_artifacts=True, generate_plot=False)
+            ir.run(start_time, end_time, 1, metric, campaign, {}, include_all_artifacts=True, generate_plot=False)
             measured_metrics_counts[metric] = ir._counts_
                 
         """ Generate the Table only if there is data available  """
@@ -976,8 +977,8 @@ class ConfidenceReporting(DataReporting):
                 Since many of the computed metrics in the SQL queries are subject to noise raw values are used to recompute only valid samples
                 Then the 
             """
-            impression_threshold = 50000
-            view_threshold = 500
+            min_impression_threshold = 1000
+            min_view_threshold = 10
             sample_threshold = 10
             
             for metric in derived_metrics:
@@ -989,21 +990,34 @@ class ConfidenceReporting(DataReporting):
                 for artifact_key in artifact_key_list:
                     derived_metrics_counts[metric][artifact_key] = list()
                 
-                min_sample_count = 100000
+                min_sample_count = 100000   # this is used to determine the artifact with the lowest number of samples
                 keys_to_remove = list()
                 for artifact_key in artifact_key_list:
                     
+                    """
+                        Cycle through the samples for each artifact for the given metric.  Determine whether to include the sample if it satisfies the minimum number of impressions.  
+                        Thisis used to filter noisy samples from the results.  Note that filters are relative to the maximum values however there is a lower absolute filter
+                        
+                    """
                     for index in range(num_samples_base):
+                        if metric == 'click_rate':
+                            impression_threshold = max([float(max(measured_metrics_counts['impressions'][artifact_key])) * 0.50, min_impression_threshold])
+                            if measured_metrics_counts['impressions'][artifact_key][index] > impression_threshold:
+                                derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['views'][artifact_key][index] / measured_metrics_counts['impressions'][artifact_key][index])
                         if metric == 'don_per_imp':
+                            impression_threshold = max([float(max(measured_metrics_counts['impressions'][artifact_key])) * 0.50, min_impression_threshold])
                             if measured_metrics_counts['impressions'][artifact_key][index] > impression_threshold:
                                 derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['donations'][artifact_key][index] / measured_metrics_counts['impressions'][artifact_key][index])
                         elif metric == 'don_per_view':
+                            view_threshold = max([float(max(measured_metrics_counts['views'][artifact_key])) * 0.50, min_view_threshold])
                             if measured_metrics_counts['views'][artifact_key][index] > view_threshold:
                                 derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['donations'][artifact_key][index] / measured_metrics_counts['views'][artifact_key][index])
                         elif metric == 'amt_norm_per_imp':
+                            impression_threshold = max([float(max(measured_metrics_counts['impressions'][artifact_key])) * 0.50, min_impression_threshold])
                             if measured_metrics_counts['impressions'][artifact_key][index] > impression_threshold:
                                 derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['amount_normal'][artifact_key][index] / measured_metrics_counts['impressions'][artifact_key][index])
                         elif metric == 'amt_norm_per_view':
+                            view_threshold = max([float(max(measured_metrics_counts['views'][artifact_key])) * 0.50, min_view_threshold])
                             if measured_metrics_counts['views'][artifact_key][index] > view_threshold:
                                 derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['amount_normal'][artifact_key][index] / measured_metrics_counts['views'][artifact_key][index])
             
@@ -1045,13 +1059,13 @@ class ConfidenceReporting(DataReporting):
         
         
                 """ Find the winner for a given metric """
-                max = 0.0
+                metric_max = 0.0
                 for artifact_key in derived_metrics_counts[metric]:
-                    if sum(derived_metrics_counts[metric][artifact_key]) > max:
+                    if sum(derived_metrics_counts[metric][artifact_key]) > metric_max:
                         winner = artifact_key
-                        max = sum(derived_metrics_counts[metric][artifact_key])
+                        metric_max = sum(derived_metrics_counts[metric][artifact_key])
                 
-                conf_colour_code[metric][winner] = '#0fff00' # the winner cell is coloured accordinglt
+                conf_colour_code[metric][winner] = TTest().get_confidence_winner_colour() # the winner cell is coloured accordinglt
                 for  artifact_key in derived_metrics_counts[metric]:
                     
                     if artifact_key != winner:
