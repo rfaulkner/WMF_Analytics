@@ -13,30 +13,7 @@
 
 <!-- Table listing all tests run -->
 
-<center>
-<table border="1" cellpadding="10">
-<tr>
-<th>Log Type</th>
-<th>Time of Import</th>
-<th>Log Start Time</th>
-<th>Log End Time</th>
-<th>Completion of Log</th>
-<th>Total Rows Loaded</th>
-</tr>
-
-{% for row in squid_table %}
-	<tr>
-	<td>{{ row.0 }}</td> <!-- type -->
-	<td>{{ row.1 }}</td> <!-- log_copy_time -->
-	<td>{{ row.2 }}</td> <!-- start_time -->
-	<td>{{ row.3 }}</td> <!-- end_time -->
-	<td>{{ row.4 }}</td> <!-- log_completion_pct -->
-	<td>{{ row.5 }}</td> <!-- total_rows -->
-	</tr>
-{% endfor %}
-
-</table> 
-</center>
+<center>{{ squid_table|safe }}</center>
 
 <div class="spacer"></div>
 <div class="spacer"></div>
