@@ -27,7 +27,7 @@ from django.template import RequestContext
 
 
 """ Import python base modules """
-import datetime, logging, sys
+import datetime, logging, sys, MySQLdb
 
 """ Import Analytics modules """
 import classes.Helper as Hlp
@@ -46,13 +46,28 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 def index(request):
     
+    """ 
+        PROCESS POST DATA
+        ================= 
+        
+        Escape all user input that can be entered in text fields 
+        
+    """
+    try:
+        campaign_regexp_filter = MySQLdb._mysql.escape_string(request.POST['campaign_regexp_filter'])
+        
+        if cmp(campaign_regexp_filter, '') == 0:
+            campaign_regexp_filter = '^C_|^C11_'
+    except:
+        campaign_regexp_filter = '^C_|^C11_'
+    
     """ Get the donations for all campaigns over the last n hours """
     duration_hrs = 6
     sampling_interval = 10
     dl = DL.DataLoader()
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.now() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
-    start_time = '20111014180000'
-    end_time = '20111014210000'
+    start_time = '20111028180000'
+    end_time = '20111028210000'
     
     """ 
         Retrieve the latest time for which impressions have been loaded
@@ -77,8 +92,9 @@ def index(request):
     """
     
     sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results.sql')
-    sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, start_time, end_time, start_time, end_time, \
-                             start_time, latest_timestamp_flat, start_time, latest_timestamp_flat)    
+    sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
+                             start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
+                             start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)    
     
     logging.info('Executing report_summary_results ...')
     results = dl.execute_SQL(sql_stmnt)

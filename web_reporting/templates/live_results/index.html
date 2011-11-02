@@ -6,11 +6,36 @@
 <div class="spacer"></div>
 
 <h2>Results since {{ start_time }} UTC: (rates are computed up to {{ latest_log_end_time }} UTC)</h2><br>
+
+<center>
 {{ summary_table|safe }}
 <div class="spacer"></div>
 <div class="spacer"></div>
+</center>
 
-<h2>The plots below are representative of the latest Fundraiser results:</h2><br>
+<div id="stylized" class="myform">
+<form action="/live_stats/" method="post">
+{% csrf_token %}
+<h1>Filter the list of campaigns:</h1><br>
+<!--<p>This is the basic look of my form without table</p> -->
+
+<label>Text Filter
+<span class="small">Enter a regular expression.  Use the campaign name to filter that campaign.</span>
+</label>
+<input type="text" name="campaign_regexp_filter" />
+
+<br>
+<button type="submit">Filter</button>
+
+</form>
+</div>
+
+
+<div class="spacer"></div>
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<h2><u>The plots below are representative of the latest Fundraiser results:</u></h2><br>
 
 <!-- jscript for live plots -->
 
