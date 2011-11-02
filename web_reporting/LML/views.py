@@ -23,16 +23,13 @@ __date__ = "June 20th, 2011"
 """ Import django modules """
 from django.shortcuts import render_to_response
 from django.template import RequestContext
-from django.http import HttpResponseRedirect
-from django.core.urlresolvers import reverse
 
 """ Import python base modules """
-import re, MySQLdb, logging, sys
+import MySQLdb, logging, sys, datetime
 
 """ Import Analytics modules """
 import classes.DataLoader as DL
-import classes.DataMapper as DM
-import classes.FundraiserDataThreading as FDT
+import classes.DataReporting as DR
 import classes.TimestampProcessor as TP
 
 
@@ -69,6 +66,13 @@ def index(request):
     
     squid_table = filtered_squid_table
     squid_table.reverse()
+    column_names = sltl.get_column_names()
+    new_column_names = list()
+    
+    for name in column_names:
+        new_column_names.append(sltl.get_verbose_column(name))
+        
+    squid_table = DR.DataReporting()._write_html_table(squid_table, new_column_names)
     
     """ Show the latest log that has been or is loading and its progress """
     completion_rate = sltl.get_completion_rate_of_latest_log()
@@ -82,33 +86,63 @@ def index(request):
 def process_filter_data(request):
         
     err_msg = ''
-    _beginning_time_ = '000001122334455'
-    _end_time_ = '99990011223344'
-
-    """ Parse the filter fields """
+    
+    time_curr = datetime.datetime.now()
+    time_dayback = time_curr + datetime.timedelta(hours = -4)
+     
+    _beginning_time_ = TP.timestamp_from_obj(time_dayback, 1, 3)
+    _end_time_ = TP.timestamp_from_obj(time_curr, 1, 3)
+    
+    
+    """ 
+        PROCESS POST VARS 
+        =================
+    """
+    
     try:
         
         latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'])
-        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'])
         
-        if not(TP.is_timestamp(earliest_utc_ts_var, 1)) or not(TP.is_timestamp(earliest_utc_ts_var, 1)):
+        if not(TP.is_timestamp(latest_utc_ts_var, 1)) and not(TP.is_timestamp(latest_utc_ts_var, 2)):
             raise TypeError
 
         if latest_utc_ts_var == '':
             latest_utc_ts_var = _end_time_
-            
-    except KeyError:
         
-        earliest_utc_ts_var = _beginning_time_
+        ts_format = TP.getTimestampFormat(latest_utc_ts_var)
+        if ts_format == TP.TS_FORMAT_FORMAT1:
+            latest_utc_ts_var = TP.timestamp_convert_format(latest_utc_ts_var, TP.TS_FORMAT_FORMAT1, TP.TS_FORMAT_FLAT)
+            
+    except KeyError:        
         latest_utc_ts_var = _end_time_
     
-    except TypeError:
-        
-        err_msg = 'Please enter a valid timestamp.'
-        
-        earliest_utc_ts_var = _beginning_time_
+    except TypeError:        
+        err_msg = 'Please enter a valid end-timestamp.'        
         latest_utc_ts_var = _end_time_
 
+
+    try:
+        
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'])
+        
+        if not(TP.is_timestamp(earliest_utc_ts_var, 1)) and not(TP.is_timestamp(earliest_utc_ts_var, 2)):
+            raise TypeError
+
+        if latest_utc_ts_var == '':
+            earliest_utc_ts_var = _end_time_
+        
+        ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
+        if ts_format == TP.TS_FORMAT_FORMAT1:
+            earliest_utc_ts_var = TP.timestamp_convert_format(earliest_utc_ts_var, TP.TS_FORMAT_FORMAT1, TP.TS_FORMAT_FLAT)
+            
+    except KeyError:
+        earliest_utc_ts_var = _beginning_time_
+    
+    except TypeError:        
+        err_msg = 'Please enter a valid start-timestamp.'        
+        earliest_utc_ts_var = _beginning_time_
+        
+        
     return err_msg, earliest_utc_ts_var, latest_utc_ts_var
 
 

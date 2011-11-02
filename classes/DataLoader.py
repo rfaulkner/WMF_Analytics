@@ -1652,7 +1652,27 @@ class SquidLogTableLoader(TableLoader):
             
             return ''
 
-
+    """
+        Get verbose name for a table column
+    """
+    def get_verbose_column(self, col_name):
+        
+        if cmp(col_name, 'type') == 0:
+            col_name = 'Log Type'
+        elif cmp(col_name, 'log_copy_time') == 0:
+            col_name = 'Time of Log Copy'
+        elif cmp(col_name, 'start_time') == 0:
+            col_name = 'Log Start Time'
+        elif cmp(col_name, 'end_time') == 0:
+            col_name = 'Log End Time'
+        elif cmp(col_name, 'log_completion_pct') == 0:
+            col_name = '% Complete'
+        elif cmp(col_name, 'total_rows') == 0:
+            col_name = 'Total Requests'
+            
+        return col_name
+       
+        
 class CiviCRMLoader(TableLoader):
     
     def __init__(self):

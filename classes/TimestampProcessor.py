@@ -41,6 +41,10 @@ __date__ = "April 8th, 2011"
 import datetime, calendar as cal, math, re
 import classes.Helper as mh
 
+
+TS_FORMAT_FLAT = 1
+TS_FORMAT_FORMAT1 = 2
+
 """
     Get timestamps for interval
     
