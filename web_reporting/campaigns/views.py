@@ -51,11 +51,17 @@ def index(request, **kwargs):
     
     crl = DL.CampaignReportingLoader('totals')
     filter_data = True
+            
+    """ Determine the start and end times for the query """ 
+    start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-1)
+    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)    
+    start_time = TP.timestamp_from_obj(start_time_obj,1,3)
     
     """ 
         PROCESS POST KWARGS 
         ===================
     """
+    
     err_msg = ''
     try:
         err_msg = str(kwargs['kwargs']['err_msg'])
@@ -64,10 +70,7 @@ def index(request, **kwargs):
     
     """ 
         PROCESS POST VARS 
-        =================
-        
-        Filter out rows based on POST vars
-        
+        =================                
     """
     
     """ Process error message """
@@ -76,45 +79,49 @@ def index(request, **kwargs):
     except KeyError:
         pass
 
-    """ Process data filtering vars  """
+    """ If the filter form was submitted extract the POST vars  """
     try:
         min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
         earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'])
         
-        if len(earliest_utc_ts_var) == 0:
-            earliest_utc_ts_var = '0'
-            
-    except KeyError:
-        
-        min_donations_var = ''
-        earliest_utc_ts_var = ''
-        filter_data = False
+        """ If the user timestamp is earlier than the default start time run the query for the earlier start time  """
+        ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
     
-    """ Look for campaigns over the last 7 days """ 
-    start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-7)
-    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)    
-    start_time = TP.timestamp_from_obj(start_time_obj,1,3)
-    
-    """ If the user timestamp is earlier than the default start time run the query for the earlier start time  """
-    ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
-    
-    if ts_format > 0:
-        earliest_utc_obj = TP.timestamp_to_obj(earliest_utc_ts_var, ts_format)
+        """ Ensure the validity of the timestamp input """
+        if ts_format == TP.TS_FORMAT_FORMAT1:
+            start_time = TP.timestamp_convert_format(earliest_utc_ts_var, TP.TS_FORMAT_FORMAT1, TP.TS_FORMAT_FLAT)
+        elif ts_format == TP.TS_FORMAT_FLAT:
+            start_time = earliest_utc_ts_var
+        elif cmp(earliest_utc_ts_var, '') == 0:
+            start_time = TP.timestamp_from_obj(start_time_obj,1,3)
+        else:
+            raise Exception()
         
-        if ts_format != 1:
-            earliest_utc_ts_var = TP.timestamp_convert_format(earliest_utc_ts_var, ts_format, 1)
-             
-        if earliest_utc_obj < start_time_obj:
-            start_time = earliest_utc_obj
+        if cmp(min_donations_var, '') == 0:
+            min_donations_var = -1
+        else:
+            min_donations_var = int(min_donations_var)
+    
+    except KeyError: # In the case the form was not submitted set minimum donations and retain the default start time 
         
+        min_donations_var = -1
+        pass
+    
+    except Exception: # In the case the form was incorrectly formatted notify the user
+        
+        min_donations_var = -1
+        start_time = TP.timestamp_from_obj(start_time_obj,1,3)      
+        err_msg = 'Filter fields are incorrect.'
+    
+
+
     """ 
         GENERATE CAMPAIGN DATA 
         ======================
         
     """
-    
-    campaigns, all_data = crl.run_query({'metric_name':'earliest_timestamp','start_time':start_time,'end_time':end_time})
-    
+    campaigns, all_data = crl.run_query({'metric_name' : 'earliest_timestamp', 'start_time' : start_time, 'end_time' : end_time})
+
     """ Sort campaigns by earliest access """    
     sorted_campaigns = sorted(campaigns.iteritems(), key=operator.itemgetter(1))
     sorted_campaigns.reverse()
@@ -124,22 +131,6 @@ def index(request, **kwargs):
         ====================
         
     """
-    if filter_data:
-        try:
-            
-            if min_donations_var == '':
-                min_donations = 0
-            else:
-                min_donations = int(min_donations_var)
-            
-            earliest_utc_ts = int(earliest_utc_ts_var)
-        except:
-            err_msg = 'Filter fields are incorrect.'
-
-            filter_data = False
-    else:
-        min_donations_var = ''
-        earliest_utc_ts_var = ''
 
     new_sorted_campaigns = list()
     for campaign in sorted_campaigns:
@@ -153,14 +144,14 @@ def index(request, **kwargs):
             timestamp = TP.timestamp_convert_format(all_data[key][3], 1, 2)
             
             if filter_data: 
-                if all_data[key][2] > min_donations and int(all_data[key][3]) > earliest_utc_ts:
+                if all_data[key][2] > min_donations_var:
                     new_sorted_campaigns.append([campaign[0], campaign[1], name, timestamp, all_data[key][2], all_data[key][4]])
             else:
                 new_sorted_campaigns.append([campaign[0], campaign[1], name, timestamp, all_data[key][2], all_data[key][4]])
     
     sorted_campaigns = new_sorted_campaigns
 
-    return render_to_response('campaigns/index.html', {'campaigns' : sorted_campaigns, 'err_msg' : err_msg, 'min_donations' : min_donations_var, 'earliest_utc' : earliest_utc_ts_var}, context_instance=RequestContext(request))
+    return render_to_response('campaigns/index.html', {'campaigns' : sorted_campaigns, 'err_msg' : err_msg}, context_instance=RequestContext(request))
 
     
 
