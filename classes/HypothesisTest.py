@@ -316,8 +316,8 @@ class TTest(HypothesisTest):
         
         pow = 2
         
-        range_constraint = math.pow(16, pow) - math.pow(16, pow - 1) * 3.0
-        min_offset = math.pow(16, pow - 1) * 2.0
+        range_constraint = math.pow(16, pow) - math.pow(16, pow - 1) * 5.0
+        min_offset = math.pow(16, pow - 1) * 4.0
         
         intensity = intensity / 1.01 # to ensure intensity is never 1.0
         hex_val = hex(int(math.floor(range_constraint * intensity) + min_offset))
