@@ -1814,6 +1814,10 @@ class CiviCRMLoader(TableLoader):
     """
     def get_earliest_donation(self, campaign):
         
+        """ Escape parameters """
+        campaign = MySQLdb._mysql.escape_string(str(campaign))
+
+
         sql = "select min(receive_date) as earliest_timestamp " + \
         "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
         "where utm_campaign REGEXP '%s'" % campaign
@@ -1830,6 +1834,9 @@ class CiviCRMLoader(TableLoader):
     """    
     def get_latest_donation(self, campaign):
         
+        """ Escape parameters """
+        campaign = MySQLdb._mysql.escape_string(str(campaign))
+
         sql = "select max(receive_date) as latest_timestamp " + \
         "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
         "where utm_campaign REGEXP '%s'" % campaign
