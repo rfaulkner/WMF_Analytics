@@ -215,7 +215,6 @@ class DataReporting(object):
         
         """ PROCESS KWARGS"""
         column_colours = dict()
-        coloured_cols = list()
         column_colours_idx = dict()
         
         """ 
@@ -230,20 +229,18 @@ class DataReporting(object):
             column_names = self.get_standard_metrics_list(column_names)        
         
         if 'coloured_columns' in kwargs.keys():
-            
-            coloured_cols = kwargs['coloured_columns']            
-            coloured_cols = self.get_standard_metrics_list(coloured_cols)
-            
+                        
+            column_colours = kwargs['coloured_columns']            
+                            
+            """ Assume kwargs['coloured_columns'] is a dictionary """
             try:
-                if isinstance(coloured_cols, list):
-                    for col_name in coloured_cols:
-                        column_colours[col_name] = '#FFFF00'
                 
-                elif isinstance(coloured_cols, dict):
-                    column_colours = coloured_cols
-                
-                else:
-                    column_colours = {}
+                """ Map column names if standard names are used """
+                if 'use_standard_metric_names' in kwargs.keys():
+                    new_column_colours = dict()
+                    for col_name in column_colours:
+                        new_column_colours[standard_metric_names[col_name]] = column_colours[col_name]
+                    column_colours = new_column_colours
                 
                 for col_name in column_colours:                    
                     column_colours_idx[column_names.index(col_name)] = column_colours[col_name]
@@ -262,7 +259,7 @@ class DataReporting(object):
             
             for name in column_names:
                 
-                if name in coloured_cols:
+                if name in column_colours:
                     html = html + '<th style="background-color:' + column_colours[name] + ';">' + name + '</th>'
                 else:
                     html = html + '<th>' + name.__str__() + '</th>'

@@ -418,8 +418,12 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         GENERATE A REPORT SUMMARY TABLE
         ===============================
     """
+    
+    summary_start_time = DL.LandingPageTableLoader().get_earliest_campaign_view(campaign)
+    summary_end_time = DL.CiviCRMLoader().get_latest_donation(campaign)
+    
     srl = DL.SummaryReportingLoader(test_type)
-    srl.run_query(start_time, end_time, campaign)
+    srl.run_query(summary_start_time, summary_end_time, campaign)
     
     columns = srl.get_column_names()
     summary_results = srl.get_results()

@@ -1672,7 +1672,11 @@ class SquidLogTableLoader(TableLoader):
             
         return col_name
        
-        
+
+"""
+
+
+"""
 class CiviCRMLoader(TableLoader):
     
     def __init__(self):
@@ -1804,6 +1808,40 @@ class CiviCRMLoader(TableLoader):
                     
         return columns, filtered_results
 
+
+    """
+        Returns the earliest time for a donation to the campaign
+    """
+    def get_earliest_donation(self, campaign):
+        
+        sql = "select min(receive_date) as earliest_timestamp " + \
+        "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
+        "where utm_campaign REGEXP '%s'" % campaign
+        
+        results = self.execute_SQL(sql)
+        
+        earliest_timestamp = results[0][0]
+        earliest_timestamp = TP.timestamp_from_obj(earliest_timestamp, 1, 2) # Round down to the nearest minute
+        
+        return earliest_timestamp
+
+    """
+        Returns the latest time for a donation to the campaign
+    """    
+    def get_latest_donation(self, campaign):
+        
+        sql = "select max(receive_date) as latest_timestamp " + \
+        "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
+        "where utm_campaign REGEXP '%s'" % campaign
+        
+        results = self.execute_SQL(sql)
+        
+        latest_timestamp = results[0][0]
+        latest_timestamp = latest_timestamp + datetime.timedelta(minutes=1) # Round up to the nearest minute
+        latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 1, 2)
+        
+        return latest_timestamp
+    
 """
 
     CLASS :: ImpressionTableLoader
@@ -1897,8 +1935,8 @@ class ImpressionTableLoader(TableLoader):
         deleteStmnt = 'delete from banner_impressions where start_timestamp = \'' + start_timestamp + '\';'
         
         self.execute_SQL(deleteStmnt)
-        
     
+
 """
 
     CLASS :: LandingPageTableLoader
@@ -2120,6 +2158,7 @@ class LandingPageTableLoader(TableLoader):
         results = self.execute_SQL(sql)
         
         latest_timestamp = results[0][0]
+        latest_timestamp = latest_timestamp + datetime.timedelta(minutes=1) # Round up to the nearest minute
         latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 1, 2)
         
         return latest_timestamp
