@@ -295,7 +295,8 @@ class TTest(HypothesisTest):
             """ Generate a hexadecimal color code based on the confidence """
             max_index = len(self._probs_)
             intesity = float(min_index + 1) / float(max_index)
-            colour_index = self.get_confidence_colour(intesity)
+            # colour_index = self.get_confidence_colour(intesity)
+            colour_index = self.get_confidence_colour_by_index(min_index)
             
         except Exception as inst:
             
@@ -333,11 +334,23 @@ class TTest(HypothesisTest):
         return colour_index
 
     """
+        Returns a colour index based on an intensity derived from a p-value
+    """
+    def get_confidence_colour_by_index(self, index):
+        
+        colour_list = ['#606060', '#979797', '#BABABA', '#E0E0E0', '#FDDBC7', '#F4A582', '#D6604D', '#D22B2B']
+                
+        return colour_list[index]
+        
+
+
+    """
         Returns a colour index to indicate a test winner
     """
     def get_confidence_winner_colour(self):
-         
-        return '#0099ff'
+        
+        return '#11BB11'
+        # return '#0099ff'
         
 """
 

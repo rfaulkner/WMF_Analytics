@@ -925,7 +925,8 @@ class ConfidenceReporting(DataReporting):
             column_names.append(conf_range)
             
             intensity = float(index + 1) / float(max_index)  
-            colour_index = TTest().get_confidence_colour(intensity)
+            # colour_index = TTest().get_confidence_colour(intensity)
+            colour_index = TTest().get_confidence_colour_by_index(index)
             cell = '<td style="background-color:' + colour_index + ';"></td>'
             
             rows[0].append(cell)
