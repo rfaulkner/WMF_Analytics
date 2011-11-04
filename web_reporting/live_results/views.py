@@ -65,7 +65,7 @@ def index(request):
     duration_hrs = 4
     sampling_interval = 10
     dl = DL.DataLoader()
-    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(hours=5), 1, hours=-duration_hrs)
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-duration_hrs)
     # start_time = '20111028170000'
     # end_time = '20111028210000'
     

@@ -45,7 +45,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 def index(request):
     
     """  """
-    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(hours=5), 1, hours=-24)
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-24)
     logging.debug('Finding live landing pages from %s to %s.' % (start_time, end_time))
     #start_time = '20110812000000'
     #end_time = '20110813000000'
