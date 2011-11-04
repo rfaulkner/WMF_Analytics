@@ -53,8 +53,8 @@ def index(request, **kwargs):
     filter_data = True
             
     """ Determine the start and end times for the query """ 
-    start_time_obj =  datetime.datetime.now() + datetime.timedelta(days=-1)
-    end_time = TP.timestamp_from_obj(datetime.datetime.now() + datetime.timedelta(hours=8),1,3)    
+    start_time_obj =  datetime.datetime.utcnow() + datetime.timedelta(days=-1)
+    end_time = TP.timestamp_from_obj(datetime.datetime.utcnow() + datetime.timedelta(hours=8),1,3)    
     start_time = TP.timestamp_from_obj(start_time_obj,1,3)
     
     """ 

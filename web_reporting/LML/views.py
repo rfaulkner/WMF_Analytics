@@ -87,7 +87,7 @@ def process_filter_data(request):
         
     err_msg = ''
     
-    time_curr = datetime.datetime.now()
+    time_curr = datetime.datetime.utcnow()
     time_dayback = time_curr + datetime.timedelta(hours = -4)
      
     _beginning_time_ = TP.timestamp_from_obj(time_dayback, 1, 3)
@@ -128,8 +128,8 @@ def process_filter_data(request):
         if not(TP.is_timestamp(earliest_utc_ts_var, 1)) and not(TP.is_timestamp(earliest_utc_ts_var, 2)):
             raise TypeError
 
-        if latest_utc_ts_var == '':
-            earliest_utc_ts_var = _end_time_
+        if earliest_utc_ts_var == '':
+            earliest_utc_ts_var = _beginning_time_
         
         ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
         if ts_format == TP.TS_FORMAT_FORMAT1:
