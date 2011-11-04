@@ -46,6 +46,8 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 def index(request):
     
+    use_one_step = True
+    
     """ 
         PROCESS POST DATA
         ================= 
@@ -94,16 +96,44 @@ def index(request):
     sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results.sql')
     sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
                              start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
-                             start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)    
+                             start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)        
     
     logging.info('Executing report_summary_results ...')
+    
     results = dl.execute_SQL(sql_stmnt)
     column_names = dl.get_column_names()
+    
+    if use_one_step:
+        
+        logging.info('... including one step artifacts ...')
+        
+        sql_stmnt_1S = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results_1S.sql')
+        sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
+                                 start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
+                                 start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)
+                
+        results = list(results)
+        results_1S = dl.execute_SQL(sql_stmnt_1S)
+        
+        """ Ensure that the results are unique """
+        one_step_keys = list()
+        for row in results_1S:
+            one_step_keys.append(str(row[0]) + str(row[1]) + str(row[2]))
+        
+        new_results = list()
+        for row in results:
+            key = str(row[0]) + str(row[1]) + str(row[2])
+            if not(key in one_step_keys):
+                new_results.append(row)
+        results = new_results
+            
+        results.extend(list(results_1S))
+    
     
     """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')
     new_results = list()
-    min_donation = 10
+    min_donation = 1
     
     for row in results:
         if row[donations_index] > min_donation:
