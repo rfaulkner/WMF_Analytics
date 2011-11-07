@@ -337,6 +337,116 @@ class DataLoader(object):
 
 """
 
+    General Long term trends for analysis.  These queries will consist of a small set of metrics to be measured.
+    The first column is a time index representing the hour
+    
+"""
+class LongTermTrendsLoader(DataLoader):
+    
+    _LT_BANNER_IMPRESSIONS_ = 0
+    _LT_LP_IMPRESSIONS_ = 1
+    _LT_DONATIONS_ = 2
+    _LT_CLICK_RATE_ = 3
+    
+    def __init__(self):
+        
+        """ Call constructor of parent """
+        DataLoader.__init__(self)
+        
+        self._results_ = None
+    
+    
+    """
+        PROCESS OPTIONAL KWARGS
+        
+            Allow the minimum number of views to be specified
+    """
+    def process_kwargs(self, kwargs_dict):
+        
+        min_val = '0' # filters no campaigns
+        campaign = ''
+        metric_name = ''
+        interval = 60
+        
+        """ Process keys -- Escape parameters """
+        for key in kwargs_dict:
+            if key == 'min_val':       
+                min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+            elif key == 'campaign':       
+                min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+            elif key == 'metric_name':       
+                metric_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+            elif key == 'interval':       
+                interval = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+                        
+        return min_val, campaign, metric_name, interval
+    
+    """
+        Based on the query type provided execute a query
+    """
+    def run_query(self, start_time, end_time, query_type, **kwargs):
+
+        min_val, campaign, metric_name, interval = self.process_kwargs(kwargs)
+        
+        if query_type == 0: 
+            
+            sql = "select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, sum(counts) as impressions from banner_impressions where on_minute >= '%s' and on_minute < '%s' group by 1"
+            sql = sql % ('%', '%', '%', '%', start_time, end_time)
+        
+        elif query_type == 1:
+            
+            sql = "select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, count(*) as views from landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1"
+            sql = sql % ('%', '%', '%', '%', start_time, end_time)
+            
+        elif query_type == 2:
+            
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, count(*) as donations, sum(total_amount) as amount from civicrm.civicrm_contribution where receive_date >= '%s' and receive_date < '%s' group by 1"
+            sql = sql % ('%', '%', '%', '%', start_time, end_time)
+            
+        elif query_type == 3:
+            
+            sql = "select  bi.hr, views / impressions as click_rate from (select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, sum(counts) as impressions from banner_impressions " + \
+            "where on_minute >= '%s' and on_minute < '%s' group by 1) as bi join (select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, count(*) as views from landing_page_requests " + \
+            "where request_time >= '%s' and request_time < '%s'  group by 1 ) as lpi on bi.hr = lpi.hr"
+            sql = sql % ('%', '%', '%', '%', start_time, end_time, '%', '%', '%', '%', start_time, end_time)
+        
+        self._results_ = self.execute_SQL(sql)
+        column_names = self.get_column_names()
+        metric_index = column_names.index(metric_name)
+
+        """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
+        
+        counts = list()
+        times = list()
+
+        for row in self._results_:  
+            
+            times.append(row[0])
+            counts.append(row[metric_index])
+            
+        start_time_obj = TP.timestamp_to_obj(start_time, 1)
+        end_time_obj = TP.timestamp_to_obj(end_time, 1)
+        diff = end_time_obj - start_time_obj
+        
+        num_hours = diff.seconds / (interval * 60) + diff.days * 24
+        
+        ts_list = TP.create_timestamp_list(start_time_obj, num_hours, interval)
+
+        new_counts = list()
+        count_index = 0
+        for ts in ts_list:
+            if not(ts in times):                
+                new_counts.append(0.0)
+            else:
+                new_counts.append(counts[count_index])
+                count_index = count_index + 1
+                
+        counts = new_counts
+           
+        return ts_list, counts
+        
+"""
+
     This Loader inherits the functionality of DaatLoader and handles SQL queries that group data by time intervals.  These are generally preferable for most
     of the time dependent data analysis and also provides functionality that enables the raw results to be combined over all keys
     
@@ -1674,7 +1784,7 @@ class SquidLogTableLoader(TableLoader):
        
 
 """
-
+    Dataloader class that handles custom data extraction from CiviCRM and drupal databases
 
 """
 class CiviCRMLoader(TableLoader):
