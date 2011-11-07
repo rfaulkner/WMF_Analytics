@@ -1927,7 +1927,6 @@ class CiviCRMLoader(TableLoader):
         """ Escape parameters """
         campaign = MySQLdb._mysql.escape_string(str(campaign))
 
-
         sql = "select min(receive_date) as earliest_timestamp " + \
         "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
         "where utm_campaign REGEXP '%s'" % campaign
@@ -2256,6 +2255,8 @@ class LandingPageTableLoader(TableLoader):
     """
     def get_earliest_campaign_view(self, utm_campaign):
         
+        utm_campaign = MySQLdb._mysql.escape_string(str(utm_campaign))
+        
         sql = "select min(request_time) from landing_page_requests where utm_campaign = '%s'" % utm_campaign
         results = self.execute_SQL(sql)
         
@@ -2271,6 +2272,8 @@ class LandingPageTableLoader(TableLoader):
     """
     def get_latest_campaign_view(self, utm_campaign):
         
+        utm_campaign = MySQLdb._mysql.escape_string(str(utm_campaign))
+        
         sql = "select max(request_time) from landing_page_requests where utm_campaign = '%s'" % utm_campaign
         results = self.execute_SQL(sql)
         
@@ -2279,7 +2282,19 @@ class LandingPageTableLoader(TableLoader):
         latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 1, 2)
         
         return latest_timestamp
-    
+
+    """
+        Counts the number of views for a given campaign
+    """
+    def get_campaign_view_count(self, utm_campaign):
+        
+        utm_campaign = MySQLdb._mysql.escape_string(str(utm_campaign))
+        
+        sql = "select count(*) from landing_page_requests where utm_campaign = '%s'" % utm_campaign
+        results = self.execute_SQL(sql)
+        
+        return int(results[0][0])
+        
 """
 
     CLASS :: IPCountryTableLoader
