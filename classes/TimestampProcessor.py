@@ -621,3 +621,24 @@ def getTimestampFormat(timestamp):
         return 2
     else: 
         return -1
+
+
+""" 
+    Create timestamp list 
+    
+    @param start: start time stamp - datetime obj
+"""
+def create_timestamp_list(start, num_samples, interval_minutes):
+    
+    curr_obj = start
+    ts_list = [timestamp_from_obj(curr_obj, 1, 3)]
+        
+    delta = datetime.timedelta(minutes=interval_minutes)
+    
+    for i in range(num_samples - 1):
+        curr_obj = curr_obj + delta
+        ts_list.append(timestamp_from_obj(curr_obj, 1, 3))
+        
+    return ts_list
+        
+    
