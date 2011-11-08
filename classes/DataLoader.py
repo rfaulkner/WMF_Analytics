@@ -478,20 +478,30 @@ class SummaryReportingLoader(DataLoader):
     def process_kwargs(self, kwargs_dict):
         
         min_views = '1000' # filters no campaigns
+        one_step = False
         
         """ Process keys -- Escape parameters """
         for key in kwargs_dict:
             if key == 'min_views':       
-                min_views = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+                min_views = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+            elif key == 'one_step':       
+                one_step = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+                                
+                """ Ensure the keyarg is boolean """
+                if cmp(one_step, 'True') == 0:
+                    one_step = True
+                else:            
+                    one_step = False
         
-        return min_views
+        return min_views, one_step
     
     
     def run_query(self, start_time, end_time, campaign, **kwargs):
         
-        min_views = self.process_kwargs(kwargs)
+        min_views, one_step = self.process_kwargs(kwargs)
         
-        if self.get_one_step_banners(start_time, end_time, campaign):
+        """ In the case that we look at one step banners the results for one step and two step pipeline totals are combined"""
+        if self.get_one_step_banners(start_time, end_time, campaign) or one_step:
             
             filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
             sql_stmnt = Hlp.file_to_string(filename)
@@ -509,6 +519,7 @@ class SummaryReportingLoader(DataLoader):
             
             """ Combine the results from one and two step donation flows """
             aggregate_amounts = [[]]
+            
             if cmp('report_total_metrics', self._query_name_) == 0:
                 
                 col_types = QD.get_column_types('report_total_metrics')
@@ -520,14 +531,32 @@ class SummaryReportingLoader(DataLoader):
                     col_name = col_names[index]
                     
                     if cmp(col_type, FDH._COLTYPE_KEY_) == 0:
-                        elem = results_1[0][index]
                         
+                        if results_1:
+                            elem = results_1[0][index]
+                        elif results_2:
+                            elem = results_2[0][index]
+                            
                     elif cmp(col_type, FDH._COLTYPE_AMOUNT_) == 0:
-                        elem = float(results_1[0][index]) + float(results_2[0][index])
                         
+                        """ If there are both one step and two step pages combine totals """
+                        if results_2 and results_1:
+                            elem = float(results_1[0][index]) + float(results_2[0][index])
+                        elif results_1:
+                            elem = float(results_1[0][index])
+                        elif results_2:
+                            elem = float(results_2[0][index])
+                            
                     elif cmp(col_type, FDH._COLTYPE_RATE_) == 0:
-                        elem = (float(results_1[0][index]) + float(results_2[0][index])) / 2
                         
+                        """ If there are both one step and two step pages combine totals """
+                        if results_2 and results_1:
+                            elem = (float(results_1[0][index]) + float(results_2[0][index])) / 2
+                        elif results_1:
+                            elem = float(results_1[0][index])
+                        elif results_2:
+                            elem = float(results_2[0][index])
+                            
                     elem = QD.get_metric_data_type(col_name, elem)
                     aggregate_amounts[0].append(elem)
                     
@@ -648,26 +677,48 @@ class IntervalReportingLoader(DataLoader):
     
     
     """
+        PROCESS OPTIONAL KWARGS
+    """
+    def process_kwargs(self, kwargs_dict):
+        
+        one_step = False
+
+        """ Process keys -- Escape parameters """
+        for key in kwargs_dict:        
+            if key == 'one_step':
+                one_step = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+                
+                """ Ensure the keyarg is boolean """
+                if cmp(one_step, 'True') == 0:
+                    one_step = True
+                else:            
+                    one_step = False
+                            
+        return one_step
+        
+    """
         Handles both one step and two step banners
     """
-    def run_query(self, start_time, end_time, interval, metric_name, campaign):                
-            
+    def run_query(self, start_time, end_time, interval, metric_name, campaign, **kwargs):                
+        
+        one_step_var = self.process_kwargs(kwargs)            
+        
         query_name = self.get_sql_filename_for_query()
         logging.info('Using query: ' + query_name)
-        
+
         """ 
             Determine if there are any one step banners
             
             If so execute both types of queries
         """
-        if self.get_one_step_banners(start_time, end_time, campaign):
-            
+        if self.get_one_step_banners(start_time, end_time, campaign) or one_step_var:
+
             logging.info('Using one-step query...')
             metrics_1, times_1, results_1 = self.run_query_base(start_time, end_time, interval, metric_name, campaign, query_name + '_1S')
             
             self._was_run_ = False
             metrics_2, times_2, results_2 = self.run_query_base(start_time, end_time, interval, metric_name, campaign, query_name)
-            
+             
             """ Combine the results from one and two step donation flows """
             
             metrics_1.update(metrics_2)
@@ -857,19 +908,19 @@ class CampaignIntervalReportingLoader(DataLoader):
                 metrics        - dict containing metric measure for each time index for each donation pipeline handle (e.g. banner names) 
                 times          - dict containing time index for each donation pipeline handle (e.g. banner names)
     """
-    def run_query(self, start_time, end_time, interval, metric_name, campaign):
+    def run_query(self, start_time, end_time, interval, metric_name, campaign, **kwargs):
         
         """ Execute the standard interval reporting query """
-        data = self._irl_artifacts_.run_query(start_time, end_time, interval, metric_name, campaign)
+        data = self._irl_artifacts_.run_query(start_time, end_time, interval, metric_name, campaign, **kwargs)
         metrics = data[0] 
         times = data[1]
-                
+        
         """ Get the totals for campaign views and donations """
-        data = self._irl_totals_.run_query(start_time, end_time, interval, metric_name, campaign)
+        data = self._irl_totals_.run_query(start_time, end_time, interval, metric_name, campaign, **kwargs)
         metrics_total = data[0] 
         times_total = data[1]
         self._results_ = data[2]
-
+        
         """ Combine the results for the campaign totals with (banner, landing page, campaign) """
         for key in metrics_total.keys():
             metrics[key] = metrics_total[key]

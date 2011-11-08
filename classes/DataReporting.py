@@ -595,21 +595,36 @@ class IntervalReporting(DataReporting):
     """        
     def run(self, start_time, end_time, interval, metric_name, campaign, label_dict, **kwargs):
         
-        """ Get the artifacts from label dictionary """
-        artifact_keys_var = label_dict.keys()
+        """ 
+            PROCESS KWARGS
+            ==============
+        """
+    
+        if 'generate_plot' in kwargs:
+            self._generate_plot_ = kwargs['generate_plot']
         
-        """ Execute the query that generates interval reporting data """
-        return_val = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
-        self._counts_ = return_val[0]
-        self._times_ = return_val[1]
-        
+        if 'one_step' in kwargs:
+            one_step_var = kwargs['one_step']
+            
+            if not(isinstance(one_step_var, bool)):
+                one_step_var = False
+        else:
+            one_step_var = False
+            
         if 'include_all_artifacts' in kwargs:
             artifact_keys_var = self._counts_.keys()
             for key in artifact_keys_var:
                 label_dict[key] = key
         
-        if 'generate_plot' in kwargs:
-            self._generate_plot_ = kwargs['generate_plot']
+            
+        """ Get the artifacts from label dictionary """
+        artifact_keys_var = label_dict.keys()
+        
+        """ Execute the query that generates interval reporting data """
+        return_val = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign, one_step=one_step_var)
+        self._counts_ = return_val[0]
+        self._times_ = return_val[1]
+        
             
         """ Filter the data """        
         self.add_filters_runtime(interval=interval, artifact_keys=artifact_keys_var, time_series=True)            
@@ -829,8 +844,22 @@ class ConfidenceReporting(DataReporting):
         
         
     """
-    def run(self, test_name, campaign, metric_name, items, start_time, end_time, interval):
+    def run(self, test_name, campaign, metric_name, items, start_time, end_time, interval, **kwargs):
         
+        """ 
+            PROCESS KWARGS
+            ==============
+        """
+        
+        if 'one_step' in kwargs:
+            one_step_var = kwargs['one_step']
+            
+            if not(isinstance(one_step_var, bool)):
+                one_step_var = False
+        else:
+            one_step_var = False
+        
+            
         """ TEMPORARY - map TODO : this should be more generalized """
         counter = 1
         for key in items.keys():
@@ -845,7 +874,7 @@ class ConfidenceReporting(DataReporting):
         artifact_keys_var = items.keys()
         
         """ Retrieve values from database """
-        results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign)
+        results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign, one_step=one_step_var)
         self._counts_ = results[0]
         self._times_ = results[1]
         

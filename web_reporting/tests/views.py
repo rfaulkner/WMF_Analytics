@@ -160,8 +160,14 @@ def test(request):
     test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'])
     utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
     start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'])
-    end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'])
+    end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'])    
+    one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'])
     
+    if cmp(one_step_var, 'True') == 0:
+        one_step_var = True
+    else:
+        one_step_var = False
+        
     try: 
         test_type_var = MySQLdb._mysql.escape_string(request.POST['test_type'])
         labels = request.POST['artifacts']
@@ -262,7 +268,7 @@ def test(request):
     
     measured_metric, winner, loser, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
     =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
-                                  sample_interval, test_interval, test_type_var, metric_types)
+                                  sample_interval, test_interval, test_type_var, metric_types, one_step_var)
     
     winner_var = winner[0]
     
@@ -306,7 +312,7 @@ def test(request):
     
 
 """
-def generate_reporting_objects(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types):
+def generate_reporting_objects(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types, one_step_var):
 
     """ Labels will always be metric names in this case """
     # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
@@ -385,15 +391,15 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         ==========================================
     """
     for metric in metric_types:
-        ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict)
+        ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict, one_step=one_step_var)
                     
     
     """ 
         CHECK THE CAMPAIGN VIEWS AND DONATIONS 
         ======================================
     """
-    ir_cmpgn.run(start_time, end_time, sample_interval, 'views', campaign, {})
-    ir_cmpgn.run(start_time, end_time, sample_interval, 'donations', campaign, {})
+    ir_cmpgn.run(start_time, end_time, sample_interval, 'views', campaign, {}, one_step=one_step_var)
+    ir_cmpgn.run(start_time, end_time, sample_interval, 'donations', campaign, {}, one_step=one_step_var)
     
     
     """ 
@@ -408,7 +414,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     for metric in measured_metric:
         
-        ret = cr.run(test_name, campaign, metric, label_dict, start_time, end_time, sample_interval)
+        ret = cr.run(test_name, campaign, metric, label_dict, start_time, end_time, sample_interval, one_step=one_step_var)
         
         confidence.append(ret[0])
         column_colours[metric] = ret[1]
@@ -419,11 +425,15 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         ===============================
     """
     
-    summary_start_time = DL.LandingPageTableLoader().get_earliest_campaign_view(campaign)
+    if one_step_var == True:
+        summary_start_time = DL.CiviCRMLoader().get_earliest_donation(campaign)
+    else:
+        summary_start_time = DL.LandingPageTableLoader().get_earliest_campaign_view(campaign)
+    
     summary_end_time = DL.CiviCRMLoader().get_latest_donation(campaign)
     
     srl = DL.SummaryReportingLoader(test_type)
-    srl.run_query(summary_start_time, summary_end_time, campaign)
+    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var)
     
     columns = srl.get_column_names()
     summary_results = srl.get_results()
@@ -465,10 +475,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     html_table = '<h4><u>Metrics Legend:</u></h4><div class="spacer"></div>' + metric_legend_table + \
         '<div class="spacer"></div><h4><u>Confidence Legend for Hypothesis Testing:</u></h4><div class="spacer"></div>' + conf_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + html_table
             
-    """ Generate totals """
+    """ Generate totals for the test summary """
     srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
-    srl.run_query(start_time, end_time, campaign)
-    html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names())
+    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var)
+    html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
         
 
     return [measured_metric, winner, loser, percent_increase, confidence, html_table_pm_banner, html_table_pm_lp, html_language, html_table]
