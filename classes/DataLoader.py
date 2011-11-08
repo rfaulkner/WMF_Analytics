@@ -1125,13 +1125,21 @@ class CampaignReportingLoader(DataLoader):
         """ Process the new results - add links """
         new_results = list()
         for row in results:
-            new_row = list(row)
-            new_row[live_banner_link_index] = '<a href="%s">%s</a>' % (row[live_banner_link_index], row[language_index])
-            new_row[lp_link_index] = '<a href="%s">%s</a>' % (row[lp_link_index], row[lp_link_index])            
+            new_row = list()
             
+            for index in range(len(row)):
+                if index == live_banner_link_index:
+                    new_row.append('<a href="%s">%s</a>' % (row[index], row[language_index]))
+                elif index == lp_link_index:
+                    new_row.append('<a href="%s">%s</a>' % (row[index], row[index]))            
+                elif index != language_index:
+                    new_row.append(row[index])
+                    
             new_results.append(new_row)
         
-        return new_results
+        columns = ['Campaign', 'Country', 'Language', 'Landing Page', 'Views', 'Donations', 'Total Amount ($)']
+        
+        return new_results, columns
         # columns = ['Country', 'Language', 'Live Banners', 'Landing Page', 'Views', 'Donations', 'Total Amount ($)']
         
 

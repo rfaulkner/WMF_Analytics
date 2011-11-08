@@ -50,12 +50,12 @@ def index(request):
     #start_time = '20110812000000'
     #end_time = '20110813000000'
     
-    live_lps = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time)
+    live_lps, columns = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time)
     
     if len(live_lps) == 0:
         html_table = '<br><p color="red"><b>No landing page data found.<b></p><br>'
     else:
-        html_table = DR.DataReporting()._write_html_table(live_lps, ['Country', 'Language', 'Live Banners', 'Landing Page', 'Views', 'Donations', 'Total Amount ($)'])
+        html_table = DR.DataReporting()._write_html_table(live_lps, columns)
     
     return render_to_response('live_lps/index.html', {'html_table' : html_table}, context_instance=RequestContext(request))
 
