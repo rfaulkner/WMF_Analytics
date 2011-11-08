@@ -1107,7 +1107,10 @@ class CampaignReportingLoader(DataLoader):
     """
     def query_live_landing_pages(self, start_time, end_time):
         
-        filename = projSet.__sql_home__+ 'report_lp_running.sql'
+        query_name = 'report_lp_running'
+        
+        filename = projSet.__sql_home__+ query_name + '.sql'
+        
         sql_stmnt = Hlp.file_to_string(filename)
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time)
         
@@ -1115,12 +1118,16 @@ class CampaignReportingLoader(DataLoader):
                 
         results =  self.execute_SQL(sql_stmnt)
         
+        live_banner_link_index = QD.get_metric_index(query_name, 'live_banners')
+        lp_link_index = QD.get_metric_index(query_name, 'lp_link')
+        language_index = QD.get_metric_index(query_name, 'language')
+        
         """ Process the new results - add links """
         new_results = list()
         for row in results:
             new_row = list(row)
-            new_row[2] = '<a href="http://%s">%s</a>' % (row[2], row[2])
-            new_row[3] = '<a href="http://wikimediafoundation.org/wiki/%s/%s/%s">%s</a>' % (row[3], row[1], row[0], row[3])            
+            new_row[live_banner_link_index] = '<a href="%s">%s</a>' % (row[live_banner_link_index], row[language_index])
+            new_row[lp_link_index] = '<a href="%s">%s</a>' % (row[lp_link_index], row[lp_link_index])            
             
             new_results.append(new_row)
         

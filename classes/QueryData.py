@@ -433,7 +433,26 @@ def get_metric_index(query_name, metric_name):
             return 10
         elif metric_name == 'amt_norm_per_view':
             return 12
+    
+    elif query_name == 'report_lp_running':
         
+        if metric_name == 'utm_campaign':
+            return 0
+        elif metric_name == 'country':
+            return 1
+        elif metric_name == 'language':
+            return 2
+        elif metric_name == 'live_banners':
+            return 3
+        elif metric_name == 'lp_link':
+            return 4
+        elif metric_name == 'views':
+            return 5
+        elif metric_name == 'donations':
+            return 6
+        elif metric_name == 'amount':
+            return 7
+            
     else:
         return 'no such table'
 
