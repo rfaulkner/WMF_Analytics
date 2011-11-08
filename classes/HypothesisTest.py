@@ -338,7 +338,7 @@ class TTest(HypothesisTest):
     """
     def get_confidence_colour_by_index(self, index):
         
-        colour_list = ['#606060', '#979797', '#BABABA', '#E0E0E0', '#FDDBC7', '#F4A582', '#D6604D', '#D22B2B']
+        colour_list = ['#808080', '#A0A0A0', '#C0C0C0', '#E0E0E0', '#FDDBC7', '#F4A582', '#D6604D', '#D22B2B']
                 
         return colour_list[index]
         
