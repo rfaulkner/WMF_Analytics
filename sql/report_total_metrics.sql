@@ -42,7 +42,7 @@ landing_page,
 count(*) as views,
 utm_campaign
 from landing_page_requests
-where request_time >= '%s' and request_time < '%s' and utm_campaign = '%s'
+where request_time >= '%s' and request_time < '%s' and utm_campaign REGEXP '%s'
 group by 1,2) as lp
 
 on imp.utm_source =  lp.utm_source
@@ -84,7 +84,7 @@ from
 drupal.contribution_tracking join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
 ) as all_contributions
 
 join 
@@ -98,7 +98,7 @@ from
 drupal.contribution_tracking left join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
 group by 1,2) as avg_contributions
 
 on all_contributions.banner = avg_contributions.banner
@@ -109,5 +109,5 @@ group by 1,2
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
 
-where lp.utm_campaign = '%s' and lp.views > %s
+where lp.views > %s
 group by 1;
