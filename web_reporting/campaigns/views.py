@@ -81,8 +81,8 @@ def index(request, **kwargs):
 
     """ If the filter form was submitted extract the POST vars  """
     try:
-        min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'])
-        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'])
+        min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'].strip())
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'].strip())
         
         """ If the user timestamp is earlier than the default start time run the query for the earlier start time  """
         ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
@@ -191,19 +191,16 @@ def show_campaigns(request, utm_campaign, **kwargs):
     except:
         test_type_var = ''
         pass
-    
-    
-
         
     """ Find the earliest and latest page views for a given campaign  """
     lptl = DL.LandingPageTableLoader()
     
-    if lptl.get_campaign_view_count(utm_campaign) > 0:
+    if lptl.get_campaign_view_count(utm_campaign) > 0: 
         one_step = False
         start_time = lptl.get_earliest_campaign_view(utm_campaign)
         end_time = lptl.get_latest_campaign_view(utm_campaign)
     
-    else:
+    else:   # Assume it is a one step test if there are no impressions for this campaign in the landing page table
         one_step = True
         ccrml = DL.CiviCRMLoader()
         start_time = ccrml.get_earliest_donation(utm_campaign)

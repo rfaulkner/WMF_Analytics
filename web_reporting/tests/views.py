@@ -52,8 +52,6 @@ _end_time_ = '99990011223344'
 """
 def index(request):
     
-    
-    
     """ 
         PROCESS POST DATA
         ================= 
@@ -63,12 +61,11 @@ def index(request):
 
     try:
         
-        latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'])
-        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'])
+        latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'].strip())
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'].strip())
         
         if not TP.is_timestamp(earliest_utc_ts_var, 1) or  not TP.is_timestamp(earliest_utc_ts_var, 1):
-            raise TypeError
-            
+            raise TypeError      
             
         if latest_utc_ts_var == '':
             latest_utc_ts_var = _end_time_
@@ -86,23 +83,33 @@ def index(request):
         latest_utc_ts_var = _end_time_
             
     ttl = DL.TestTableLoader()
+    columns = ttl.get_column_names()
     test_rows = ttl.get_all_test_rows()
     
     """ Build a list of tests -- apply filters """
     l = []
+    
+    utm_campaign_index = ttl.get_test_index('utm_campaign')
+    html_report_index = ttl.get_test_index('html_report')
+    
     for i in test_rows:
         test_start_time = ttl.get_test_field(i, 'start_time')
-        
+        new_row = list(i)
+                
         """ Ensure the timestamp is properly formatted """
         if TP.is_timestamp(test_start_time, 2):
             test_start_time = TP.timestamp_convert_format(test_start_time, 2, 1)
         
+        new_row[html_report_index] = '<a href="/tests/report/%s">view</a>' % new_row[utm_campaign_index]
+        
         if int(test_start_time) > int(earliest_utc_ts_var) and int(test_start_time) < int(latest_utc_ts_var):
-            l.append(i)
+            l.append(new_row)
         
     l.reverse()
     
-    return render_to_response('tests/index.html', {'err_msg' : err_msg, 'test_rows' : l},  context_instance=RequestContext(request))
+    test_table = DR.DataReporting()._write_html_table(l, columns, use_standard_metric_names=True)
+    
+    return render_to_response('tests/index.html', {'err_msg' : err_msg, 'test_table' : test_table},  context_instance=RequestContext(request))
 
 
 """
@@ -157,12 +164,18 @@ def test(request):
         Escape all user input that can be entered in text fields 
         
     """
-    test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'])
-    utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
-    start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'])
-    end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'])    
-    one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'])
+    test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'].strip())
+    utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'].strip())
+    start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
+    end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())    
+    one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'].strip())
     
+    """ Convert timestamp format if necessary """
+    if TP.is_timestamp(start_time_var, 2):
+        start_time_var = TP.timestamp_convert_format(start_time_var, 2, 1)
+    if TP.is_timestamp(end_time_var, 2):
+        end_time_var = TP.timestamp_convert_format(end_time_var, 2, 1)
+            
     if cmp(one_step_var, 'True') == 0:
         one_step_var = True
     else:
@@ -498,10 +511,16 @@ def generate_summary(request):
             Escape all user input that can be entered in text fields 
             
         """
-        utm_campaign = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
-        start_time = MySQLdb._mysql.escape_string(request.POST['start_time'])
-        end_time = MySQLdb._mysql.escape_string(request.POST['end_time'])
-            
+        utm_campaign = MySQLdb._mysql.escape_string(request.POST['utm_campaign'].strip())
+        start_time = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
+        end_time = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())
+        
+        """ Convert timestamp format if necessary """
+        if TP.is_timestamp(start_time, 2):
+            start_time = TP.timestamp_convert_format(start_time, 2, 1)
+        if TP.is_timestamp(end_time, 2):
+            end_time = TP.timestamp_convert_format(end_time, 2, 1)
+         
         """ 
             GENERATE A REPORT SUMMARY TABLE
             ===============================

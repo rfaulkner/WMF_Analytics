@@ -1522,9 +1522,8 @@ class TestTableLoader(TableLoader):
             logging.error('Could not execute: ' + update_stmnt)
             
             return -1
-        
-
     
+           
     def insert_row(self, **kwargs):
         
         insert_stmnt = 'insert into test values '
@@ -1540,8 +1539,7 @@ class TestTableLoader(TableLoader):
             logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
-            # sys.exit('Could not execute: ' + insert_stmnt)
-
+    
     
     def record_exists(self, **kwargs):
         
@@ -1635,10 +1633,37 @@ class TestTableLoader(TableLoader):
             
             return ''
 
-    
+    """
+        This method returns an index to a given field key in the test table
+    """
+    def get_test_index(self, key):
+        
+        if key == 'test_name':
+            return 0
+        elif key == 'test_type':
+            return 1
+        elif key == 'utm_campaign':           
+            return 2
+        elif key == 'start_time':
+            return 3
+        elif key == 'end_time':
+            return 4
+        elif key == 'winner':
+            return 5
+        elif key == 'is_conclusive':
+            return 6
+        elif key == 'html_report':                
+            return 7
+        else:
+            logging.error(self.__str__() + ': Test Table field does not exist.')
+            return None
+
     def delete_row(self):
         return
     
+    def get_column_names(self):
+        
+        return ['Name', 'Type', 'Campaign', 'Start Time', 'End Time', 'Winner', 'Conclusive?', 'Report']
     
 """
 

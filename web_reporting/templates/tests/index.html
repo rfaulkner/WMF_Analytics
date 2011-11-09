@@ -51,34 +51,7 @@
 <div class="spacer"></div>
 
 <!-- Table listing all tests run -->
-<center>
-<table border="1" cellpadding="10">
-<tr>
-<th>Name</th>
-<th>Type</th>
-<th>Campaign</th>
-<th>Start Time</th>
-<th>End Time</th>
-<th>Winner</th>
-<th>Conclusive?</th>
-<th>Report</th>
-</tr>
-
-{% for row in test_rows %}
-	<tr>
-	<td>{{ row.0 }}</td> <!-- test_name -->
-	<td>{{ row.1 }}</td> <!-- test_type -->
-	<td>{{ row.2 }}</td> <!-- utm_campaign -->
-	<td>{{ row.3 }}</td> <!-- start_time -->
-	<td>{{ row.4 }}</td> <!-- end_time -->
-	<td>{{ row.5 }}</td> <!-- winner -->
-	<td>{{ row.6 }}</td> <!-- is_conclusive -->
-	<td><a href="/tests/report/{{ row.2 }}">view</a></td>
-	</tr>
-{% endfor %}
-
-</table> 
-</center>
+<center>{{ test_table|safe }}</center>
 
 <div class="spacer"></div>
 <div class="spacer"></div>

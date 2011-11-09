@@ -101,7 +101,7 @@ def process_filter_data(request):
     
     try:
         
-        latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'])
+        latest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'].strip())
         
         if not(TP.is_timestamp(latest_utc_ts_var, 1)) and not(TP.is_timestamp(latest_utc_ts_var, 2)):
             raise TypeError
@@ -123,7 +123,7 @@ def process_filter_data(request):
 
     try:
         
-        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'])
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'].strip())
         
         if not(TP.is_timestamp(earliest_utc_ts_var, 1)) and not(TP.is_timestamp(earliest_utc_ts_var, 2)):
             raise TypeError
