@@ -90,7 +90,13 @@ def format_query(query_name, sql_stmnt, args):
         campaign = args[2]
         min_views = args[3]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, start_time, end_time, campaign, campaign, min_views)
+        """ Format the condition for minimum views """
+        if cmp(str(min_views), '-1') == 0:
+            min_views = ' '
+        else:
+            min_views = 'where lp.views > ' + str(min_views) + ' '
+            
+        sql_stmnt = sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, start_time, end_time, campaign, min_views)
         
     elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
     cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0 or cmp(query_name, 'report_total_metrics_1S') == 0:
@@ -100,7 +106,13 @@ def format_query(query_name, sql_stmnt, args):
         campaign = args[2]
         min_views = args[3]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, start_time, end_time, campaign, campaign, min_views)
+        """ Format the condition for minimum views """
+        if cmp(str(min_views), '-1') == 0:
+            min_views = ' '
+        else:
+            min_views = 'where lp.views > ' + str(min_views) + ' '
+            
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, start_time, end_time, campaign, min_views)
     
     elif cmp(query_name, 'report_latest_campaign') == 0:
         start_time = args[0]

@@ -511,14 +511,20 @@ def generate_summary(request):
         
         columns = srl.get_column_names()
         summary_results = srl.get_results()
+        if not(summary_results):
+            summary_results = '<p>No data available for %s.' % utm_campaign
             
-        html_table = DR.DataReporting()._write_html_table(summary_results, columns)    
+        html_table = DR.DataReporting()._write_html_table(summary_results, columns, use_standard_metric_names=True)    
         
         """ Generate totals """
         srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1)
         
-        html_table = html_table + '<div class="spacer"></div><div class="spacer"></div>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
+        total_summary_results = srl.get_results()
+        if not(total_summary_results):
+            total_summary_results = '<p>No data available for %s.' % utm_campaign
+            
+        html_table = html_table + '<div class="spacer"></div><div class="spacer"></div>' + DR.DataReporting()._write_html_table(total_summary_results, srl.get_column_names(), use_standard_metric_names=True)
         
         metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
         conf_legend_table = DR.ConfidenceReporting(query_type='bannerlp', hyp_test='TTest').get_confidence_legend_table()

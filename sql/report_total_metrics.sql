@@ -9,7 +9,7 @@
 
 select
 
-concat(lp.utm_campaign,' Totals') as campaign,
+concat(ecomm.utm_campaign,' Totals') as campaign,
 sum(floor(impressions * (views / total_views))) as impressions, 
 sum(views) as views,
 sum(donations) as donations,
@@ -58,7 +58,7 @@ group by 1) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source
 
-left join
+right join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 
@@ -66,6 +66,7 @@ left join
 (
 select 
 
+all_contributions.utm_campaign,
 all_contributions.banner,
 all_contributions.landing_page,
 count(*) as donations,
@@ -76,6 +77,7 @@ from
 
 (
 select
+utm_campaign,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page,
 total_amount as amount
@@ -104,10 +106,10 @@ group by 1,2) as avg_contributions
 on all_contributions.banner = avg_contributions.banner
 and all_contributions.landing_page = avg_contributions.landing_page
 
-group by 1,2
+group by 1,2,3
 ) as ecomm
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
 
-where lp.views > %s
+%s
 group by 1;

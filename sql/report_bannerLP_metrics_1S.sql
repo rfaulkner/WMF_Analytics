@@ -9,7 +9,7 @@
 
 select
 
-concat(imp.utm_source,'-', lp.landing_page) as utm_source,
+concat(ecomm.banner,'-', ecomm.landing_page) as utm_source,
 floor(impressions * (views / total_views)) as impressions, 
 views,
 donations,
@@ -62,7 +62,7 @@ group by 1) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source
 
-left join
+right join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 
@@ -113,5 +113,5 @@ group by 1,2
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
 
-where lp.views > %s
+%s
 group by 1 order by 1 desc;

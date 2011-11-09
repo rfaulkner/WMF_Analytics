@@ -577,6 +577,8 @@ class SummaryReportingLoader(DataLoader):
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             
+            
+            
     """
         GET method for query results
     """

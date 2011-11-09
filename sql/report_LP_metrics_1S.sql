@@ -9,7 +9,7 @@
 
 select
 
-lp.landing_page,
+ecomm.landing_page,
 views,
 donations,
 amount,
@@ -30,7 +30,7 @@ from drupal.contribution_tracking
 where ts >= '%s' and ts < '%s' and utm_campaign REGEXP '%s'
 group by 1) as lp
 
-left join
+right join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 
@@ -57,7 +57,7 @@ ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.
 where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
 ) as all_contributions
 
-join 
+right join 
 
 (select
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page,
@@ -77,5 +77,5 @@ group by 1
 
 on ecomm.landing_page  = lp.landing_page
 
-where lp.views > %s 
+%s 
 group by 1 order by 1 desc;

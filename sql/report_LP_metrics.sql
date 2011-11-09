@@ -9,7 +9,7 @@
 
 select
 
-lp.landing_page,
+ecomm.landing_page,
 views,
 donations,
 amount,
@@ -30,10 +30,10 @@ utm_campaign
 from landing_page_requests
 
 where request_time >=  '%s' and request_time < '%s'
-and utm_campaign = '%s'
+and utm_campaign REGEXP '%s'
 group by 1) as lp
 
-left join
+right join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 
@@ -57,7 +57,7 @@ from
 drupal.contribution_tracking join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
 ) as all_contributions
 
 join 
@@ -70,7 +70,7 @@ from
 drupal.contribution_tracking left join civicrm.civicrm_contribution
 ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign = '%s'
+where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
 group by 1) as avg_contributions
 
 on all_contributions.landing_page = avg_contributions.landing_page 
@@ -80,4 +80,5 @@ group by 1
 
 on ecomm.landing_page = lp.landing_page
 
-where lp.utm_campaign = '%s' and lp.views > %s group by 1 order by 1 desc;
+%s 
+group by 1 order by 1 desc;
