@@ -551,6 +551,26 @@ def generate_summary(request):
         html_table = '<h4><u>Metrics Legend:</u></h4><div class="spacer"></div>' + metric_legend_table + \
         '<div class="spacer"></div><h4><u>Confidence Legend for Hypothesis Testing:</u></h4><div class="spacer"></div>' + conf_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + html_table
         
+        """ 
+            DETERMINE PAYMENT METHODS 
+            =========================
+        """
+        
+        ccl = DL.CiviCRMLoader()
+        pm_data_banner, pm_data_lp  = ccl.get_payment_methods(utm_campaign, start_time, end_time)
+        
+        pm_data_banner_mapped = list()
+        pm_data_lp_mapped = list()
+        
+        ccl.map_autoviv_to_list(pm_data_banner, pm_data_banner_mapped, [])
+        ccl.map_autoviv_to_list(pm_data_lp, pm_data_lp_mapped, [])        
+        
+        html_table_pm_banner = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_banner_mapped, ['Payment Method', 'Portion of Donations'], 'Banner')
+        html_table_pm_lp = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_lp_mapped, ['Payment Method', 'Portion of Donations'], 'Landing Page')
+        
+        html_table = html_table + '<h4><u>Payment Methods Breakdown:</u></h4><div class="spacer"></div>' + html_table_pm_banner + '<div class="spacer"></div>' + \
+            html_table_pm_lp + '<div class="spacer"></div><div class="spacer"></div>'
+        
         return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))
     
     except:
