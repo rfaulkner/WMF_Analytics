@@ -15,7 +15,7 @@ DATE_FORMAT(ts,'%sY%sm%sd%sH') as dt_hr,
 FLOOR(MINUTE(ts) / %s) * %s as dt_min,
 utm_campaign,
 sum(not isnull(civicrm.civicrm_contribution.id)) as donations,
-sum(civicrm.civicrm_contribution.id) as clicks
+count(*) as clicks
 
 from
 
