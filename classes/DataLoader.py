@@ -780,7 +780,7 @@ class IntervalReportingLoader(DataLoader):
             sql_stmnt = Hlp.file_to_string(filename)
             
             sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, campaign, interval])
-            
+            print sql_stmnt
             
         """ Get Indexes into Query """
         key_index = QD.get_key_index(query_name)
@@ -1109,9 +1109,15 @@ class CampaignReportingLoader(DataLoader):
     """
     def query_live_landing_pages(self, start_time, end_time):
         
+        CIVI_DONATE_UTM_SOURCE_DELIMETER = '@'
         query_name = 'report_lp_running'
         
         filename = projSet.__sql_home__+ query_name + '.sql'
+        
+        lp_link_str_donate = 'https://donate.wikimedia.org/wiki/Special:FundraiserLandingPage?uselang=%s&' + \
+        'country=%s&template=%s&appeal=%s&form-countryspecific=%s'
+        
+        lp_link_str_foundation = 'http://wikimediafoundation.org/wiki/%s/%s/%s'
         
         sql_stmnt = Hlp.file_to_string(filename)
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time)
@@ -1121,19 +1127,44 @@ class CampaignReportingLoader(DataLoader):
         results =  self.execute_SQL(sql_stmnt)
         
         live_banner_link_index = QD.get_metric_index(query_name, 'live_banners')
-        lp_link_index = QD.get_metric_index(query_name, 'lp_link')
+        landing_page_index = QD.get_metric_index(query_name, 'landing_page')
         language_index = QD.get_metric_index(query_name, 'language')
+        country_index = QD.get_metric_index(query_name, 'country')
         
         """ Process the new results - add links """
         new_results = list()
         for row in results:
             new_row = list()
             
+            """ Filter requests from donate.wikimedia.org """
+            landing_page = row[landing_page_index]
+            
+            if landing_page != None:
+                if re.search(CIVI_DONATE_UTM_SOURCE_DELIMETER, landing_page):
+                    lp_fields = landing_page.split(CIVI_DONATE_UTM_SOURCE_DELIMETER)
+                    if len(lp_fields) == 3:
+                        lp_link = lp_link_str_donate % (row[language_index], row[country_index], lp_fields[2], lp_fields[1], lp_fields[0])
+                    elif len(lp_fields) == 2:
+                        lp_link = lp_link_str_donate % (row[language_index], row[country_index], 'Lp-layout-default', lp_fields[1], lp_fields[0])
+                    else:
+                        lp_link = ''
+                else:
+                    lp_link = lp_link_str_foundation % (landing_page, row[language_index], row[country_index])
+            
+            else:
+                lp_link = ''
+            
+            """ Build LP link from fields """
+            
             for index in range(len(row)):
                 if index == live_banner_link_index:
                     new_row.append('<a href="%s">%s</a>' % (row[index], row[language_index]))
-                elif index == lp_link_index:
-                    new_row.append('<a href="%s">%s</a>' % (row[index], row[index]))            
+                elif index == landing_page_index:
+                    if len(lp_link) > 0:
+                        new_row.append('<a href="%s">%s</a>' % (lp_link, lp_link))            
+                    else:
+                        new_row.append('')
+                        
                 elif index != language_index:
                     new_row.append(row[index])
                     

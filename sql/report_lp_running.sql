@@ -12,10 +12,12 @@ civi_data.utm_campaign,
 civi_data.country, 
 civi_data.language, 
 concat('http://',civi_data.language,'.wikipedia.org/wiki/Main_Page?country=',civi_data.country) as live_banners,
-concat('http://wikimediafoundation.org/wiki/',civi_data.landing_page,'/',civi_data.language,'/',civi_data.country) as lp_link,
--- civi_data.landing_page as landing_page,
+-- concat('http://wikimediafoundation.org/wiki/',civi_data.landing_page,'/',civi_data.language,'/',civi_data.country) as lp_link,
+civi_data.landing_page as landing_page,
 views, donations, amount
-	
+
+
+
 from
 
 (select 

@@ -456,7 +456,7 @@ def get_metric_index(query_name, metric_name):
             return 2
         elif metric_name == 'live_banners':
             return 3
-        elif metric_name == 'lp_link':
+        elif metric_name == 'landing_page':
             return 4
         elif metric_name == 'views':
             return 5
