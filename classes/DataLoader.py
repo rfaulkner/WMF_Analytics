@@ -1109,19 +1109,22 @@ class CampaignReportingLoader(DataLoader):
     """
     def query_live_landing_pages(self, start_time, end_time):
         
-        CIVI_DONATE_UTM_SOURCE_DELIMETER = '@'
+        CIVI_DONATE_UTM_SOURCE_DELIMETER = '~'
+        # LP_NAME_FIELDS = ['Lp-layout-','appeal-template-','Appeal-','form-template-','Form-countryspecific-']
+        LP_NAME_FIELDS = ['','','','','']
+        
         query_name = 'report_lp_running'
         
         filename = projSet.__sql_home__+ query_name + '.sql'
         
         lp_link_str_donate = 'https://donate.wikimedia.org/wiki/Special:FundraiserLandingPage?uselang=%s&' + \
-        'country=%s&template=%s&appeal=%s&form-countryspecific=%s'
+        'country=%s&template=%s&appeal-template=%s&appeal=%s&form-template=%s&form-countryspecific=%s'
         
         lp_link_str_foundation = 'http://wikimediafoundation.org/wiki/%s/%s/%s'
         
         sql_stmnt = Hlp.file_to_string(filename)
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time)
-        
+        print sql_stmnt
         logging.info('Using query:  report_lp_running -> get live landing pages')
                 
         results =  self.execute_SQL(sql_stmnt)
@@ -1141,13 +1144,14 @@ class CampaignReportingLoader(DataLoader):
             
             if landing_page != None:
                 if re.search(CIVI_DONATE_UTM_SOURCE_DELIMETER, landing_page):
+                    # <template>~<appeal-template>~<appeal>~<form-template>~<form-countryspecific>
                     lp_fields = landing_page.split(CIVI_DONATE_UTM_SOURCE_DELIMETER)
-                    if len(lp_fields) == 3:
-                        lp_link = lp_link_str_donate % (row[language_index], row[country_index], lp_fields[2], lp_fields[1], lp_fields[0])
-                    elif len(lp_fields) == 2:
-                        lp_link = lp_link_str_donate % (row[language_index], row[country_index], 'Lp-layout-default', lp_fields[1], lp_fields[0])
+                    if len(lp_fields) == 5:
+                        print landing_page
+                        lp_link = lp_link_str_donate % (row[language_index], row[country_index], LP_NAME_FIELDS[0] + lp_fields[0], LP_NAME_FIELDS[1] + lp_fields[1], \
+                                                        LP_NAME_FIELDS[2] + lp_fields[2], LP_NAME_FIELDS[3] + lp_fields[3], LP_NAME_FIELDS[4] + lp_fields[4])
                     else:
-                        lp_link = ''
+                        lp_link = '<b>Missing fields in utm_source string.</b>'
                 else:
                     lp_link = lp_link_str_foundation % (landing_page, row[language_index], row[country_index])
             

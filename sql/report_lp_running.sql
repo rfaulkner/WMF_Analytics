@@ -31,9 +31,9 @@ sum(total_amount) as amount
 
 from 
 drupal.contribution_tracking 
-join civicrm.civicrm_contribution on drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id
-join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
-join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
+left join civicrm.civicrm_contribution on drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id
+left join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+left join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
 where receive_date >=  '%s' and receive_date < '%s' group by 1,2,3,4) as civi_data
 
