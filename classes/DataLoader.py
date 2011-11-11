@@ -385,7 +385,11 @@ class LongTermTrendsLoader(DataLoader):
         Based on the query type provided execute a query
     """
     def run_query(self, start_time, end_time, query_type, **kwargs):
-
+        
+        """ Escape timestamps """
+        start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
+        end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
+        
         min_val, campaign, metric_name, interval = self.process_kwargs(kwargs)
         
         if query_type == 0: 
