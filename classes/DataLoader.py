@@ -1153,10 +1153,15 @@ class CampaignReportingLoader(DataLoader):
                     # <template>~<appeal-template>~<appeal>~<form-template>~<form-countryspecific>
                     lp_fields = landing_page.split(CIVI_DONATE_UTM_SOURCE_DELIMETER)
                     if len(lp_fields) == 5:
-                        print landing_page
+                        
+                        landing_page = LP_NAME_FIELDS[0] + lp_fields[0] + '~' + LP_NAME_FIELDS[1] + lp_fields[1] + '~' + LP_NAME_FIELDS[2] + lp_fields[2] + '~' +  \
+                         LP_NAME_FIELDS[3] + lp_fields[3] + '~' +  LP_NAME_FIELDS[4] + lp_fields[4]
+
                         lp_link = lp_link_str_donate % (row[language_index], row[country_index], LP_NAME_FIELDS[0] + lp_fields[0], LP_NAME_FIELDS[1] + lp_fields[1], \
-                                                        LP_NAME_FIELDS[2] + lp_fields[2], LP_NAME_FIELDS[3] + lp_fields[3], LP_NAME_FIELDS[4] + lp_fields[4])
+                                LP_NAME_FIELDS[2] + lp_fields[2], LP_NAME_FIELDS[3] + lp_fields[3], LP_NAME_FIELDS[4] + lp_fields[4])
+
                     else:
+                        landing_page = 'None'
                         lp_link = '<b>Missing fields in utm_source string.</b>'
                 else:
                     lp_link = lp_link_str_foundation % (landing_page, row[language_index], row[country_index])
@@ -1171,7 +1176,7 @@ class CampaignReportingLoader(DataLoader):
                     new_row.append('<a href="%s">%s</a>' % (row[index], row[language_index]))
                 elif index == landing_page_index:
                     if len(lp_link) > 0:
-                        new_row.append('<a href="%s">%s</a>' % (lp_link, lp_link))            
+                        new_row.append('<a href="%s">%s</a>' % (lp_link, landing_page))            
                     else:
                         new_row.append('')
                         
