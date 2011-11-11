@@ -43,6 +43,7 @@ left join
 
 on civi_data.landing_page = lp.landing_page and civi_data.country = lp.country and civi_data.language = lp.language and civi_data.utm_campaign = lp.utm_campaign 
 
--- where views > 10
+where donations > %s
+
 order by 1,2,3,5 desc;
 

@@ -27,7 +27,7 @@ from django.template import RequestContext
 
 
 """ Import python base modules """
-import sys, datetime, logging
+import sys, datetime, logging, MySQLdb
 
 """ Import Analytics modules """
 import classes.TimestampProcessor as TP
@@ -43,14 +43,12 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
     Index page for live landing page results. 
 """
 def index(request):
-    
-    """  """
-    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-24)
+
+    """ Process POST """     
+    start_time, end_time, min_donation = process_post_vars(request)
     logging.debug('Finding live landing pages from %s to %s.' % (start_time, end_time))
-    #start_time = '20110812000000'
-    #end_time = '20110813000000'
     
-    live_lps, columns = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time)
+    live_lps, columns = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time, min_donation=min_donation)
     
     if len(live_lps) == 0:
         html_table = '<br><p color="red"><b>No landing page data found.<b></p><br>'
@@ -59,3 +57,36 @@ def index(request):
     
     return render_to_response('live_lps/index.html', {'html_table' : html_table}, context_instance=RequestContext(request))
 
+
+""" 
+    Process POST for the index view
+"""
+def process_post_vars(request):
+    
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-24)
+    
+    """ If the filter form was submitted extract the POST vars  """
+    try:
+        min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'].strip())
+        min_donations_var = int(min_donations_var)
+        
+    except:
+        min_donations_var = 0
+        
+    try:
+        
+        earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'].strip())
+        
+        """ If the user timestamp is earlier than the default start time run the query for the earlier start time  """
+        ts_format = TP.getTimestampFormat(earliest_utc_ts_var)
+    
+        """ Ensure the validity of the timestamp input """
+        if ts_format == TP.TS_FORMAT_FORMAT1:
+            start_time = TP.timestamp_convert_format(earliest_utc_ts_var, TP.TS_FORMAT_FORMAT1, TP.TS_FORMAT_FLAT)
+        elif ts_format == TP.TS_FORMAT_FLAT:
+            start_time = earliest_utc_ts_var
+                
+    except Exception: # In the case the form was incorrectly formatted notify the user        
+        pass
+        
+    return start_time, end_time, min_donations_var

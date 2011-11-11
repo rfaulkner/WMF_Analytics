@@ -1107,12 +1107,18 @@ class CampaignReportingLoader(DataLoader):
         @param end_time: end timestamp of query
         
     """
-    def query_live_landing_pages(self, start_time, end_time):
+    def query_live_landing_pages(self, start_time, end_time, **kwargs):
         
         CIVI_DONATE_UTM_SOURCE_DELIMETER = '~'
-        # LP_NAME_FIELDS = ['Lp-layout-','appeal-template-','Appeal-','form-template-','Form-countryspecific-']
-        LP_NAME_FIELDS = ['','','','','']
+        LP_NAME_FIELDS = ['Lp-layout-','appeal-template-','Appeal-','form-template-','Form-countryspecific-']
+        # LP_NAME_FIELDS = ['','','','','']
         
+        if 'min_donation' in kwargs:
+            min_donation = kwargs['min_donation']
+            
+            if not(isinstance(min_donation, int)):
+                min_donation = 0
+
         query_name = 'report_lp_running'
         
         filename = projSet.__sql_home__+ query_name + '.sql'
@@ -1123,8 +1129,8 @@ class CampaignReportingLoader(DataLoader):
         lp_link_str_foundation = 'http://wikimediafoundation.org/wiki/%s/%s/%s'
         
         sql_stmnt = Hlp.file_to_string(filename)
-        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time)
-        print sql_stmnt
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, str(min_donation))
+        
         logging.info('Using query:  report_lp_running -> get live landing pages')
                 
         results =  self.execute_SQL(sql_stmnt)
