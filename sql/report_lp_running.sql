@@ -43,7 +43,7 @@ left join
 
 on civi_data.landing_page = lp.landing_page and civi_data.country = lp.country and civi_data.language = lp.language and civi_data.utm_campaign = lp.utm_campaign 
 
-where donations > %s and civi_data.utm_campaign regexp 'C_|C11_' and civi_data.landing_page != ''
+where donations > %s and civi_data.utm_campaign regexp 'C11_' and civi_data.landing_page != ''
 
 order by 1,2,3,5 desc;
 
