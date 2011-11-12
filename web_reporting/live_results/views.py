@@ -46,7 +46,8 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 def index(request):
     
-    use_one_step = False
+    """ Find the earliest and latest page views for a given campaign  """
+    lptl = DL.LandingPageTableLoader()
     
     """ 
         PROCESS POST DATA
@@ -64,13 +65,16 @@ def index(request):
         campaign_regexp_filter = '^C_|^C11_'
     
     """ Get the donations for all campaigns over the last n hours """
-    duration_hrs = 4
-    sampling_interval = 10
+    duration_hrs = 6
+    sampling_interval = 5
     dl = DL.DataLoader()
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-duration_hrs)
-    # start_time = '20111028170000'
-    # end_time = '20111028210000'
+    start_time = '20111102220000'
+    end_time = '20111103040000'
     
+    """ Should a one-step query be used? """        
+    use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
+
     """ 
         Retrieve the latest time for which impressions have been loaded
     """
@@ -111,8 +115,8 @@ def index(request):
         sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
                                  start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
                                  start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)
-                
-        results = list(results)
+        
+        results = list(results)        
         results_1S = dl.execute_SQL(sql_stmnt_1S)
         
         """ Ensure that the results are unique """
@@ -128,7 +132,7 @@ def index(request):
         results = new_results
             
         results.extend(list(results_1S))
-    
+        print results
     
     """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')
@@ -191,7 +195,7 @@ def index(request):
     ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
-    
+
     """ Extract data from interval reporting objects """        
     cmpgn_data_dict = ir_cmpgn.get_data_lists(['C_', 'C11_'], empty_data)
     cmpgn_banner_dict = ir_banner.get_data_lists(['B_', 'B11_'], empty_data)
@@ -205,46 +209,46 @@ def index(request):
     
     return render_to_response('live_results/index.html', dict_param,  context_instance=RequestContext(request))
     
-#
-#"""
-#    Index page for live results. 
-#"""
-#def long_term_tends(request):
-#    
-#    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, days=-2)
-#    
-#    lttl = DL.LongTermTrendsLoader()
-#    dr = DR.DataReporting()
-#    
-#    """ Retrieve data: banner / lp impressions, donations, click rate """
-#    query_types = [DL.LongTermTrendsLoader._LT_BANNER_IMPRESSIONS_, DL.LongTermTrendsLoader._LT_LP_IMPRESSIONS_, \
-#                   DL.LongTermTrendsLoader._LT_DONATIONS_, DL.LongTermTrendsLoader._LT_CLICK_RATE_]
-#    
-#    metric_names = ['Banner Impressions', 'LP Impressions', 'Donations', 'Click Rate']
-#    
-#    counts_list = list()
-#    times_list = list()
-#    
-#    for query_type in query_types:
-#        
-#        metric_name = metric_names[query_type]        
-#        count_data = dict()
-#        time_data = dict()
-#                
-#        ret = lttl.run_query(start_time, end_time, query_type)
-#        
-#        count_data[metric_name] = ret[1]
-#        time_data[metric_name] = ret[0]
-#        
-#        cmpgn_data_dict = dr.get_data_lists([''], empty_data)
-#        
-#    bi = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_BANNER_IMPRESSIONS_)
-#    lpi = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_LP_IMPRESSIONS_)
-#    don = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_DONATIONS_)
-#    cr = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_CLICK_RATE_)
-#    
-#    """ Compose dictonaries to feed into get_data_lists """
-#    dr._counts_['banner impressions'] = bi[0]
-#    dr._times_['banner impressions'] = bi[1]
-#    # dr.get_data_lists(patterns, empty_data)
-#    return
+
+"""
+    Index page for live results. 
+"""
+def long_term_tends(request):
+    
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, days=-2)
+    
+    lttl = DL.LongTermTrendsLoader()
+    dr = DR.DataReporting()
+    
+    """ Retrieve data: banner / lp impressions, donations, click rate """
+    query_types = [DL.LongTermTrendsLoader._LT_BANNER_IMPRESSIONS_, DL.LongTermTrendsLoader._LT_LP_IMPRESSIONS_, \
+                   DL.LongTermTrendsLoader._LT_DONATIONS_, DL.LongTermTrendsLoader._LT_CLICK_RATE_]
+    
+    metric_names = ['Banner Impressions', 'LP Impressions', 'Donations', 'Click Rate']
+    
+    counts_list = list()
+    times_list = list()
+    
+    for query_type in query_types:
+        
+        metric_name = metric_names[query_type]        
+        count_data = dict()
+        time_data = dict()
+                
+        ret = lttl.run_query(start_time, end_time, query_type)
+        
+        count_data[metric_name] = ret[1]
+        time_data[metric_name] = ret[0]
+        
+        cmpgn_data_dict = dr.get_data_lists([''], empty_data)
+        
+    bi = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_BANNER_IMPRESSIONS_)
+    lpi = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_LP_IMPRESSIONS_)
+    don = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_DONATIONS_)
+    cr = lttl.run_query(start_time, end_time, DL.LongTermTrendsLoader._LT_CLICK_RATE_)
+    
+    """ Compose dictonaries to feed into get_data_lists """
+    dr._counts_['banner impressions'] = bi[0]
+    dr._times_['banner impressions'] = bi[1]
+    # dr.get_data_lists(patterns, empty_data)
+    return

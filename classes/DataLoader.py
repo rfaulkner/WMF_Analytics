@@ -784,7 +784,6 @@ class IntervalReportingLoader(DataLoader):
             sql_stmnt = Hlp.file_to_string(filename)
             
             sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, campaign, interval])
-            print sql_stmnt
             
         """ Get Indexes into Query """
         key_index = QD.get_key_index(query_name)
@@ -2100,7 +2099,37 @@ class CiviCRMLoader(TableLoader):
         latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 1, 2)
         
         return latest_timestamp
-    
+
+    """
+        Returns a list of campaigns running within a given interval
+    """    
+    def get_campaigns_in_interval(self, start_time, end_time, **kwargs):
+
+        """ Check for a campaign filter """
+        
+        if 'campaign_filter' in kwargs:
+            campaign_filter = kwargs['campaign_filter']
+            if not(isinstance(campaign_filter, str)):
+                campaign_filter = ''
+            else:
+                campaign_filter = MySQLdb._mysql.escape_string(str(campaign_filter))
+                
+        """ Escape parameters """
+        start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
+        end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
+        
+        sql = "select utm_campaign " + \
+        "from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
+        "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s' group by 1" % (start_time, end_time, campaign_filter)
+        
+        results = self.execute_SQL(sql)
+        
+        campaigns = list()
+        for row in results:
+            campaigns.append(str(row[0]))
+        
+        return campaigns
+                
 """
 
     CLASS :: ImpressionTableLoader
@@ -2433,10 +2462,34 @@ class LandingPageTableLoader(TableLoader):
         
         utm_campaign = MySQLdb._mysql.escape_string(str(utm_campaign))
         
-        sql = "select count(*) from landing_page_requests where utm_campaign = '%s'" % utm_campaign
+        sql = "select count(*) from landing_page_requests where utm_campaign regexp '%s'" % utm_campaign
         results = self.execute_SQL(sql)
         
         return int(results[0][0])
+    
+    
+    """
+        Counts the number of views for a given campaign
+    """
+    def is_one_step(self, start_time, end_time, campaign_filter):
+        
+        campaign_filter = MySQLdb._mysql.escape_string(str(campaign_filter))
+        
+        sql = "select ecomm.utm_campaign, if(lp.views, lp.views, 0) as lp_views, if(ecomm.views, ecomm.views, 0) as ecomm_views from " + \
+        "(select utm_campaign, count(*) as views from landing_page_requests where request_time > '%s' and request_time <= '%s' and utm_campaign regexp '%s' group by 1) as lp right join " + \
+        "(select utm_campaign, count(*) as views from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
+        "where receive_date > '%s' and receive_date <= '%s' and utm_campaign regexp '%s' group by 1) as ecomm on lp.utm_campaign = ecomm.utm_campaign " + \
+        "where lp.views < ecomm.views and ecomm.views > 10" 
+        
+        sql = sql % (start_time, end_time, campaign_filter, start_time, end_time, campaign_filter) 
+        
+        results = self.execute_SQL(sql)
+        
+        if len(results) == 0:
+            return True
+        else:
+            return False
+        
         
 """
 
