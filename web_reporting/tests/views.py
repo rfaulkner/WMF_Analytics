@@ -38,7 +38,7 @@ import classes.FundraiserDataHandler as FDH
 import classes.TimestampProcessor as TP
 import classes.QueryData as QD
 import config.settings as projSet
-
+from web_reporting.campaigns.views import show_campaigns, index as campaigns_index 
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr
@@ -157,145 +157,163 @@ def test_summaries(request):
 """
 def test(request):
     
-    """ 
-        PROCESS POST DATA
-        ================= 
-        
-        Escape all user input that can be entered in text fields 
-        
-    """
-    test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'].strip())
-    utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'].strip())
-    start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
-    end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())    
-    one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'].strip())
-    
-    """ Convert timestamp format if necessary """
-    if TP.is_timestamp(start_time_var, 2):
-        start_time_var = TP.timestamp_convert_format(start_time_var, 2, 1)
-    if TP.is_timestamp(end_time_var, 2):
-        end_time_var = TP.timestamp_convert_format(end_time_var, 2, 1)
+    try:
             
-    if cmp(one_step_var, 'True') == 0:
-        one_step_var = True
-    else:
-        one_step_var = False
-        
-    try: 
-        test_type_var = MySQLdb._mysql.escape_string(request.POST['test_type'])
-        labels = request.POST['artifacts']
-                        
-    except KeyError:
-
-        test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type           
-        labels = labels.__str__() 
-    
-    label_dict = dict()
-    label_dict_full = dict()
-    
-    labels = labels[1:-1].split(',')        
-                                
-    """ Parse the labels """     
-    for i in range(len(labels)):
-        labels[i] = labels[i]
-        label = labels[i].split('\'')[1]
-        label = label.strip()            
-        pieces = label.split(' ')
-        label = pieces[0]
-        for j in range(len(pieces) - 1):
-            label = label + '_' + pieces[j+1]
-        
-        """ Escape the label parameters """
-        label = MySQLdb._mysql.escape_string(label)
-        label_dict_full[label] = label
+        """ 
+            PROCESS POST DATA
+            ================= 
             
-    """ Look at the artifact names and map them into a dict() - Determine if artifacts were chosen by the user """
-    
-    if request.POST.__contains__('artifacts_chosen'):
+            Escape all user input that can be entered in text fields 
+            
+        """
+        test_name_var = MySQLdb._mysql.escape_string(request.POST['test_name'].strip())
+        utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'].strip())
+        start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
+        end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())    
+        one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'].strip())
         
-        artifacts_chosen =  request.POST.getlist('artifacts_chosen')
-        
-        """ Ensure that only two items are selected """
-        if len(artifacts_chosen) > 2:
-            raise Exception('Please select (checkboxes) exactly two items to test')
-        
-        for elem in artifacts_chosen:
-            esc_elem = MySQLdb._mysql.escape_string(str(elem))
-            label_dict[esc_elem] = esc_elem
-    else:
-        label_dict = label_dict_full
-
-    
-    """ Parse the added labels IF they are not empty """
-    for key in label_dict.keys():
-        
-        try:
-            if not(request.POST[key] == ''):
+        """ Convert timestamp format if necessary """
+        if TP.is_timestamp(start_time_var, 2):
+            start_time_var = TP.timestamp_convert_format(start_time_var, 2, 1)
+        if TP.is_timestamp(end_time_var, 2):
+            end_time_var = TP.timestamp_convert_format(end_time_var, 2, 1)
                 
-                label_dict[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
-            else:
-                label_dict[key] = key
-        except:
-            logging.error('Could not find %s in the POST QueryDict.' % key)
+        if cmp(one_step_var, 'True') == 0:
+            one_step_var = True
+        else:
+            one_step_var = False
+            
+        try: 
+            test_type_var = MySQLdb._mysql.escape_string(request.POST['test_type'])
+            labels = request.POST['artifacts']
+                            
+        except KeyError:
     
-    for key in label_dict_full.keys():
-        try:
-            if not(request.POST[key] == ''):
-                label_dict_full[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
-            else:
-                label_dict_full[key] = key
-        except:
-            logging.error('Could not find %s in the POST QueryDict.' % key)
+            test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type           
+            labels = labels.__str__() 
+        
+        label_dict = dict()
+        label_dict_full = dict()
+        
+        labels = labels[1:-1].split(',')        
+                                    
+        """ Parse the labels """     
+        for i in range(len(labels)):
+            labels[i] = labels[i]
+            label = labels[i].split('\'')[1]
+            label = label.strip()            
+            pieces = label.split(' ')
+            label = pieces[0]
+            for j in range(len(pieces) - 1):
+                label = label + '_' + pieces[j+1]
+            
+            """ Escape the label parameters """
+            label = MySQLdb._mysql.escape_string(label)
+            label_dict_full[label] = label
+                
+        """ Look at the artifact names and map them into a dict() - Determine if artifacts were chosen by the user """
+        
+        if request.POST.__contains__('artifacts_chosen'):
+            
+            artifacts_chosen =  request.POST.getlist('artifacts_chosen')
+            
+            """ Ensure that only two items are selected """
+            if len(artifacts_chosen) > 2:
+                raise Exception('Please select (checkboxes) exactly two items to test')
+            
+            for elem in artifacts_chosen:
+                esc_elem = MySQLdb._mysql.escape_string(str(elem))
+                label_dict[esc_elem] = esc_elem
+        else:
+            label_dict = label_dict_full
+    
+        
+        """ Parse the added labels IF they are not empty """
+        for key in label_dict.keys():
+            
+            try:
+                if not(request.POST[key] == ''):
+                    
+                    label_dict[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
+                else:
+                    label_dict[key] = key
+            except:
+                logging.error('Could not find %s in the POST QueryDict.' % key)
+        
+        for key in label_dict_full.keys():
+            try:
+                if not(request.POST[key] == ''):
+                    label_dict_full[key] = MySQLdb._mysql.escape_string(str(request.POST[key]))
+                else:
+                    label_dict_full[key] = key
+            except:
+                logging.error('Could not find %s in the POST QueryDict.' % key)
+    
+        
+        """ 
+            EXECUTE REPORT GENERATION
+            =========================
+        
+            setup time parameters
+            determine test metrics
+            execute queries
+        """
+        
+        sample_interval = 1
+        
+        start_time_obj = TP.timestamp_to_obj(start_time_var, 1)
+        end_time_obj = TP.timestamp_to_obj(end_time_var, 1)
+        
+        time_diff = end_time_obj - start_time_obj
+        time_diff_min = time_diff.seconds / 60.0
+        test_interval = int(math.floor(time_diff_min / sample_interval)) # 2 is the interval
+            
+        metric_types = FDH.get_test_type_metrics(test_type_var)
+        metric_types_full = dict()
+        
+        
+        """ Get the full (descriptive) version of the metric names 
+            !! FIXME / TODO -- order these properly !! """
+        
+        for i in range(len(metric_types)):
+            metric_types_full[metric_types[i]] = QD.get_metric_full_name(metric_types[i])
+        
+        
+        """ USE generate_reporting_objects() TO GENERATE THE REPORT DATA - dependent on test type """
+        
+        measured_metric, winner, loser, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
+        =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
+                                      sample_interval, test_interval, test_type_var, metric_types, one_step_var)
+        
+        winner_var = winner[0]
+        
+        results = list()
+        for index in range(len(winner)):
+            results.append({'metric' : measured_metric[index], 'winner' : winner[index], 'loser': loser[index], 'percent_win' : percent_win[index], 'confidence' : confidence[index]})
+            
+        template_var_dict = {'results' : results,  \
+                  'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
+                  'summary_table': html_table, 'sample_interval' : sample_interval, \
+                  'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
+        
+        html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
+            
 
-    
-    """ 
-        EXECUTE REPORT GENERATION
-        =========================
-    
-        setup time parameters
-        determine test metrics
-        execute queries
-    """
-    
-    sample_interval = 1
-    
-    start_time_obj = TP.timestamp_to_obj(start_time_var, 1)
-    end_time_obj = TP.timestamp_to_obj(end_time_var, 1)
-    
-    time_diff = end_time_obj - start_time_obj
-    time_diff_min = time_diff.seconds / 60.0
-    test_interval = int(math.floor(time_diff_min / sample_interval)) # 2 is the interval
+    except Exception as inst:
         
-    metric_types = FDH.get_test_type_metrics(test_type_var)
-    metric_types_full = dict()
+        logging.error('Failed to correctly generate test report.')
+        logging.error(type(inst))
+        logging.error(inst.args)
+        logging.error(inst)
     
-    
-    """ Get the full (descriptive) version of the metric names 
-        !! FIXME / TODO -- order these properly !! """
-    
-    for i in range(len(metric_types)):
-        metric_types_full[metric_types[i]] = QD.get_metric_full_name(metric_types[i])
-    
-    
-    """ USE generate_reporting_objects() TO GENERATE THE REPORT DATA - dependent on test type """
-    
-    measured_metric, winner, loser, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
-    =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
-                                  sample_interval, test_interval, test_type_var, metric_types, one_step_var)
-    
-    winner_var = winner[0]
-    
-    results = list()
-    for index in range(len(winner)):
-        results.append({'metric' : measured_metric[index], 'winner' : winner[index], 'loser': loser[index], 'percent_win' : percent_win[index], 'confidence' : confidence[index]})
+        """ Return to the index page with an error """
+        try:
+            err_msg = 'Test Generation failed for: %s.  Check the fields submitted for generation. <br><br>ERROR:<br><br>%s' % (utm_campaign_var, inst.__str__())
+        except:
+            err_msg = 'Test Generation failed.  Check the fields submitted for generation. <br><br>ERROR:<br><br>%s' % inst.__str__()
+            return campaigns_index(request, kwargs={'err_msg' : err_msg})
         
-    template_var_dict = {'results' : results,  \
-              'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
-              'summary_table': html_table, 'sample_interval' : sample_interval, \
-              'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
-    
-    html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
-        
+        return show_campaigns(request, utm_campaign_var, kwargs={'err_msg' : err_msg})
 
     
     """ 
