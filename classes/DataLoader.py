@@ -1123,6 +1123,7 @@ class CampaignReportingLoader(DataLoader):
     def query_live_landing_pages(self, start_time, end_time, **kwargs):
         
         CIVI_DONATE_UTM_SOURCE_DELIMETER = '~'
+        ONESTEP_PATERN = '^cc[0-9][0-9]$'
         LP_NAME_FIELDS = ['Lp-layout-','appeal-template-','Appeal-','form-template-','Form-countryspecific-']
         # LP_NAME_FIELDS = ['','','','','']
         
@@ -1140,6 +1141,9 @@ class CampaignReportingLoader(DataLoader):
         'country=%s&template=%s&appeal-template=%s&appeal=%s&form-template=%s&form-countryspecific=%s'
         
         lp_link_str_foundation = 'http://wikimediafoundation.org/wiki/%s/%s/%s'
+        
+        lp_link_str_1S = 'https://payments.wikimedia.org/index.php/Special:PayflowProGateway?uselang=%s&country=%s&appeal=jimmy-appeal' + \
+        '&form_name=RapidHtml&ffname=webitects_2_2stepB-US&utm_medium=sitenotice&utm_source_id=%s&_cache_=true'
         
         sql_stmnt = Hlp.file_to_string(filename)
         sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, str(min_donation))
@@ -1176,6 +1180,12 @@ class CampaignReportingLoader(DataLoader):
                     else:
                         landing_page = 'None'
                         lp_link = '<b>Missing fields in utm_source string.</b>'
+                
+                elif re.search(ONESTEP_PATERN, landing_page):
+                
+                    utm_source_id = landing_page.split('c')[2]
+                    lp_link = lp_link_str_1S % (row[language_index], row[country_index], utm_source_id)
+                
                 else:
                     lp_link = lp_link_str_foundation % (landing_page, row[language_index], row[country_index])
             
