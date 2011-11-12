@@ -335,6 +335,16 @@ class DataLoader(object):
         return one_step_banners
 
 
+    """
+        Return a specific query name given a query type
+                
+    """
+    def stringify(self, str_to_stringify):
+            
+            if str_to_stringify is None:
+                return 'NULL'
+            
+            return '"' + str_to_stringify + '"'
 """
 
     General Long term trends for analysis.  These queries will consist of a small set of metrics to be measured.
@@ -1522,25 +1532,25 @@ class TestTableLoader(TableLoader):
         for key in kwargs_dict:
             if key == 'utm_campaign':       
                 utm_campaign = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))    
-                utm_campaign = Hlp.stringify(utm_campaign)
+                utm_campaign = self.stringify(utm_campaign)
             elif key == 'test_name':
                 test_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                test_name = Hlp.stringify(test_name)
+                test_name = self.stringify(test_name)
             elif key == 'test_type':
                 test_type = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                test_type = Hlp.stringify(test_type)
+                test_type = self.stringify(test_type)
             elif key == 'start_time':
                 start_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                start_time = Hlp.stringify(start_time)
+                start_time = self.stringify(start_time)
             elif key == 'end_time':
                 end_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                end_time = Hlp.stringify(kwargs_dict[key])
+                end_time = self.stringify(kwargs_dict[key])
             elif key == 'winner':
                 winner = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                winner = Hlp.stringify(winner)
+                winner = self.stringify(winner)
             elif key == 'is_conclusive':
                 is_conclusive = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                is_conclusive = Hlp.stringify(is_conclusive)
+                is_conclusive = self.stringify(is_conclusive)
             elif key == 'html_report':                             
                 # html_report = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
 
@@ -1552,7 +1562,7 @@ class TestTableLoader(TableLoader):
                     html_report_new = html_report_new + MySQLdb._mysql.escape_string(piece) + '\\"'
                 html_report_new = html_report_new[:-4]
                 
-                html_report = Hlp.stringify(html_report_new)
+                html_report = self.stringify(html_report_new)
         
         return [test_name, test_type, utm_campaign, start_time, end_time, winner, is_conclusive, html_report]
             
@@ -1755,16 +1765,16 @@ class SquidLogTableLoader(TableLoader):
         for key in kwargs_dict:
             if key == 'type':
                 type = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                type = Hlp.stringify(type)
+                type = self.stringify(type)
             elif key == 'log_copy_time':
                 log_copy_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                log_copy_time = Hlp.stringify(log_copy_time)
+                log_copy_time = self.stringify(log_copy_time)
             elif key == 'start_time':
                 start_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                start_time = Hlp.stringify(start_time)
+                start_time = self.stringify(start_time)
             elif key == 'end_time':
                 end_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                end_time = Hlp.stringify(end_time)
+                end_time = self.stringify(end_time)
             elif key == 'log_completion_pct':
                 log_completion_pct = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
                 log_completion_pct = log_completion_pct
@@ -1943,7 +1953,7 @@ class CiviCRMLoader(TableLoader):
                 
         for key in kwargs_dict:
             if key == 'utm_source_arg':           
-                utm_source = Hlp.stringify(kwargs_dict[key])
+                utm_source = self.stringify(kwargs_dict[key])
         
         return [utm_source]
     
@@ -2172,19 +2182,19 @@ class ImpressionTableLoader(TableLoader):
         for key in kwargs_dict:
             if key == 'utm_source_arg':
                 utm_source = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))           
-                utm_source = Hlp.stringify(utm_source)
+                utm_source = self.stringify(utm_source)
             elif key == 'referrer_arg':
                 referrer = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                referrer = Hlp.stringify(referrer)
+                referrer = self.stringify(referrer)
             elif key == 'country_arg':
                 country = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                country = Hlp.stringify(country)
+                country = self.stringify(country)
             elif key == 'lang_arg':
                 lang = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                lang = Hlp.stringify(lang)
+                lang = self.stringify(lang)
             elif key == 'counts_arg':
                 counts = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                counts = Hlp.stringify(counts)
+                counts = self.stringify(counts)
             elif key == 'on_minute_arg':
                 on_minute = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
             elif key == 'start_timestamp_arg':
@@ -2278,43 +2288,43 @@ class LandingPageTableLoader(TableLoader):
         for key in kwargs_dict:
             if key == 'utm_source_arg':   
                 utm_source = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))        
-                utm_source = Hlp.stringify(utm_source)
+                utm_source = self.stringify(utm_source)
             elif key == 'utm_campaign_arg':
                 utm_campaign = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                utm_campaign = Hlp.stringify(utm_campaign)
+                utm_campaign = self.stringify(utm_campaign)
             elif key == 'utm_medium_arg':
                 utm_medium = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                utm_medium = Hlp.stringify(utm_medium)
+                utm_medium = self.stringify(utm_medium)
             elif key == 'landing_page_arg':
                 landing_page = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                landing_page = Hlp.stringify(landing_page)
+                landing_page = self.stringify(landing_page)
             elif key == 'page_url_arg':
                 page_url = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                page_url = Hlp.stringify(page_url)
+                page_url = self.stringify(page_url)
             elif key == 'referrer_url_arg':
                 referrer_url = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                referrer_url = Hlp.stringify(referrer_url)
+                referrer_url = self.stringify(referrer_url)
             elif key == 'browser_arg':
                 browser = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                browser = Hlp.stringify(browser)
+                browser = self.stringify(browser)
             elif key == 'lang_arg':
                 lang = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                lang = Hlp.stringify(lang)
+                lang = self.stringify(lang)
             elif key == 'country_arg':
                 country = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                country = Hlp.stringify(country)
+                country = self.stringify(country)
             elif key == 'project_arg':
                 project = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                project = Hlp.stringify(project)
+                project = self.stringify(project)
             elif key == 'ip_arg':
                 ip = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                ip = Hlp.stringify(ip)
+                ip = self.stringify(ip)
             elif key == 'start_timestamp_arg':
                 start_timestamp = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                start_timestamp = Hlp.stringify(start_timestamp)
+                start_timestamp = self.stringify(start_timestamp)
             elif key == 'timestamp_arg':
                 timestamp = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                timestamp = Hlp.stringify(timestamp)
+                timestamp = self.stringify(timestamp)
                 
         return [start_timestamp, timestamp, utm_source, utm_campaign, utm_medium, landing_page, page_url, referrer_url, browser, lang, country, project, ip]
     
@@ -2377,7 +2387,7 @@ class LandingPageTableLoader(TableLoader):
                 ref_title = ref_url.split('wikipedia.org/wiki/')[1]
                 # referrers.append(ref_title)
                 
-                page_title_str = page_title_str + 'page_title = %s or ' % Hlp.stringify(MySQLdb._mysql.escape_string(ref_title))
+                page_title_str = page_title_str + 'page_title = %s or ' % self.stringify(MySQLdb._mysql.escape_string(ref_title))
                 
         if len(page_title_str) > 2:
             page_title_str = page_title_str[:-4] + ') '
@@ -2626,10 +2636,10 @@ class MiningPatternsTableLoader(TableLoader):
         for key in kwargs_dict:
             if key == 'pattern_type':      
                 pattern_type = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))     
-                pattern_type = Hlp.stringify(pattern_type)
+                pattern_type = self.stringify(pattern_type)
             elif key == 'pattern':
                 pattern = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                pattern = Hlp.stringify(pattern)
+                pattern = self.stringify(pattern)
                 
         return [pattern_type, pattern]
     
@@ -2743,13 +2753,13 @@ class DonorBracketsTableLoader(TableLoader):
         for key in kwargs_dict:
             if key == 'bracket_name':
                 bracket_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))           
-                bracket_name = Hlp.stringify(bracket_name)
+                bracket_name = self.stringify(bracket_name)
             if key == 'min_val':         
                 min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))  
-                min_val = Hlp.stringify(min_val)
+                min_val = self.stringify(min_val)
             elif key == 'max_val':
                 max_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                max_val = Hlp.stringify(max_val)
+                max_val = self.stringify(max_val)
 
         return [bracket_name, min_val, max_val]
     
@@ -3036,8 +3046,8 @@ class TrafficSamplesTableLoader(TableLoader):
     def process_kwargs(self, kwargs_dict):
         
         page_id = -1
-        page_title = Hlp.stringify('')
-        request_time = Hlp.stringify('00000000000000')
+        page_title = self.stringify('')
+        request_time = self.stringify('00000000000000')
         
         for key in kwargs_dict:
             if key == 'page_id':           
@@ -3045,10 +3055,10 @@ class TrafficSamplesTableLoader(TableLoader):
                 page_id = page_id
             if key == 'page_title':           
                 page_title = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                page_title = Hlp.stringify(page_title)
+                page_title = self.stringify(page_title)
             elif key == 'request_time':
                 request_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                request_time = Hlp.stringify(request_time)
+                request_time = self.stringify(request_time)
 
         return page_id, page_title, request_time
     

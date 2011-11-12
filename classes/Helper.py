@@ -13,8 +13,8 @@ __revision__ = "$Rev$"
 __date__ = "May 3rd, 2011"
 
 
-import math, logging, sys
-import calendar as cal
+import logging, sys
+
 
 import config.settings as projSet
 
@@ -22,17 +22,6 @@ import config.settings as projSet
 LOGGING_STREAM = sys.stderr
 logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
-
-"""
-    Return a specific query name given a query type
-            
-"""
-def stringify(str_to_stringify):
-        
-        if str_to_stringify is None:
-            return 'NULL'
-        
-        return '"' + str_to_stringify + '"'
     
 
 class AutoVivification(dict):
