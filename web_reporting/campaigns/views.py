@@ -200,14 +200,12 @@ def show_campaigns(request, utm_campaign, **kwargs):
         start_time = ccrml.get_earliest_donation(utm_campaign)
         end_time = ccrml.get_latest_donation(utm_campaign)
         
-        if lptl.is_one_step(start_time, end_time, utm_campaign): 
-            one_step = False
+        one_step = lptl.is_one_step(start_time, end_time, utm_campaign) 
+        
+        if not(one_step): 
             start_time = lptl.get_earliest_campaign_view(utm_campaign)
-            end_time = lptl.get_latest_campaign_view(utm_campaign)
-        
-        else:   # Assume it is a one step test if there are no impressions for this campaign in the landing page table
-            one_step = True
-        
+            end_time = lptl.get_latest_campaign_view(utm_campaign)                      
+
         interval = 1
             
         """ Create reporting object to retrieve campaign data and write plots to image repo on disk """
