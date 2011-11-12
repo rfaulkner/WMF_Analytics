@@ -69,8 +69,8 @@ def index(request):
     sampling_interval = 5
     dl = DL.DataLoader()
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-duration_hrs)
-    start_time = '20111102220000'
-    end_time = '20111103040000'
+    # start_time = '20111102220000'
+    # end_time = '20111103040000'
     
     """ Should a one-step query be used? """        
     use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
@@ -87,7 +87,7 @@ def index(request):
     latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
 
     try: 
-        conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter)
+        conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
         
     except:
         conf_colour_code = {}
@@ -132,7 +132,6 @@ def index(request):
         results = new_results
             
         results.extend(list(results_1S))
-        print results
     
     """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')

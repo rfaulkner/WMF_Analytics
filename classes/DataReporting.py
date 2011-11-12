@@ -950,7 +950,7 @@ class ConfidenceReporting(DataReporting):
             
             column_names.append(conf_range)
             
-            intensity = float(index + 1) / float(max_index)  
+            # intensity = float(index + 1) / float(max_index)  
             # colour_index = TTest().get_confidence_colour(intensity)
             colour_index = TTest().get_confidence_colour_by_index(index)
             cell = '<td style="background-color:' + colour_index + ';"></td>'
@@ -971,8 +971,13 @@ class ConfidenceReporting(DataReporting):
         @return - colour indices of confidence on values
         
     """
-    def get_confidence_on_time_range(self, start_time, end_time, campaign):
+    def get_confidence_on_time_range(self, start_time, end_time, campaign, **kwargs):
         
+        use_one_step = False
+        if 'one_step' in kwargs:
+            if isinstance(kwargs['one_step'], bool):
+                use_one_step = kwargs['one_step']
+                
         derived_metrics = ['click_rate', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
         measured_metrics = ['impressions', 'views', 'donations', 'amount_normal']
         measured_metrics_counts = dict()
@@ -985,7 +990,7 @@ class ConfidenceReporting(DataReporting):
         logging.info('Getting minutely live data for hypothesis testing ...')
         for metric in measured_metrics:
                             
-            ir.run(start_time, end_time, 1, metric, campaign, {}, include_all_artifacts=True, generate_plot=False)
+            ir.run(start_time, end_time, 1, metric, campaign, {}, include_all_artifacts=True, generate_plot=False, one_step=use_one_step)
             measured_metrics_counts[metric] = ir._counts_
                 
         """ Generate the Table only if there is data available  """
