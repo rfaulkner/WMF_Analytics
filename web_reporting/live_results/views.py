@@ -74,7 +74,7 @@ def index(request):
     
     """ Should a one-step query be used? """        
     use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
-
+    
     """ 
         Retrieve the latest time for which impressions have been loaded
     """

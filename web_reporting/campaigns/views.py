@@ -195,17 +195,18 @@ def show_campaigns(request, utm_campaign, **kwargs):
     try:
         """ Find the earliest and latest page views for a given campaign  """
         lptl = DL.LandingPageTableLoader()
+        ccrml = DL.CiviCRMLoader()
         
-        if lptl.get_campaign_view_count(utm_campaign) > 0: 
+        start_time = ccrml.get_earliest_donation(utm_campaign)
+        end_time = ccrml.get_latest_donation(utm_campaign)
+        
+        if lptl.is_one_step(start_time, end_time, utm_campaign): 
             one_step = False
             start_time = lptl.get_earliest_campaign_view(utm_campaign)
             end_time = lptl.get_latest_campaign_view(utm_campaign)
         
         else:   # Assume it is a one step test if there are no impressions for this campaign in the landing page table
             one_step = True
-            ccrml = DL.CiviCRMLoader()
-            start_time = ccrml.get_earliest_donation(utm_campaign)
-            end_time = ccrml.get_latest_donation(utm_campaign)
         
         interval = 1
             

@@ -2485,20 +2485,20 @@ class LandingPageTableLoader(TableLoader):
         
         campaign_filter = MySQLdb._mysql.escape_string(str(campaign_filter))
         
-        sql = "select ecomm.utm_campaign, if(lp.views, lp.views, 0) as lp_views, if(ecomm.views, ecomm.views, 0) as ecomm_views from " + \
-        "(select utm_campaign, count(*) as views from landing_page_requests where request_time > '%s' and request_time <= '%s' and utm_campaign regexp '%s' group by 1) as lp right join " + \
-        "(select utm_campaign, count(*) as views from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
-        "where receive_date > '%s' and receive_date <= '%s' and utm_campaign regexp '%s' group by 1) as ecomm on lp.utm_campaign = ecomm.utm_campaign " + \
-        "where lp.views < ecomm.views and ecomm.views > 10" 
+        sql = "select ecomm.utm_campaign, ecomm.landing_page, if(lp.views, lp.views, 0) as lp_views, if(ecomm.views, ecomm.views, 0) as ecomm_views from " + \
+        "(select utm_campaign, landing_page, count(*) as views from landing_page_requests where request_time > '%s' and request_time <= '%s' and utm_campaign regexp '%s' group by 1,2) as lp right join " + \
+        "(select utm_campaign, SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, count(*) as views from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id) " + \
+        "where receive_date > '%s' and receive_date <= '%s' and utm_campaign regexp '%s' group by 1,2) as ecomm on lp.utm_campaign = ecomm.utm_campaign and lp.landing_page = ecomm.landing_page " + \
+        "having lp_views < ecomm_views and ecomm_views > 10" 
         
         sql = sql % (start_time, end_time, campaign_filter, start_time, end_time, campaign_filter) 
-        
+
         results = self.execute_SQL(sql)
-        
+
         if len(results) == 0:
-            return True
-        else:
             return False
+        else:
+            return True
         
         
 """
