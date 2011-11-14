@@ -2,57 +2,34 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Live Results:</h1>
-<div class="spacer"></div>
-
-<h2>Results since {{ start_time }} UTC: (rates are computed up to {{ latest_log_end_time }} UTC)</h2><br>
-
-<center>
-{{ summary_table|safe }}
-<div class="spacer"></div>
-<div class="spacer"></div>
-</center>
-
-<div id="stylized" class="myform">
-<form action="/live_stats/" method="post">
-{% csrf_token %}
-<h1>Filter the list of campaigns:</h1><br>
-<!--<p>This is the basic look of my form without table</p> -->
-
-<label>Text Filter
-<span class="small">Enter a regular expression.  Use the campaign name to filter that campaign.</span>
-</label>
-<input type="text" name="campaign_regexp_filter" />
-
-<br>
-<button type="submit">Filter</button>
-
-</form>
-</div>
-
-
-<div class="spacer"></div>
-<div class="spacer"></div>
+<h1>Long Term Trends:</h1>
 <div class="spacer"></div>
 
 <h2><u>The plots below are representative of the latest Fundraiser results:</u></h2><br>
 
 <!-- jscript for live plots -->
-
+<h3>Banner Impressions</h3>
 <div id="placeholder0" style="width:800px;height:600px;"></div>
-<p>Donations for the latest campaigns over the last 6 hours.</p>
+<p>Impressions over the last 72 hours over 1 hour intervals.</p>
 <br><br>
+<h3>Landing Page Impressions</h3>
 <div id="placeholder1" style="width:800px;height:600px;"></div>
-<p>Donations for the latest banners over the last 6 hours.</p>
+<p>Views over the last 72 hours over 1 hour intervals.</p>
 <br><br>
+<h3>Total Donations</h3>
 <div id="placeholder2" style="width:800px;height:600px;"></div>
-<p>Donations for the latest landing pages over the last 6 hours.</p>
+<p>Donations over the last 72 hours over 1 hour intervals.</p>
+<br><br>
+<h3>Click Rate</h3>
+<div id="placeholder3" style="width:800px;height:600px;"></div>
+<p>Click Rate over the last 72 hours over 1 hour intervals.</p>
+
 
 <script type="text/javascript">
 $(function () {
 
 
-    var total_plots = 3;
+    var total_plots = 4;
 
     // Extract the django variables
 	var data = {{ data }};
@@ -148,7 +125,6 @@ $(function () {
 <br><br>
 <u>Go to:</u>
 <br><br>
-<a href="/live_stats/long_term_trends">Home</a>
 <a href="/">Home</a>
 <br>
 

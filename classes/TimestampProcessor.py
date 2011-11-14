@@ -38,7 +38,7 @@ __revision__ = "$Rev$"
 __date__ = "April 8th, 2011"
 
 
-import datetime, calendar as cal, math, re
+import datetime, calendar as cal, math, re, copy
 import classes.Helper as mh
 
 
@@ -80,7 +80,10 @@ def timestamps_for_interval(start_time_obj, timestamp_format, **kwargs):
          
 """
 def normalize_timestamps(time_lists, count_back, time_unit):
-     
+    
+    """ Convert timestamps if they are strings """
+    time_lists = timestamp_list_to_obj(time_lists)
+    
     time_lists, isList = timestamps_to_dict(time_lists)
     
     """ Depending on args set the start date """
@@ -126,7 +129,7 @@ def normalize_timestamps(time_lists, count_back, time_unit):
         
     return time_norm
      
- 
+
 """
 
     HELPER METHOD for normalize_timestamps.  Convert lists into dictionaries before processing it is assumed that lists 
@@ -174,7 +177,7 @@ def find_latest_date_in_list(time_lists):
     date_max = datetime.datetime(1000,1,1,0,0,0)
     
     for key in time_lists.keys():
-        for date_obj in time_lists[key]:
+        for date_obj in time_lists[key]:            
             if date_obj > date_max:
                 date_max = date_obj
                 
@@ -350,6 +353,24 @@ def timestamp_to_obj(timestamp, format):
 
     return time_obj
 
+"""
+    Convert a list timestamps to a list  datetime objects of a given format
+
+    @param timestamps: List of string timestamps
+    @param format: Timestamp formats
+"""
+def timestamp_list_to_obj(timestamps):
+    
+    obj_list = list()
+    
+    for ts in timestamps:
+        if isinstance(ts, str):            
+            format = getTimestampFormat(ts)        
+            obj_list.append(timestamp_to_obj(ts, format))
+        else:
+            obj_list.append(ts)
+            
+    return obj_list
 
 """
 
@@ -479,7 +500,7 @@ def timestamp_convert_format(ts, format_from, format_to):
             new_timestamp = ts[0:4] + ts[5:7] + ts[8:10] + ts[11:13] + ts[14:16] + ts[17:19]
             
     return new_timestamp
- 
+
 """
 
     THIS METHOD IS CURRENTLY COUPLED WITH HYPOTHESIS TEST

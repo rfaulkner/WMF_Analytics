@@ -406,7 +406,7 @@ class LongTermTrendsLoader(DataLoader):
             
             sql = "select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, sum(counts) as impressions from banner_impressions where on_minute >= '%s' and on_minute < '%s' group by 1"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
-        
+            
         elif query_type == 1:
             
             sql = "select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, count(*) as views from landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1"
@@ -427,7 +427,7 @@ class LongTermTrendsLoader(DataLoader):
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
-
+        
         """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
         
         counts = list()
@@ -436,10 +436,10 @@ class LongTermTrendsLoader(DataLoader):
         for row in self._results_:  
             
             times.append(row[0])
-            counts.append(row[metric_index])
-            
-        start_time_obj = TP.timestamp_to_obj(start_time, 1)
-        end_time_obj = TP.timestamp_to_obj(end_time, 1)
+            counts.append(float(row[metric_index]))
+
+        start_time_obj = TP.timestamp_to_obj(start_time[:10] + '0000', 1)
+        end_time_obj = TP.timestamp_to_obj(end_time[:10] + '0000', 1)
         diff = end_time_obj - start_time_obj
         
         num_hours = diff.seconds / (interval * 60) + diff.days * 24

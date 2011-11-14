@@ -194,7 +194,7 @@ def index(request):
     ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
     ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
-
+    
     """ Extract data from interval reporting objects """        
     cmpgn_data_dict = ir_cmpgn.get_data_lists(['C_', 'C11_'], empty_data)
     cmpgn_banner_dict = ir_banner.get_data_lists(['B_', 'B11_'], empty_data)
@@ -207,5 +207,38 @@ def index(request):
     dict_param['start_time'] = TP.timestamp_convert_format(start_time, 1, 2)
     
     return render_to_response('live_results/index.html', dict_param,  context_instance=RequestContext(request))
+
+
+"""
+    View for Long Term results over all Fundraising campaigns hour by hour
+"""
+def long_term_trends(request):
     
+    """ number of hours to look back """
+    duration_hrs = 72
+    
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-20), 1, hours=-duration_hrs)
+    
+    """ set the metrics to plot """
+    lttdl = DL.LongTermTrendsLoader()
+    metrics = ['impressions', 'views', 'donations', 'click_rate']
+    data = list()
+    
+    """ For each metric use the LongTermTrendsLoader to generate the data to plot """
+    for index in range(len(metrics)):
+        
+        dr = DR.DataReporting()
+        
+        times, counts = lttdl.run_query(start_time, end_time, index, metric_name=metrics[index])
+        times = TP.normalize_timestamps(times, False, 1)
+            
+        dr._counts_[metrics[index]] = counts
+        dr._times_[metrics[index]] = times
+
+        empty_data = [0] * len(times)
+        data.append(dr.get_data_lists([''], empty_data))
+    
+    dict_param = Hlp.combine_data_lists(data)
+    
+    return render_to_response('live_results/long_term_trends.html', dict_param,  context_instance=RequestContext(request))
 
