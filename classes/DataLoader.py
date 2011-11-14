@@ -2209,6 +2209,7 @@ class ImpressionTableLoader(TableLoader):
                 on_minute = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
             elif key == 'start_timestamp_arg':
                 start_timestamp = MySQLdb._mysql.escape_string(str(start_timestamp))
+                start_timestamp = self.stringify(start_timestamp)
         
         return [start_timestamp, utm_source, referrer, country, lang, counts, on_minute]
     
@@ -2240,7 +2241,7 @@ class ImpressionTableLoader(TableLoader):
     def delete_row(self, start_timestamp):
         
         start_timestamp = self.process_kwargs({ 'start_timestamp_arg' : start_timestamp})[0]
-        deleteStmnt = 'delete from banner_impressions where start_timestamp = \'' + start_timestamp + '\';'
+        deleteStmnt = 'delete from banner_impressions where start_timestamp = ' + start_timestamp + ';'
         
         self.execute_SQL(deleteStmnt)
     
@@ -2357,7 +2358,7 @@ class LandingPageTableLoader(TableLoader):
     def delete_row(self, start_timestamp):
         
         start_timestamp = self.process_kwargs({'start_timestamp_arg' : start_timestamp})[0]
-        deleteStmnt = 'delete from landing_page_requests where start_timestamp = \'' + start_timestamp + '\';'
+        deleteStmnt = 'delete from landing_page_requests where start_timestamp = ' + start_timestamp + ';'
         
         return self.execute_SQL(deleteStmnt)
 
