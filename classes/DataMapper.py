@@ -399,7 +399,8 @@ class FundraiserDataMapper(DataMapper):
             
             copied_banner_logs = self.copy_logs('banner', **kwargs)
             copied_lp_logs = self.copy_logs('lp', **kwargs)
-                    
+            # For Test -- copied_lp_logs = self.copy_logs('lp', year='2011', month='11', day='14', hour='03', minute='15')      
+            
         """ Mine the latest logs """ 
         for banner_imp_file in copied_banner_logs:
             try:
@@ -650,13 +651,10 @@ class FundraiserDataMapper(DataMapper):
         ipctl = DL.IPCountryTableLoader()
         
         """ Retrieve the log timestamp from the filename """
-        #time_stamps = Hlp.get_timestamps(logFileName)
         time_stamps = self.get_timestamps_with_interval(logFileName, self._log_copy_interval_)
         
-        # start = time_stamps[0]
         end = time_stamps[1]
-        # start_timestamp_in = "convert(\'" + start + "\', datetime)"
-        curr_time = TP.timestamp_from_obj(datetime.datetime.now(),1,3)
+        curr_time = TP.timestamp_from_obj(datetime.datetime.utcnow(),1,3)
         
         """ retrieve the start time of the log """
         start = self.get_first_timestamp_from_log(logFileName)
@@ -802,9 +800,11 @@ class FundraiserDataMapper(DataMapper):
                  Process landing URL
                  ===================
                  
-                 sample landing url
+                 sample landing urls:
+                 
                      landing_url = "http://wikimediafoundation.org/w/index.php?title=WMFJA085/en/US&utm_source=donate&utm_medium=sidebar&utm_campaign=20101204SB002&country_code=US&referrer=http%3A%2F%2Fen.wikipedia.org%2Fwiki%2FFile%3AMurphy_High_School.jpg"
                      landing_url = "http://wikimediafoundation.org/wiki/WMFJA1/ru"
+                     landing_url = *donate.wikimedia.org/wiki/Special:FundraiserLandingPage?uselang=en&country=US&template=Lp-layout-default&appeal=Appeal-default&form-countryspecific=Form-countryspecific-control&utm_medium=sitenotice&utm_source=B11_Donate_Jimmy_Control&utm_campaign=C11_1107
             """
             
             try:
@@ -820,7 +820,7 @@ class FundraiserDataMapper(DataMapper):
             query_fields = cgi.parse_qs(parsed_landing_url[queryIndex]) # Get the banner name and lang
             path_pieces = parsed_landing_url[pathIndex].split('/')
 
-            include_request, index_str_flag = self.evaluate_landing_url(landing_url, parsed_landing_url, query_fields, path_pieces, lp_patterns)
+            include_request, url_match = self.evaluate_landing_url(landing_url, parsed_landing_url, query_fields, path_pieces, lp_patterns)
             
             if include_request:
                 
@@ -835,30 +835,9 @@ class FundraiserDataMapper(DataMapper):
                     pass
                 
                 """ Address cases where the query string contains the landing page - ...wikimediafoundation.org/w/index.php?... """
-                if index_str_flag:
-                    try:
-                        
-                        """ URLs of the form ...?title=<lp_name> """
-                        lp_country = query_fields['title'][0].split('/')
-                        landing_page = lp_country[0]
-                        
-                        """ URLs of the form ...?county_code=<iso_code> """
-                        try:
-                            country = query_fields['country'][0]
-                        except:
-                            """ URLs of the form ...?title=<lp_name>/<lang>/<iso_code> """
-                            if len(lp_country) == 3:
-                                country = lp_country[2]
-                            else:
-                                country = lp_country[1]                                                
-                        
-                    except:
-                        
-                        logging.info('Could not parse landing page request from query string: %s', landing_url)
-                        landing_page = 'NONE'
-                        country = ipctl.localize_IP(ip_add) 
-                        
-                else: 
+                # http://wikimediafoundation.org/wiki/
+                if url_match == 1: 
+                    
                     """ Address cases where the query string does not contain the landing page - ...wikimediafoundation.org/wiki/... """
                     parsed_landing_url = up.urlparse(landing_url)
                     query_fields = cgi.parse_qs(parsed_landing_url[queryIndex]) # Get the banner name and lang
@@ -882,24 +861,79 @@ class FundraiserDataMapper(DataMapper):
                         except:
                             
                             logging.info('Could not parse country from landing path: %s', landing_url)
-                            country = ipctl.localize_IP(ip_add)
-                
-                # If country is confused with the language use the ip
+                            line = logFile.readline()
+                            total_lines_in_file = total_lines_in_file - 1
+                            continue
+
+                # http://wikimediafoundation.org/w/index.php? 
+                elif url_match == 2:
+                    
+                    try:
+                        
+                        """ URLs of the form ...?title=<lp_name> """
+                        lp_country = query_fields['title'][0].split('/')
+                        landing_page = lp_country[0]
+                        
+                        """ URLs of the form ...?county_code=<iso_code> """
+                        try:
+                            country = query_fields['country'][0]
+                        except:
+                            """ URLs of the form ...?title=<lp_name>/<lang>/<iso_code> """
+                            if len(lp_country) == 3:
+                                country = lp_country[2]
+                            else:
+                                country = lp_country[1]                                                
+                        
+                    except:
+                        
+                        logging.info('Could not parse landing page request from query string: %s', landing_url)
+                        line = logFile.readline()
+                        total_lines_in_file = total_lines_in_file - 1
+                        continue
+
+                # donate.wikimedia.org/wiki/Special:FundraiserLandingPage?
+                elif url_match == 3:
+                    
+                    try:
+                        # e.g. uselang=en&country=US&template=Lp-layout-default&appeal=Appeal-default&form-countryspecific=Form-countryspecific-control&utm_medium=sitenotice&utm_source=B11_Donate_Jimmy_Control&utm_campaign=C11_1107
+                        
+                        source_lang = query_fields['uselang'][0]
+                        country = query_fields['country'][0]
+                        
+                        landing_page = query_fields['template'][0].split('-')[2] + '~' + query_fields['appeal-template'][0].split('-')[2] + '~' + query_fields['appeal'][0].split('-')[1] + \
+                        '~' + query_fields['form-template'][0].split('-')[2] + '~' + query_fields['form-countryspecific'][0].split('-')[2] 
+                        
+                        utm_source = query_fields['utm_source'][0]
+                        utm_campaign = query_fields['utm_campaign'][0] + '_' + country
+                        utm_medium = query_fields['utm_medium'][0]
+                        
+                    except Exception as inst:
+                        
+                        logging.info(inst)     # __str__ allows args to printed directly
+                        logging.info('Could not parse landing page request from query string: %s', landing_url)
+                        line = logFile.readline()
+                        total_lines_in_file = total_lines_in_file - 1
+                        continue
+ 
+                        
+                """ If country is confused with the language use the ip """
                 if country == country.lower():
                     
                     logging.info('Using geo-locator to set ip-address: %s', landing_url)
                     country = ipctl.localize_IP(ip_add) 
                                 
-                # ensure fields exist
+                """ Ensure fields providing request ID exist """
                 try:
                     utm_source = query_fields['utm_source'][0]
                     utm_campaign = query_fields['utm_campaign'][0]
                     utm_medium = query_fields['utm_medium'][0];
     
                 except KeyError:
-                    utm_source = 'NONE'
-                    utm_campaign = 'NONE'
-                    utm_medium = 'NONE'
+                    
+                    line = logFile.readline()
+                    total_lines_in_file = total_lines_in_file - 1
+                    continue
+
                 
                 """ Insert record into the landing_page_requests table """
                 
@@ -981,51 +1015,54 @@ class FundraiserDataMapper(DataMapper):
         """ 
             Filter the landing URLs
         
-             /wikimediafoundation.org/wiki/WMF/
-             /wikimediafoundation.org/w/index.php?title=WMF/ 
-
+             wikimediafoundation.org/wiki/WMF/
+             wikimediafoundation.org/w/index.php?title=WMF/ 
+             donate.wikimedia.org/wiki/Special:FundraiserLandingPage?uselang=en&country=US&template=Lp-layout-default&appeal=Appeal-default&form-countryspecific=Form-countryspecific-control&utm_medium=sitenotice&utm_source=B11_Donate_Jimmy_Control&utm_campaign=C11_1107
+            
             Evaluate conditions which determine acceptance of request based on the landing url 
         """
         try: 
             
-            logic_str_1 = False
-            for pattern in lp_patterns:
-                logic_str_1 = re.search(pattern, path_pieces[2]) or logic_str_1
+            accept_request = False
                 
-            # c1 = re.search('WMF', path_pieces[2] ) != None or re.search('Junetesting001', path_pieces[2] ) != None or re.search('L11', path_pieces[2] ) 
-            # c2 = re.search('Hear_from_Kartika', path_pieces[2]) != None
+            """ Conditions 1 through 3 are mutually exclusive """
+            condition_1 = parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'wiki'
+            condition_2 = (parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'w' and re.search('index.php', path_pieces[2]))            
+            condition_3 = parsed_landing_url[hostIndex] == 'donate.wikimedia.org' and path_pieces[1] == 'wiki' and re.search('Special:FundraiserLandingPage', path_pieces[2])            
+            # condition_3 = (re.search('donate.wikimedia.org.*wiki.*Special:FundraiserLandingPage', landing_url) != None)
+            condition_4 = (re.search('Special:LandingCheck',landing_url) == None) # The request must not be a "Special:LandingCheck"     
+             
+            accept_url = (condition_1 or condition_2 or condition_3) and condition_4
+                        
+            """ If the URL has been accepted process the LP names - evaluate against the patterns stored in the db """
+            if accept_url:
+                lp_name_flag = False
+                url_match = -1
+                
+                if condition_1:       
+                    url_match = 1                            
+                    for pattern in lp_patterns:
+                        lp_name_flag = re.search(pattern, path_pieces[2]) or lp_name_flag
+               
+                elif condition_2:
+                    try:
+                        for pattern in lp_patterns:
+                            lp_name_flag = re.search(pattern, query_fields['title'][0] ) or lp_name_flag
+                        url_match = 2
+                    except KeyError:                
+                        lp_name_flag = False
             
-            # cond1 = parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'wiki' and (c1 or c2)
-            condition_1 = parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'wiki' and logic_str_1
+                elif condition_3:
+                    
+                    lp_name_flag = True
+                    url_match = 3
+                
+                accept_request = lp_name_flag
 
-            # c1 = re.search('index.php', path_pieces[2] )  != None
-            # index_str_flag = c1
-            index_str_flag = re.search('index.php', path_pieces[2] )
-            
-            try:
-                # c2 = re.search('WMF', query_fields['title'][0] ) != None or re.search('L2011', query_fields['title'][0] ) != None  or re.search('L11', query_fields['title'][0] ) != None 
-                logic_str_2 = False
-                for pattern in lp_patterns:
-                    logic_str_2 = re.search(pattern, query_fields['title'][0] ) or logic_str_2
-                
-            except KeyError:
-                # c2 = 0
-                logic_str_2 = False
-                
-            # cond2 = (parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'w' and c1 and c2)
-            condition_2 = (parsed_landing_url[hostIndex] == 'wikimediafoundation.org' and path_pieces[1] == 'w' and index_str_flag and logic_str_2)
-                            
-            """ The request must not be a "Special:LandingCheck" """
-            regexp_res = re.search('Special:LandingCheck',landing_url)
-            condition_3 = (regexp_res == None)
-            
             """ Return the (1) whether to include the request or not, (2) the format type of the request """
-            return [(condition_1 or condition_2) and condition_3, index_str_flag]
+            return [accept_request, url_match]
 
         except: 
-            #print type(e)     # the exception instance
-            #print e.args      # arguments stored in .args
-            #print e           # __str__ allows args to printed directly
             
             return [False, False]
 
