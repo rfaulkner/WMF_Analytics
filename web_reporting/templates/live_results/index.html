@@ -23,8 +23,11 @@
 <span class="small">Enter a regular expression.  Use the campaign name to filter that campaign.</span>
 </label>
 <input type="text" name="campaign_regexp_filter" />
+<div class="spacer_small"></div>
 
-<br>
+<input type="checkbox" name="country_filter" value="{{ name }}" />Filter results by country?
+<div class="spacer_small"></div>
+
 <button type="submit">Filter</button>
 
 </form>
@@ -148,7 +151,7 @@ $(function () {
 <br><br>
 <u>Go to:</u>
 <br><br>
-<a href="/live_stats/long_term_trends">Home</a>
+<a href="/live_stats/long_term_trends">Long Term Trends</a>
 <a href="/">Home</a>
 <br>
 
