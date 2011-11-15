@@ -45,10 +45,10 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 def index(request):
 
     """ Process POST """     
-    start_time, end_time, min_donation = process_post_vars(request)
+    start_time, end_time, min_donation, view_order = process_post_vars(request)
     logging.debug('Finding live landing pages from %s to %s.' % (start_time, end_time))
     
-    live_lps, columns = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time, min_donation=min_donation)
+    live_lps, columns = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time, min_donation=min_donation, view_order=view_order)
     
     if len(live_lps) == 0:
         html_table = '<br><p color="red"><b>No landing page data found.<b></p><br>'
@@ -65,14 +65,15 @@ def process_post_vars(request):
     
     end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-24)
     
-    """ If the filter form was submitted extract the POST vars  """
+    # POST: minimum donations for records
     try:
         min_donations_var = MySQLdb._mysql.escape_string(request.POST['min_donations'].strip())
         min_donations_var = int(min_donations_var)
         
     except:
         min_donations_var = 0
-        
+    
+    # POST Start Timestamp for records
     try:
         
         earliest_utc_ts_var = MySQLdb._mysql.escape_string(request.POST['utc_ts'].strip())
@@ -88,5 +89,17 @@ def process_post_vars(request):
                 
     except Exception: # In the case the form was incorrectly formatted notify the user        
         pass
+    
+    # POST: minimum donations for records
+    try:
+        view_order = MySQLdb._mysql.escape_string(request.POST['view_order'].strip())
         
-    return start_time, end_time, min_donations_var
+        if cmp(view_order, 'campaign') == 0:
+            view_order_str = 'order by utm_campaign, country, language, landing_page desc'
+        elif cmp(view_order, 'country') == 0:
+            view_order_str = 'order by country, language, utm_campaign, landing_page desc'
+        
+    except:
+        view_order_str = 'order by utm_campaign, country, language, landing_page desc'
+    
+    return start_time, end_time, min_donations_var, view_order_str

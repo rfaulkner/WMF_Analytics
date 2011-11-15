@@ -1127,12 +1127,21 @@ class CampaignReportingLoader(DataLoader):
         LP_NAME_FIELDS = ['Lp-layout-','appeal-template-','Appeal-','form-template-','Form-countryspecific-']
         # LP_NAME_FIELDS = ['','','','','']
         
+        """ 
+            PROCESS KWARGS -- minimum donation value and 'order by' string
+        """
         if 'min_donation' in kwargs:
             min_donation = kwargs['min_donation']
             
             if not(isinstance(min_donation, int)):
                 min_donation = 0
-
+        
+        if 'view_order' in kwargs:
+            view_order_str = kwargs['view_order']
+            
+        else:
+            view_order_str = 'order by utm_campaign, country, language, landing_page desc' # default view order
+            
         query_name = 'report_lp_running'
         
         filename = projSet.__sql_home__+ query_name + '.sql'
@@ -1144,9 +1153,9 @@ class CampaignReportingLoader(DataLoader):
         
         lp_link_str_1S = 'https://payments.wikimedia.org/index.php/Special:PayflowProGateway?uselang=%s&country=%s&appeal=jimmy-appeal' + \
         '&form_name=RapidHtml&ffname=webitects_2_2stepB-US&utm_medium=sitenotice&utm_source_id=%s&_cache_=true'
-        
+                        
         sql_stmnt = Hlp.file_to_string(filename)
-        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, str(min_donation))
+        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, str(min_donation), view_order_str)
         
         logging.info('Using query:  report_lp_running -> get live landing pages')
                 
