@@ -235,5 +235,5 @@ and ecomm_full.banner = ecomm_truncated.banner
 and ecomm_full.landing_page = ecomm_truncated.landing_page
 and ecomm_full.country = ecomm_truncated.country
 
-group by 1,2,3,4
+group by 4,1,2,3
 order by earliest_access.min_date_cmgn, ecomm_full.country desc;

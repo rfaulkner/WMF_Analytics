@@ -242,5 +242,5 @@ and ecomm_full.country = ecomm_truncated.country
 
 where views > 10 * ecomm_full.donations
 
-group by 1,2,3,4
+group by 4,1,2,3
 order by earliest_access.min_date_cmgn, ecomm_full.country desc;
