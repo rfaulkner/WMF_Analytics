@@ -63,7 +63,23 @@ def index(request):
             campaign_regexp_filter = '^C_|^C11_'
     except:
         campaign_regexp_filter = '^C_|^C11_'
+
+    try:
+        min_donation = MySQLdb._mysql.escape_string(request.POST['min_donation'].strip())
+        min_donation = int(min_donation)
     
+    except:
+        min_donation = 0
+                
+    if 'country_filter' in request.POST:        
+        query_name = 'report_summary_results_country.sql'
+        query_name_1S = 'report_summary_results_country_1S.sql'
+        
+    else:
+        query_name = 'report_summary_results.sql'
+        query_name_1S = 'report_summary_results_1S.sql'
+        
+        
     """ Get the donations for all campaigns over the last n hours """
     duration_hrs = 6
     sampling_interval = 5
@@ -97,7 +113,7 @@ def index(request):
         ===================
     """
     
-    sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results.sql')
+    sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + query_name)
     sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
                              start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
                              start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)        
@@ -111,7 +127,7 @@ def index(request):
         
         logging.info('... including one step artifacts ...')
         
-        sql_stmnt_1S = Hlp.file_to_string(projSet.__sql_home__ + 'report_summary_results_1S.sql')
+        sql_stmnt_1S = Hlp.file_to_string(projSet.__sql_home__ + query_name_1S)
         sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
                                  start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
                                  start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)
@@ -136,7 +152,7 @@ def index(request):
     """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')
     new_results = list()
-    min_donation = 1
+    # min_donation = 1
     
     for row in results:
         if row[donations_index] > min_donation:
