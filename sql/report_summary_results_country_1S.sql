@@ -1,8 +1,8 @@
 --
 -- Ryan Faulkner - September 12th, 2011
--- report_summary_results_country.sql
+-- report_summary_results_country_1S.sql
 --
--- This query returns the results over campaigns, banners, and lps broken out by country
+-- This query returns the results over campaigns, banners, and lps broken out by country for one step forms
 -- This is consumed by the live results view /Fundraising_Tools/web_reporting/live_results
 --
 
@@ -39,16 +39,18 @@ group by 1,2) as imp
 
 right outer join
 
-(select 
+(select
 utm_campaign,
-utm_source, 
-landing_page,
-country,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source, 
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, 
+civicrm.civicrm_country.name as country,
 count(*) as views
 
-from landing_page_requests
+from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
-where request_time >=  '%s' and request_time < '%s'
+where ts >= '%s' and ts < '%s'
 and (utm_campaign REGEXP '%s')
 group by 1,2,3,4) as lp
 
@@ -61,12 +63,15 @@ join
 
 (select 
 utm_campaign,
-utm_source, 
-country,
+SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source, 
+civicrm.civicrm_country.name as country,
 count(*) as total_views
 
-from landing_page_requests
-where request_time >= '%s' and request_time < '%s'
+from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
+
+where ts >= '%s' and ts < '%s'
 and (utm_campaign REGEXP '%s')
 group by 1,2,3) as lp_tot
 
@@ -234,6 +239,8 @@ on ecomm_full.utm_campaign = ecomm_truncated.utm_campaign
 and ecomm_full.banner = ecomm_truncated.banner  
 and ecomm_full.landing_page = ecomm_truncated.landing_page
 and ecomm_full.country = ecomm_truncated.country
+
+where views > 10 * ecomm_full.donations
 
 group by 1,2,3,4
 order by earliest_access.min_date_cmgn, ecomm_full.country desc;
