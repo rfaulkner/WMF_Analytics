@@ -57,5 +57,4 @@ group by 1,2) as lp_tot
 on bi.utm_source = lp_tot.utm_source and bi.country =  lp_tot.country
 
 %s
-order by 1,2,3 desc
-limit 360
+order by 4,5 desc

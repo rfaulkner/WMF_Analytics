@@ -315,7 +315,7 @@ def impression_list(request):
     if 'iso_code' in request.POST:
         if cmp(request.POST['iso_code'], '') != 0:
             iso_code = MySQLdb._mysql.escape_string(request.POST['iso_code'].strip())
-            where_clause = "where bi.country = '%s' " % iso_code
+            where_clause = "where bi.country regexp '%s' " % iso_code
                     
     """ 
         Format and execute query 
