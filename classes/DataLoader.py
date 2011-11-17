@@ -345,6 +345,22 @@ class DataLoader(object):
                 return 'NULL'
             
             return '"' + str_to_stringify + '"'
+
+    """
+        Turn a counts vector into a set of samples 
+    """
+    def histify(self, data, label_indices):
+        
+        indices = range(len(data))
+        hist_list = list()
+
+        for index in indices:
+            samples = [label_indices[index]] * data[index]            
+            hist_list.extend(samples)
+            
+        return hist_list
+
+
 """
 
     General Long term trends for analysis.  These queries will consist of a small set of metrics to be measured.
@@ -382,6 +398,8 @@ class LongTermTrendsLoader(DataLoader):
         metric_name = ''
         interval = 60
         metric_type = self._MT_AMOUNT_
+        groups = {'*' : 'All'}
+        group_metric = 'country'
         
         """ Process keys -- Escape parameters """
         for key in kwargs_dict:
@@ -389,26 +407,44 @@ class LongTermTrendsLoader(DataLoader):
                 min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
             elif key == 'campaign':       
                 min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+            
+            # name of metric to sample
             elif key == 'metric_name':       
                 metric_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+            
+            # sampling interval of data
             elif key == 'interval':       
                 interval = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+            
+            # metric data type for operations (rates, amounts)
             elif key == 'metric_type':       
                 metric_type = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
                 metric_type = int(metric_type)
+            
+            # Contains the regex groups for the grouping metric
+            elif key == 'groups':       
+                # groups is contains values that are read only and do not need escaping
+                if isinstance(kwargs_dict[key], dict):
+                    groups = kwargs_dict[key]
+            
+            # metric to group on
+            elif key == 'group_metric':
+                group_metric = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
                 
-        return min_val, campaign, metric_name, interval, metric_type
+                
+        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric
     
     """
         Based on the query type provided execute a query
     """
     def run_query(self, start_time, end_time, query_type, **kwargs):
                 
+        
         """ Escape timestamps """
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
-        min_val, campaign, metric_name, interval, metric_type = self.process_kwargs(kwargs)
+        min_val, campaign, metric_name, interval, metric_type, groups, group_metric = self.process_kwargs(kwargs)
         
         if query_type == 0: 
             
@@ -424,7 +460,7 @@ class LongTermTrendsLoader(DataLoader):
             
         elif query_type == 2:
             
-            logging.info('Executing query for long term donations ...')
+            logging.info('Executing query for long term donations based on country ...')
             sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, iso_code as country, count(*) as donations, sum(total_amount) as amount " + \
             "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
             "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
@@ -439,26 +475,30 @@ class LongTermTrendsLoader(DataLoader):
             "where request_time >= '%s' and request_time < '%s'  group by 1,2 ) as lpi on bi.hr = lpi.hr and bi.country = lpi.country order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time, '%', '%', '%', '%', start_time, end_time)
         
+        elif query_type == 4:
+
+            logging.info('Executing query for long term donations based on currency ...')
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, substring(1,3,source) as currency, count(*) as donations, sum(total_amount) as amount " + \
+            "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+            "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+            "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
+            sql = sql % ('%', '%', '%', '%', start_time, end_time)
+
         
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
-        key_index = column_names.index('country')
+        key_index = column_names.index(group_metric)
 
         counts = dict()
         times = dict()
 
         """ Parse data from query results - organize into keys based on country """
-        groups = {'US':'(US)', 'CA':'(CA)', 'JP':'(JP)', 'IN':'(IN)', 'NL':'(NL)', 'Other':'(US|CA|JP|IN|NL)'} # These should be mutually exclusive        
         group_counts = dict()
-        curr_keys = list()
         
         for row in self._results_:
                         
             key = row[key_index] 
-            """ Exceptional case where the key is empty """
-            if len(key) != 2:
-                key = 'None'
                 
             timestamp = row[0]
             count = float(row[metric_index])                    
@@ -679,8 +719,7 @@ class SummaryReportingLoader(DataLoader):
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             
-            
-            
+                   
     """
         GET method for query results
     """
@@ -1459,21 +1498,7 @@ class DonorBracketsReportingLoader(DataLoader):
                     index[key] = index[key] + 1
 
         return new_bracket_names, new_donations, new_amounts
-    
-    
-    """
-        Turn a counts vector into a set of samples || TODO:  bump this up to the base class
-    """
-    def histify(self, data, label_indices):
-        
-        indices = range(len(data))
-        hist_list = list()
 
-        for index in indices:
-            samples = [label_indices[index]] * data[index]            
-            hist_list.extend(samples)
-            
-        return hist_list
     
     """
         Retrieve 
