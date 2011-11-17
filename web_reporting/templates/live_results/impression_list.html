@@ -1,0 +1,55 @@
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Impression counts:</h1><br>
+<h4>The table below is a listing of impressions for each form pipeline in all countries from {{start}} to {{end}}:</h4><br>
+<div class="spacer"></div>
+
+{% if err_msg != '' %}
+	<span style="color:red">{{err_msg}}</span>
+	<div class="spacer"></div>
+{% endif %}
+
+<!-- Table listing all impressions run -->
+
+<center>{{ imp_table|safe }}</center>
+
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<div id="stylized" class="myform">
+<form action="/live_stats/impressions" method="post">
+{% csrf_token %}
+<h1><u>Filter Records</u></h1><br>
+<!--<p>This is the basic look of my form without table</p> -->
+
+<label>ISO Code (Country)
+<span class="small">e.g. (United States -> US, Germany -> DE)</span>
+</label>
+<input type="text" name="iso_code" value="" />
+
+<label>Start UTC Timestamp
+<span class="small">Earliest Timestamp: yyymmddhhiiss</span>
+</label>
+<input type="text" name="earliest_utc_ts" value="" />
+
+<label>End UTC Timestamp
+<span class="small">Latest Timestamp: yyymmddhhiiss</span>
+</label>
+<input type="text" name="latest_utc_ts" value=""/>
+
+<br>
+<button type="submit">Filter</button>
+
+</form>
+</div>
+
+<div class="spacer"></div>
+
+<u>Go to:</u>
+<br><br>
+<a href="/">Home</a>
+<br>
+
+{% endblock %}

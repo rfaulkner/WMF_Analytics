@@ -10,6 +10,9 @@
     
     index             -- Queries the fundraiser database for donations and sends the data to the template to be displayed 
     
+    impression_list     - listing of impressions for various countries
+    
+    
     Helpers:
     
     get_data_lists        -- composes the donation query data into a format expected by the template
@@ -242,6 +245,11 @@ def long_term_trends(request):
     metrics = ['impressions', 'views', 'donations', 'amount', 'click_rate']
     metrics_index = [0, 1, 2, 2, 3]
     
+    country_groups = {'US':'(US)', 'CA':'(CA)', 'JP':'(JP)', 'IN':'(IN)', 'NL':'(NL)', 'Other':'(US|CA|JP|IN|NL)'}
+    currency_groups = {'USD':'(USD)', 'CAD':'(CAD)', 'JPY':'(JPY)', 'EUR':'(EUR)', 'Other':'(USD|CAD|JPY|EUR)'}
+    groups = [country_groups, country_groups, country_groups, country_groups, country_groups]
+    group_metrics = ['country', 'country', 'country', 'country', 'country']
+    
     metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_RATE_]
     data = list()
     
@@ -250,7 +258,7 @@ def long_term_trends(request):
         
         dr = DR.DataReporting()
         
-        times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index])
+        times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], groups=groups[index], group_metric=group_metrics[index])
         times = TP.normalize_timestamps(times, False, 1)
             
         dr._counts_ = counts
@@ -263,3 +271,66 @@ def long_term_trends(request):
     
     return render_to_response('live_results/long_term_trends.html', dict_param,  context_instance=RequestContext(request))
 
+
+
+"""
+    Generates a listing of impressions for all countries and banners
+"""
+def impression_list(request):
+    
+    err_msg = ''
+    where_clause = ''
+    
+    """ 
+        Process times and POST
+        =============
+    """
+    duration_hrs = 2
+    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-duration_hrs)    
+    
+    if 'earliest_utc_ts' in request.POST:
+        if cmp(request.POST['earliest_utc_ts'], '') != 0:
+            earliest_utc_ts = MySQLdb._mysql.escape_string(request.POST['earliest_utc_ts'].strip())
+            format = TP.getTimestampFormat(earliest_utc_ts)
+            
+            if format == 1:
+                start_time = earliest_utc_ts
+            if format == 2:
+                start_time = TP.timestamp_convert_format(earliest_utc_ts, 2, 1)
+            elif format == -1:
+                err_msg = err_msg + 'Start timestamp is formatted incorrectly\n'
+    
+    if 'latest_utc_ts' in request.POST:
+        if cmp(request.POST['latest_utc_ts'], '') != 0:
+            latest_utc_ts = MySQLdb._mysql.escape_string(request.POST['latest_utc_ts'].strip())
+            format = TP.getTimestampFormat(latest_utc_ts)
+            
+            if format == 1:
+                end_time = latest_utc_ts
+            if format == 2:
+                end_time = TP.timestamp_convert_format(latest_utc_ts, 2, 1)
+            elif format == -1:
+                err_msg = err_msg + 'End timestamp is formatted incorrectly\n'
+            
+    if 'iso_code' in request.POST:
+        if cmp(request.POST['iso_code'], '') != 0:
+            iso_code = MySQLdb._mysql.escape_string(request.POST['iso_code'].strip())
+            where_clause = "where bi.country = '%s' " % iso_code
+                    
+    """ 
+        Format and execute query 
+        ========================
+    """
+        
+    query_name = 'report_country_impressions.sql'    
+    
+    sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + query_name)
+    sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, start_time, end_time, where_clause)
+    
+    dl = DL.DataLoader()
+    results = dl.execute_SQL(sql_stmnt)
+    column_names = dl.get_column_names()
+
+    imp_table = DR.DataReporting()._write_html_table(results, column_names)
+    
+    return render_to_response('live_results/impression_list.html', {'imp_table' : imp_table.decode("utf-8"), 'err_msg' : err_msg, 'start' : TP.timestamp_convert_format(start_time, 1, 2), 'end' : TP.timestamp_convert_format(end_time, 1, 2)},  context_instance=RequestContext(request))
