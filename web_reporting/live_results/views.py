@@ -103,8 +103,10 @@ def index(request):
     latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
 
     try: 
-        conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
-        
+        if campaign_regexp_filter != '^C_|^C11_':
+            conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
+        else:
+            conf_colour_code = {}
     except:
         conf_colour_code = {}
     
@@ -237,7 +239,10 @@ def long_term_trends(request):
     
     """ set the metrics to plot """
     lttdl = DL.LongTermTrendsLoader()
-    metrics = ['impressions', 'views', 'donations', 'click_rate']
+    metrics = ['impressions', 'views', 'donations', 'amount', 'click_rate']
+    metrics_index = [0, 1, 2, 2, 3]
+    
+    metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_RATE_]
     data = list()
     
     """ For each metric use the LongTermTrendsLoader to generate the data to plot """
@@ -245,13 +250,13 @@ def long_term_trends(request):
         
         dr = DR.DataReporting()
         
-        times, counts = lttdl.run_query(start_time, end_time, index, metric_name=metrics[index])
+        times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index])
         times = TP.normalize_timestamps(times, False, 1)
             
-        dr._counts_[metrics[index]] = counts
-        dr._times_[metrics[index]] = times
+        dr._counts_ = counts
+        dr._times_ = times
 
-        empty_data = [0] * len(times)
+        empty_data = [0] * len(times['Total'])
         data.append(dr.get_data_lists([''], empty_data))
     
     dict_param = Hlp.combine_data_lists(data)

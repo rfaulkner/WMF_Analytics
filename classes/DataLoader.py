@@ -353,6 +353,10 @@ class DataLoader(object):
 """
 class LongTermTrendsLoader(DataLoader):
     
+    """ Metric Types """
+    _MT_AMOUNT_ = 1
+    _MT_RATE_ = 2
+    
     _LT_BANNER_IMPRESSIONS_ = 0
     _LT_LP_IMPRESSIONS_ = 1
     _LT_DONATIONS_ = 2
@@ -377,6 +381,7 @@ class LongTermTrendsLoader(DataLoader):
         campaign = ''
         metric_name = ''
         interval = 60
+        metric_type = self._MT_AMOUNT_
         
         """ Process keys -- Escape parameters """
         for key in kwargs_dict:
@@ -388,76 +393,159 @@ class LongTermTrendsLoader(DataLoader):
                 metric_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
             elif key == 'interval':       
                 interval = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
-                        
-        return min_val, campaign, metric_name, interval
+            elif key == 'metric_type':       
+                metric_type = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
+                metric_type = int(metric_type)
+                
+        return min_val, campaign, metric_name, interval, metric_type
     
     """
         Based on the query type provided execute a query
     """
     def run_query(self, start_time, end_time, query_type, **kwargs):
-        
+                
         """ Escape timestamps """
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
-        min_val, campaign, metric_name, interval = self.process_kwargs(kwargs)
+        min_val, campaign, metric_name, interval, metric_type = self.process_kwargs(kwargs)
         
         if query_type == 0: 
             
-            sql = "select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, sum(counts) as impressions from banner_impressions where on_minute >= '%s' and on_minute < '%s' group by 1"
+            logging.info('Executing query for long term banner impressions ...')
+            sql = "select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, country, sum(counts) as impressions from banner_impressions where on_minute >= '%s' and on_minute < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
         elif query_type == 1:
             
-            sql = "select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, count(*) as views from landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1"
+            logging.info('Executing query for long term LP impressions ...')
+            sql = "select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, country, count(*) as views from landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
         elif query_type == 2:
             
-            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, count(*) as donations, sum(total_amount) as amount from civicrm.civicrm_contribution where receive_date >= '%s' and receive_date < '%s' group by 1"
+            logging.info('Executing query for long term donations ...')
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, iso_code as country, count(*) as donations, sum(total_amount) as amount " + \
+            "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+            "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+            "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
         elif query_type == 3:
             
-            sql = "select  bi.hr, views / impressions as click_rate from (select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, sum(counts) as impressions from banner_impressions " + \
-            "where on_minute >= '%s' and on_minute < '%s' group by 1) as bi join (select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, count(*) as views from landing_page_requests " + \
-            "where request_time >= '%s' and request_time < '%s'  group by 1 ) as lpi on bi.hr = lpi.hr"
+            logging.info('Executing query for long term click rate ...')
+            sql = "select bi.hr, bi.country, views / impressions as click_rate from (select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, country, sum(counts) as impressions from banner_impressions " + \
+            "where on_minute >= '%s' and on_minute < '%s' group by 1,2) as bi join (select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, country, count(*) as views from landing_page_requests " + \
+            "where request_time >= '%s' and request_time < '%s'  group by 1,2 ) as lpi on bi.hr = lpi.hr and bi.country = lpi.country order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time, '%', '%', '%', '%', start_time, end_time)
+        
         
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
+        key_index = column_names.index('country')
+
+        counts = dict()
+        times = dict()
+
+        """ Parse data from query results - organize into keys based on country """
+        groups = {'US':'(US)', 'CA':'(CA)', 'JP':'(JP)', 'IN':'(IN)', 'NL':'(NL)', 'Other':'(US|CA|JP|IN|NL)'} # These should be mutually exclusive        
+        group_counts = dict()
+        curr_keys = list()
         
+        for row in self._results_:
+                        
+            key = row[key_index] 
+            """ Exceptional case where the key is empty """
+            if len(key) != 2:
+                key = 'None'
+                
+            timestamp = row[0]
+            count = float(row[metric_index])                    
+                
+            """  Evaluate the regex for each pattern"""
+            for gkey in groups:
+                if cmp(gkey,'Other') == 0: 
+                    regex = not(re.search(groups[gkey], key))
+                else:
+                    regex = re.search(groups[gkey], key)
+                                
+                if regex:                    
+                    key = gkey                                        
+                    break
+
+            if not(key in counts.keys()):
+                counts[key] = list()
+                times[key] = list()
+                group_counts[key] = list()
+                
+                times[key].append(timestamp)
+                counts[key].append(count)
+                group_counts[key].append(1.0)
+                
+            elif timestamp in times[key]:                
+                t_index = times[key].index(timestamp)
+                counts[key][t_index] = counts[key][t_index] + count
+                group_counts[key][t_index] = group_counts[key][t_index] + 1.0
+                
+            else:
+                times[key].append(timestamp)
+                counts[key].append(count)
+                group_counts[key].append(1.0)
+                        
+        keys = counts.keys()[:] # make a copy of the key array
+        
+        """ If the metric is a rate ensure that all of the are averaged over the number of keys """        
+        if metric_type == self._MT_RATE_:      
+            for key in counts:
+                for index in range(len(counts[key])):
+                    counts[key][index] = counts[key][index] / group_counts[key][index]      
+                    if counts[key][index] > 0.1:
+                        counts[key][index] = 0.1
+            
         """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
         
-        counts = list()
-        times = list()
+        for key in counts:
 
-        for row in self._results_:  
+            start_time_obj = TP.timestamp_to_obj(start_time[:10] + '0000', 1)
+            end_time_obj = TP.timestamp_to_obj(end_time[:10] + '0000', 1)
+            diff = end_time_obj - start_time_obj
             
-            times.append(row[0])
-            counts.append(float(row[metric_index]))
-
-        start_time_obj = TP.timestamp_to_obj(start_time[:10] + '0000', 1)
-        end_time_obj = TP.timestamp_to_obj(end_time[:10] + '0000', 1)
-        diff = end_time_obj - start_time_obj
+            num_hours = diff.seconds / (interval * 60) + diff.days * 24
+            
+            ts_list = TP.create_timestamp_list(start_time_obj, num_hours, interval)
+    
+            new_counts = list()
+            count_index = 0
+            for ts in ts_list:
+                if not(ts in times[key]):                
+                    new_counts.append(0.0)
+                else:
+                    new_counts.append(counts[key][count_index])
+                    count_index = count_index + 1
+                    
+            counts[key] = new_counts
+            times[key] = ts_list
         
-        num_hours = diff.seconds / (interval * 60) + diff.days * 24
         
-        ts_list = TP.create_timestamp_list(start_time_obj, num_hours, interval)
-
-        new_counts = list()
-        count_index = 0
-        for ts in ts_list:
-            if not(ts in times):                
-                new_counts.append(0.0)
-            else:
-                new_counts.append(counts[count_index])
-                count_index = count_index + 1
+        """ Add in the totals """
+        num_data_points = len(counts[keys[0]])  # update this value
+        
+        counts['Total'] = list()        
+        times['Total'] = list()
+        
+        for index in range(num_data_points):
+            new_val = 0.0
+            for key in keys:
+                new_val = new_val + counts[key][index]
                 
-        counts = new_counts
-           
-        return ts_list, counts
+            if metric_type == self._MT_RATE_:
+                new_val = new_val / len(keys)
+                
+            counts['Total'].append(new_val)
+            times['Total'].append(ts_list[index])
+
+        return times, counts
         
 """
 

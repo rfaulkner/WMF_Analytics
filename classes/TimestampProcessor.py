@@ -38,8 +38,12 @@ __revision__ = "$Rev$"
 __date__ = "April 8th, 2011"
 
 
-import datetime, calendar as cal, math, re, copy
+import datetime, calendar as cal, math, re, logging, sys
 import classes.Helper as mh
+
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
 
 
 TS_FORMAT_FLAT = 1
@@ -82,7 +86,13 @@ def timestamps_for_interval(start_time_obj, timestamp_format, **kwargs):
 def normalize_timestamps(time_lists, count_back, time_unit):
     
     """ Convert timestamps if they are strings """
-    time_lists = timestamp_list_to_obj(time_lists)
+    if isinstance(time_lists, list):
+        time_lists = timestamp_list_to_obj(time_lists)
+    elif isinstance(time_lists, dict):
+        time_lists = timestamp_dict_to_obj(time_lists)
+    else:
+        logging.error('TimestampProcessor::normalize_timestamps -- Timestamps must be contained in a list or dictionary.')
+        return dict()
     
     time_lists, isList = timestamps_to_dict(time_lists)
     
@@ -361,6 +371,10 @@ def timestamp_to_obj(timestamp, format):
 """
 def timestamp_list_to_obj(timestamps):
     
+    if not(isinstance(timestamps, list)):
+        logging.error('TimestampProcessor::timestamp_list_to_obj -- Parameter must be a list of timestamps.')
+        return list()
+    
     obj_list = list()
     
     for ts in timestamps:
@@ -372,6 +386,20 @@ def timestamp_list_to_obj(timestamps):
             
     return obj_list
 
+""" Same as method above for dictionaries containing timestamp lists """
+def timestamp_dict_to_obj(timestamps_dict):
+    
+    if not(isinstance(timestamps_dict, dict)):
+        logging.error('TimestampProcessor::timestamp_dict_to_obj -- Parameter must be a dictionary of timestamps.')
+        return dict()
+    
+    """ Use timestamp_list_to_obj method to do the work """
+    for key in timestamps_dict:
+        timestamps_dict[key] = timestamp_list_to_obj(timestamps_dict[key])
+    
+    return timestamps_dict
+
+        
 """
 
     Evaluates a timestamp of a given format to ensure that it is valid
