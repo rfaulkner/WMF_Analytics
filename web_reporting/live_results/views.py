@@ -36,9 +36,11 @@ import datetime, logging, sys, MySQLdb
 import classes.Helper as Hlp
 import classes.DataReporting as DR
 import classes.DataLoader as DL
+import classes.DataCaching as DC
 import classes.FundraiserDataHandler as FDH
 import classes.TimestampProcessor as TP
 import config.settings as projSet
+import data.web_reporting_view_keys as view_keys
 
 """ CONFIGURE THE LOGGER """
 LOGGING_STREAM = sys.stderr
@@ -233,41 +235,12 @@ def index(request):
 """
     View for Long Term results over all Fundraising campaigns hour by hour
 """
+
+
 def long_term_trends(request):
     
-    """ number of hours to look back """
-    duration_hrs = 72
-    
-    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-20), 1, hours=-duration_hrs)
-    
-    """ set the metrics to plot """
-    lttdl = DL.LongTermTrendsLoader()
-    metrics = ['impressions', 'views', 'donations', 'amount', 'click_rate']
-    metrics_index = [0, 1, 2, 2, 3]
-    
-    country_groups = {'US':'(US)', 'CA':'(CA)', 'JP':'(JP)', 'IN':'(IN)', 'NL':'(NL)', 'Other':'(US|CA|JP|IN|NL)'}
-    currency_groups = {'USD':'(USD)', 'CAD':'(CAD)', 'JPY':'(JPY)', 'EUR':'(EUR)', 'Other':'(USD|CAD|JPY|EUR)'}
-    groups = [country_groups, country_groups, country_groups, country_groups, country_groups]
-    group_metrics = ['country', 'country', 'country', 'country', 'country']
-    
-    metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_RATE_]
-    data = list()
-    
-    """ For each metric use the LongTermTrendsLoader to generate the data to plot """
-    for index in range(len(metrics)):
-        
-        dr = DR.DataReporting()
-        
-        times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], groups=groups[index], group_metric=group_metrics[index])
-        times = TP.normalize_timestamps(times, False, 1)
-            
-        dr._counts_ = counts
-        dr._times_ = times
-
-        empty_data = [0] * len(times['Total'])
-        data.append(dr.get_data_lists([''], empty_data))
-    
-    dict_param = Hlp.combine_data_lists(data)
+    cache = DC.LTT_DataCaching()
+    dict_param = cache.get_cached_data(view_keys.LTT_DICT_KEY)
     
     return render_to_response('live_results/long_term_trends.html', dict_param,  context_instance=RequestContext(request))
 

@@ -16,7 +16,7 @@ __date__ = "April 8th, 2011"
 
 
 """ Import python base modules """
-import sys, MySQLdb, math, datetime, re, logging, csv, operator, numpy as np
+import sys, MySQLdb, math, datetime, re, logging, csv, operator, numpy as np, shelve
 
 """ Import Analytics modules """
 import config.settings as projSet
@@ -377,7 +377,7 @@ class LongTermTrendsLoader(DataLoader):
     _LT_LP_IMPRESSIONS_ = 1
     _LT_DONATIONS_ = 2
     _LT_CLICK_RATE_ = 3
-    
+     
     def __init__(self):
         
         """ Call constructor of parent """
@@ -438,8 +438,7 @@ class LongTermTrendsLoader(DataLoader):
         Based on the query type provided execute a query
     """
     def run_query(self, start_time, end_time, query_type, **kwargs):
-                
-        
+                        
         """ Escape timestamps """
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
@@ -478,13 +477,56 @@ class LongTermTrendsLoader(DataLoader):
         elif query_type == 4:
 
             logging.info('Executing query for long term donations based on currency ...')
-            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, substring(1,3,source) as currency, count(*) as donations, sum(total_amount) as amount " + \
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, substring(source,1,3) as currency, count(*) as donations, sum(total_amount) as amount " + \
             "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
             "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
             "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
 
+        """ 
+            SHELVE query results for future hits 
+            ====================================
+
+
+        logging.info('Unshelving query results ...')
         
+        ltt_vars = shelve.open( projSet.__data_file_dir__ + 'ltt_vars.s')
+        curr_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
+        
+        var_name_results = 'res_qt' + str(query_type)
+        var_name_columns = 'col_qt' + str(query_type)
+        var_curr_hour = 'curr_hour_' + str(query_type)
+        
+        # Execute the results on a new hour
+        if not(var_curr_hour in ltt_vars):
+            run_query = True            
+            ltt_vars[var_curr_hour] = curr_time.hour
+        
+        elif curr_time.hour != ltt_vars[var_curr_hour]:
+            run_query = True            
+            ltt_vars[var_curr_hour] = curr_time.hour
+            
+        else:
+            run_query = False
+            
+        if run_query: 
+            
+            logging.info('Executing queries ...')
+            self._results_ = self.execute_SQL(sql)
+            column_names = self.get_column_names()
+            
+            ltt_vars[var_name_results] = self._results_
+            ltt_vars[var_name_columns] = column_names
+        
+        else:
+            logging.info('Using shelved results ...')
+            self._results_ = ltt_vars[var_name_results]
+            column_names = ltt_vars[var_name_columns]
+            
+        ltt_vars.close()
+
+        =========== """
+
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
@@ -2330,7 +2372,7 @@ class ImpressionTableLoader(TableLoader):
             elif key == 'on_minute_arg':
                 on_minute = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
             elif key == 'start_timestamp_arg':
-                start_timestamp = MySQLdb._mysql.escape_string(str(start_timestamp))
+                start_timestamp = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
                 start_timestamp = self.stringify(start_timestamp)
         
         return [start_timestamp, utm_source, referrer, country, lang, counts, on_minute]
