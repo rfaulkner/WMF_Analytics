@@ -470,7 +470,7 @@ class FundraiserDataMapper(DataMapper):
         
         start = time_stamps[0]
         end = time_stamps[1]
-        start_timestamp_in = "convert(\'" + start + "\', datetime)"
+        start_timestamp_in = start
         curr_time = TP.timestamp_from_obj(datetime.datetime.now(),1,3)
         
         

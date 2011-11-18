@@ -2340,6 +2340,7 @@ class ImpressionTableLoader(TableLoader):
         
         start_timestamp, utm_source, referrer, country, lang, counts, on_minute = self.process_kwargs(kwargs)
         
+        start_timestamp = "convert('" + start_timestamp + "00', datetime)"
         on_minute = "convert('" + on_minute + "00', datetime)"
         val = '(' + start_timestamp + ',' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' \
                                     + counts + ',' + on_minute + ');'
