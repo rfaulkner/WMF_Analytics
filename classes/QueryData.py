@@ -41,47 +41,47 @@ def format_query(query_name, sql_stmnt, args):
     
     if cmp(query_name, 'report_campaign_ecomm') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % (start_time)
+        sql_stmnt = str(sql_stmnt % (start_time))
 
     elif cmp(query_name, 'report_campaign_logs') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % (start_time, start_time, start_time)
+        sql_stmnt = str(sql_stmnt % (start_time, start_time, start_time))
 
     elif cmp(query_name, 'report_campaign_ecomm_by_hr') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', '%', start_time))
 
     elif cmp(query_name, 'report_campaign_logs_by_hr') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time, '%', '%', '%', '%', \
-        start_time, '%', '%', '%', '%', start_time, '%')
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', '%', start_time, '%', '%', '%', '%', \
+        start_time, '%', '%', '%', '%', start_time, '%'))
 
     elif cmp(query_name, 'report_impressions_country') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', start_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', start_time))
 
     elif cmp(query_name, 'report_campaign_logs_by_min') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '%', start_time, '%', '%', '%', '%', \
-        start_time, '%', '%', '%', '%', start_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', '%', start_time, '%', '%', '%', '%', \
+        start_time, '%', '%', '%', '%', start_time))
     
     elif cmp(query_name, 'report_non_US_clicks') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', start_time, '%', '%', '%', start_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', start_time, '%', '%', '%', start_time))
     
     elif cmp(query_name, 'report_contribution_tracking') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '%', '%',start_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', '%', '%',start_time))
     
     elif cmp(query_name, 'report_total_amounts_by_hr') == 0:
         start_time = args[0]
         end_time = args[1]            
-        sql_stmnt = sql_stmnt % ('%', '%', '%', ' %H', start_time, end_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', ' %H', start_time, end_time))
     
     elif cmp(query_name, 'report_total_amounts_by_day') == 0:
         start_time = args[0]
         end_time = args[1]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '', start_time, end_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', '', start_time, end_time))
     
     elif cmp(query_name, 'report_LP_metrics') == 0 or cmp(query_name, 'report_LP_metrics_1S') == 0:
         
@@ -96,7 +96,7 @@ def format_query(query_name, sql_stmnt, args):
         else:
             min_views = 'where lp.views > ' + str(min_views) + ' '
             
-        sql_stmnt = sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, start_time, end_time, campaign, min_views)
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, start_time, end_time, campaign, min_views))
         
     elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
     cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0 or cmp(query_name, 'report_total_metrics_1S') == 0:
@@ -112,25 +112,25 @@ def format_query(query_name, sql_stmnt, args):
         else:
             min_views = 'where lp.views > ' + str(min_views) + ' '
             
-        sql_stmnt = sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, start_time, end_time, campaign, min_views)
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, start_time, end_time, campaign, min_views))
     
     elif cmp(query_name, 'report_latest_campaign') == 0:
         start_time = args[0]
-        sql_stmnt = sql_stmnt % (start_time)
+        sql_stmnt = str(sql_stmnt % (start_time))
             
     elif cmp(query_name, 'report_banner_impressions_by_hour') == 0:
         start = args[0]
         end = args[1]
-        sql_stmnt = sql_stmnt % ('%','%','%','%', start, end)
+        sql_stmnt = str(sql_stmnt % ('%','%','%','%', start, end))
                 
     elif cmp(query_name, 'report_ecomm_by_amount') == 0:
         start_time = args[0]
         end_time = args[1]
-        sql_stmnt = sql_stmnt % ('%', '%',  '%',  '%', start_time, end_time, end_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%',  '%',  '%', start_time, end_time, end_time))
     
     elif cmp(query_name, 'report_ecomm_by_contact') == 0:
         where_str = args[0]
-        sql_stmnt = sql_stmnt % ('%', '%', '%', '%', where_str)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', '%', where_str))
     
     elif cmp(query_name, 'report_LP_metrics_minutely') == 0 or cmp(query_name, 'report_LP_metrics_minutely_1S') == 0:
         
@@ -144,8 +144,8 @@ def format_query(query_name, sql_stmnt, args):
         imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
         imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
         
-        sql_stmnt = sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
-                                 start_time, end_time, campaign, campaign)
+        sql_stmnt = str(sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
+                                 start_time, end_time, campaign, campaign))
     
     elif cmp(query_name, 'report_banner_metrics_minutely') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely') == 0 or cmp(query_name, 'report_banner_metrics_minutely_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely_1S') == 0:
     
@@ -159,8 +159,8 @@ def format_query(query_name, sql_stmnt, args):
         imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
         imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
         
-        sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
-                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, start_time, end_time, campaign, campaign)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
+                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, start_time, end_time, campaign, campaign))
     
     elif cmp(query_name, 'report_campaign_metrics_minutely') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_1S') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_total') == 0 \
     or cmp(query_name, 'report_campaign_metrics_minutely_total_1S') == 0:
@@ -169,41 +169,41 @@ def format_query(query_name, sql_stmnt, args):
         campaign = args[2]
         interval = args[3]
         
-        sql_stmnt = sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign)
+        sql_stmnt = str(sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign))
     
     elif cmp(query_name, 'report_campaign_totals') == 0:
         start_time = args[0]
         end_time = args[1]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time)
+        sql_stmnt = str(sql_stmnt % (start_time, end_time))
     
     elif cmp(query_name, 'report_campaign_banners') == 0:
         start_time = args[0]
         end_time = args[1]
         utm_campaign = args[2]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, utm_campaign))
         
     elif cmp(query_name, 'report_campaign_lps') == 0:
         start_time = args[0]
         end_time = args[1]
         utm_campaign = args[2]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, utm_campaign))
     
     elif cmp(query_name, 'report_campaign_bannerlps') == 0:
         start_time = args[0]
         end_time = args[1]
         utm_campaign = args[2]
         
-        sql_stmnt = sql_stmnt % (start_time, end_time, utm_campaign)
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, utm_campaign))
     
     elif cmp(query_name, 'report_campaign_metrics_minutely_all') == 0 or cmp(query_name, 'report_banner_metrics_minutely_all') == 0 or cmp(query_name, 'report_lp_metrics_minutely_all') == 0:
         start_time = args[0]
         end_time = args[1]
         interval = args[3]
         
-        sql_stmnt = sql_stmnt % ('%', '%', '%',  '%', interval, interval, start_time, end_time)
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%',  '%', interval, interval, start_time, end_time))
         
     else:
         return 'no such table\n'
