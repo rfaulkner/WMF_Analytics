@@ -110,6 +110,7 @@ class LTT_DataCaching(DataCaching):
         
         dict_param = Hlp.combine_data_lists(data)
         dict_param['interval'] = self.VIEW_DURATION_HRS    
+        dict_param['end_time'] = TP.timestamp_convert_format(end_time,1,2)
         
         self.cache_data(dict_param, key)
         
