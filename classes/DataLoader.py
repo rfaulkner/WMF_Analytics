@@ -497,7 +497,11 @@ class LongTermTrendsLoader(DataLoader):
         for row in self._results_:
                         
             key = row[key_index] 
-                
+            
+            """ Ensure the key is a string """
+            if not(isinstance(key, str)):
+                key = '' 
+               
             timestamp = row[0]
             count = float(row[metric_index])                    
                 
