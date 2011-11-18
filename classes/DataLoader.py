@@ -16,7 +16,7 @@ __date__ = "April 8th, 2011"
 
 
 """ Import python base modules """
-import sys, MySQLdb, math, datetime, re, logging, csv, operator, numpy as np, shelve
+import sys, MySQLdb, math, datetime, re, logging, csv, operator, numpy as np
 
 """ Import Analytics modules """
 import config.settings as projSet
@@ -482,50 +482,6 @@ class LongTermTrendsLoader(DataLoader):
             "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
             "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
-
-        """ 
-            SHELVE query results for future hits 
-            ====================================
-
-
-        logging.info('Unshelving query results ...')
-        
-        ltt_vars = shelve.open( projSet.__data_file_dir__ + 'ltt_vars.s')
-        curr_time = datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
-        
-        var_name_results = 'res_qt' + str(query_type)
-        var_name_columns = 'col_qt' + str(query_type)
-        var_curr_hour = 'curr_hour_' + str(query_type)
-        
-        # Execute the results on a new hour
-        if not(var_curr_hour in ltt_vars):
-            run_query = True            
-            ltt_vars[var_curr_hour] = curr_time.hour
-        
-        elif curr_time.hour != ltt_vars[var_curr_hour]:
-            run_query = True            
-            ltt_vars[var_curr_hour] = curr_time.hour
-            
-        else:
-            run_query = False
-            
-        if run_query: 
-            
-            logging.info('Executing queries ...')
-            self._results_ = self.execute_SQL(sql)
-            column_names = self.get_column_names()
-            
-            ltt_vars[var_name_results] = self._results_
-            ltt_vars[var_name_columns] = column_names
-        
-        else:
-            logging.info('Using shelved results ...')
-            self._results_ = ltt_vars[var_name_results]
-            column_names = ltt_vars[var_name_columns]
-            
-        ltt_vars.close()
-
-        =========== """
 
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()

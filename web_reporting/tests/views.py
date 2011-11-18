@@ -297,7 +297,25 @@ def test(request):
                   'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
         
         html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
-            
+    
+        """ 
+            WRITE TO TEST TABLE
+            =================== 
+        
+        """
+        
+        ttl = DL.TestTableLoader()
+        
+        """ Format the html string """
+        html_string = html.__str__()
+        html_string = html_string.replace('"', '\\"')
+    
+        if ttl.record_exists(utm_campaign=utm_campaign_var):
+            ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
+        else:
+            ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
+        
+        return html
 
     except Exception as inst:
         
@@ -314,28 +332,6 @@ def test(request):
             return campaigns_index(request, kwargs={'err_msg' : err_msg})
         
         return show_campaigns(request, utm_campaign_var, kwargs={'err_msg' : err_msg})
-
-    
-    """ 
-        WRITE TO TEST TABLE
-        =================== 
-    
-    """
-    
-    ttl = DL.TestTableLoader()
-    
-    """ Format the html string """
-    html_string = html.__str__()
-    html_string = html_string.replace('"', '\\"')
-
-    if ttl.record_exists(utm_campaign=utm_campaign_var):
-        ttl.update_test_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
-    else:
-        ttl.insert_row(test_name=test_name_var,test_type=test_type_var,utm_campaign=utm_campaign_var,start_time=start_time_var,end_time=end_time_var,html_report=html_string, winner=winner_var)
-    
-    return html
-
-
 
 """
 
