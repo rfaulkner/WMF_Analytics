@@ -468,15 +468,13 @@ class FundraiserDataMapper(DataMapper):
         """ Retrieve the log timestamp from the filename """
         time_stamps = self.get_timestamps_with_interval(logFileName, self._log_copy_interval_)
         
-        start = time_stamps[0]
+        """ retrieve the start time of the log """
+        start = self.get_first_timestamp_from_log(logFileName)
+
         end = time_stamps[1]
         start_timestamp_in = start
         curr_time = TP.timestamp_from_obj(datetime.datetime.now(),1,3)
-        
-        
-        """ retrieve the start time of the log """
-        start = self.get_first_timestamp_from_log(logFileName)
-        
+                                
         """ Initialization - open the file """
         logFile, total_lines_in_file = self.open_logfile(logFileName)
         
@@ -909,8 +907,8 @@ class FundraiserDataMapper(DataMapper):
                         
                     except Exception as inst:
                         
-                        logging.info(inst)     # __str__ allows args to printed directly
-                        logging.info('Could not parse landing page request from query string: %s', landing_url)
+                        # logging.info(inst)     # __str__ allows args to printed directly
+                        # logging.info('Could not parse landing page request from query string: %s', landing_url)
                         line = logFile.readline()
                         total_lines_in_file = total_lines_in_file - 1
                         continue
