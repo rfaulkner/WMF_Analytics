@@ -65,3 +65,10 @@ def main(args):
                 pass
     
     return 0
+
+"""
+    Call main, exit when execution is complete
+
+""" 
+if __name__ == "__main__":
+    main([])
