@@ -10,30 +10,34 @@
 <!-- jscript for live plots -->
 <h3>Banner Impressions</h3>
 <div id="placeholder0" style="width:800px;height:600px;"></div>
-<p>Impressions over the last 72 hours over 1 hour intervals.</p>
+<p>Impressions over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
 <h3>Landing Page Impressions</h3>
 <div id="placeholder1" style="width:800px;height:600px;"></div>
-<p>Views over the last 72 hours over 1 hour intervals.</p>
+<p>Views over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
 <h3>Total Donations</h3>
 <div id="placeholder2" style="width:800px;height:600px;"></div>
-<p>Donations over the last 72 hours over 1 hour intervals.</p>
+<p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
 <h3>Total USD</h3>
 <div id="placeholder3" style="width:800px;height:600px;"></div>
-<p>Donations over the last 72 hours over 1 hour intervals.</p>
+<p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
 <h3>Click Rate</h3>
 <div id="placeholder4" style="width:800px;height:600px;"></div>
-<p>Click Rate over the last 72 hours over 1 hour intervals.</p>
+<p>Click Rate over the last {{interval}} hours over 1 hour intervals.</p>
+<br><br>
+<h3>Currencies</h3>
+<div id="placeholder5" style="width:800px;height:600px;"></div>
+<p>Currency amounts in USD over the last {{interval}} hours over 1 hour intervals.</p>
 
 
 <script type="text/javascript">
 $(function () {
 
 
-    var total_plots = 5;
+    var total_plots = 6;
 
     // Extract the django variables
 	var data = {{ data }};
