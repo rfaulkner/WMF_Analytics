@@ -399,6 +399,8 @@ def get_metric_index(query_name, metric_name):
             return 14
         elif metric_name == 'avg_donation_norm':
             return 15
+        elif metric_name == 'utm_campaign':
+            return 16
         else:
             return -1
     

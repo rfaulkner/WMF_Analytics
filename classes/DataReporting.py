@@ -48,7 +48,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 
 standard_metric_names = {'imp' : 'Bi', 'impressions' : 'Bi', 'views' : 'LPi', 'don_per_imp' : 'D / Bi', 'don_per_view' : 'D / LPi', 'amt_per_imp' : 'A / Bi', 'amt_per_view' : 'A / LPi', \
                          'amt_norm_per_imp' : 'An / Bi', 'amt_norm_per_view' : 'An / LPi', 'click_rate' : 'LPi / Bi', 'avg_donation' : 'AVG A', 'avg_donation_norm' : 'AVG An', \
-                         'campaign' : 'Campaign', 'utm_campaign' : 'Campaign', 'utm_source' : 'B', 'banner' : 'B', 'landing_page' : 'LP', 'donations' : 'D', 'amount' : 'A', \
+                         'campaign' : 'Campaign', 'utm_campaign' : 'Campaign', 'utm_source' : 'B', 'banner' : 'B', 'landing_page' : 'LP', 'donations' : 'D', 'clicks' : 'Clk', 'amount' : 'A', \
                          'amount_normal' : 'An', 'country' : 'Country'}
 
 
@@ -977,7 +977,13 @@ class ConfidenceReporting(DataReporting):
         if 'one_step' in kwargs:
             if isinstance(kwargs['one_step'], bool):
                 use_one_step = kwargs['one_step']
-                
+        
+        sampling_interval = 1
+        if 'sampling_interval' in kwargs:
+            if isinstance(kwargs['sampling_interval'], int):
+                sampling_interval = kwargs['sampling_interval']
+        
+        
         derived_metrics = ['click_rate', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
         measured_metrics = ['impressions', 'views', 'donations', 'amount_normal']
         measured_metrics_counts = dict()
@@ -988,13 +994,20 @@ class ConfidenceReporting(DataReporting):
         t_test = TTest()
          
         logging.info('Getting minutely live data for hypothesis testing ...')
-        for metric in measured_metrics:
-                            
-            ir.run(start_time, end_time, 1, metric, campaign, {}, include_all_artifacts=True, generate_plot=False, one_step=use_one_step)
-            measured_metrics_counts[metric] = ir._counts_
-                
+        
+        if 'measured_metrics_counts' in kwargs:
+            measured_metrics_counts = kwargs['measured_metrics_counts']
+            
+        else:
+            
+            for metric in measured_metrics:                                
+                ir.run(start_time, end_time, sampling_interval, metric, campaign, {}, include_all_artifacts=True, generate_plot=False, one_step=use_one_step)
+                measured_metrics_counts[metric] = ir._counts_
+        
         """ Generate the Table only if there is data available  """
-        if ir._counts_:
+        try:
+            
+            metric = measured_metrics_counts.keys()[0]
             
             artifact_key_list = measured_metrics_counts[metric].keys()
             first_key = artifact_key_list[0]
@@ -1025,7 +1038,7 @@ class ConfidenceReporting(DataReporting):
                     
                     """
                         Cycle through the samples for each artifact for the given metric.  Determine whether to include the sample if it satisfies the minimum number of impressions.  
-                        Thisis used to filter noisy samples from the results.  Note that filters are relative to the maximum values however there is a lower absolute filter
+                        This is used to filter noisy samples from the results.  Note that filters are relative to the maximum values however there is a lower absolute filter
                         
                     """
                     for index in range(num_samples_base):
@@ -1103,8 +1116,13 @@ class ConfidenceReporting(DataReporting):
                         
                         """ ret[5] == colour_index - Get the colour coding for the winner """
                         conf_colour_code[metric][artifact_key] = ret[5]
-                                                
-        return conf_colour_code
+        
+        except:
+            
+            conf_colour_code = {}
+            measured_metrics_counts = {}
+                                            
+        return conf_colour_code, measured_metrics_counts
 
 """
 """

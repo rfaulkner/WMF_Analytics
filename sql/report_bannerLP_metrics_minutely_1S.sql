@@ -10,7 +10,7 @@
 select
 
 if(imp.dt_min < 10, concat(imp.dt_hr, '0', imp.dt_min,'00'), concat(imp.dt_hr, imp.dt_min,'00')) as day_hr,
-concat(imp.utm_source,'-', lp.landing_page) as utm_source,
+concat(lp.utm_campaign,'-',imp.utm_source,'-', lp.landing_page) as utm_source,
 floor(impressions * (views / total_views)) as impressions, 
 views,
 donations,
@@ -25,7 +25,7 @@ amount / views as amt_per_view,
 amount_normal / views as amt_norm_per_view,
 amount / donations as avg_donation,
 amount_normal / donations as avg_donation_norm
-	
+
 from
 
 (select 

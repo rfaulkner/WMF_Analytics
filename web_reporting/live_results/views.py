@@ -30,15 +30,15 @@ from django.template import RequestContext
 
 
 """ Import python base modules """
-import datetime, logging, sys, MySQLdb
+import datetime, logging, sys, MySQLdb, re
 
 """ Import Analytics modules """
 import classes.Helper as Hlp
 import classes.DataReporting as DR
 import classes.DataLoader as DL
 import classes.DataCaching as DC
-import classes.FundraiserDataHandler as FDH
 import classes.TimestampProcessor as TP
+import classes.FundraiserDataHandler as FDH
 import config.settings as projSet
 import data.web_reporting_view_keys as view_keys
 
@@ -51,8 +51,6 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 def index(request):
     
-    """ Find the earliest and latest page views for a given campaign  """
-    lptl = DL.LandingPageTableLoader()
     
     """ 
         PROCESS POST DATA
@@ -76,104 +74,64 @@ def index(request):
     except:
         min_donation = 0
                 
-    if 'country_filter' in request.POST:        
-        query_name = 'report_summary_results_country.sql'
-        query_name_1S = 'report_summary_results_country_1S.sql'
+    cache = DC.LiveResults_DataCaching()
+    dict_param = cache.retrieve_cached_data(view_keys.LIVE_RESULTS_DICT_KEY)
+    
+    measured_metrics_counts = dict_param['measured_metrics_counts']
+    results = dict_param['results']
+    column_names = dict_param['column_names']
+    sampling_interval = dict_param['interval']    
+    duration_hrs = dict_param['duration']
+    
+    start_time = dict_param['start_time']
+    end_time = dict_param['end_time']
         
-    else:
-        query_name = 'report_summary_results.sql'
-        query_name_1S = 'report_summary_results_1S.sql'
-        
-        
-    """ Get the donations for all campaigns over the last n hours """
-    duration_hrs = 6
-    sampling_interval = 5
-    dl = DL.DataLoader()
-    end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-duration_hrs)
-    # start_time = '20111102220000'
-    # end_time = '20111103040000'
+    ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
+    ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False)
+    ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False)
     
-    """ Should a one-step query be used? """        
-    use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
+    ir_cmpgn._counts_ = dict_param['ir_cmpgn_counts']
+    ir_banner._counts_ = dict_param['ir_banner_counts']
+    ir_lp._counts_ = dict_param['ir_lp_counts']
     
-    """ 
-        Retrieve the latest time for which impressions have been loaded
-    """
-    
-    sql_stmnt = 'select max(end_time) as latest_ts from squid_log_record where log_completion_pct = 100.00'
-    
-    results = dl.execute_SQL(sql_stmnt)
-    latest_timestamp = results[0][0]
-    latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 2, 3)
-    latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
+    ir_cmpgn._times_ = dict_param['ir_cmpgn_times']
+    ir_banner._times_ = dict_param['ir_banner_times']
+    ir_lp._times_ = dict_param['ir_lp_times']
 
-    try: 
-        if campaign_regexp_filter != '^C_|^C11_':
-            conf_colour_code = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
-        else:
-            conf_colour_code = {}
-    except:
-        conf_colour_code = {}
+    metric_legend_table = dict_param['metric_legend_table']
+    conf_legend_table = dict_param['conf_legend_table']
+
     
-    """ 
-        Prepare Live Tables 
-        ===================
-    """
+    """ Filtering -- donations and artifacts """
     
-    sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + query_name)
-    sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
-                             start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
-                             start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)        
-    
-    logging.info('Executing report_summary_results ...')
-    
-    results = dl.execute_SQL(sql_stmnt)
-    column_names = dl.get_column_names()
-    
-    if use_one_step:
-        
-        logging.info('... including one step artifacts ...')
-        
-        sql_stmnt_1S = Hlp.file_to_string(projSet.__sql_home__ + query_name_1S)
-        sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
-                                 start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
-                                 start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)
-        
-        results = list(results)        
-        results_1S = dl.execute_SQL(sql_stmnt_1S)
-        
-        """ Ensure that the results are unique """
-        one_step_keys = list()
-        for row in results_1S:
-            one_step_keys.append(str(row[0]) + str(row[1]) + str(row[2]))
-        
-        new_results = list()
-        for row in results:
-            key = str(row[0]) + str(row[1]) + str(row[2])
-            if not(key in one_step_keys):
-                new_results.append(row)
-        results = new_results
-            
-        results.extend(list(results_1S))
-    
-    """ Filtering -- remove rows with fewer than 5 donations """
     donations_index = column_names.index('donations')
+    campaign_index = column_names.index('utm_campaign')
     new_results = list()
     # min_donation = 1
     
     for row in results:
-        if row[donations_index] > min_donation:
+        if row[donations_index] > min_donation and re.search(campaign_regexp_filter, row[campaign_index]):
             new_results.append(list(row))
-    
+
     results = new_results
-            
-    """ 
-        Format results to encode html table cell markup in results
-        ===============================
+    
+    new_measured_metrics_counts = dict()
+    for metric in measured_metrics_counts:        
+        new_measured_metrics_counts[metric] = dict()
         
+        for artifact_key in measured_metrics_counts[metric]:
+            if re.search(campaign_regexp_filter, artifact_key):
+                new_measured_metrics_counts[metric][artifact_key] = measured_metrics_counts[metric][artifact_key]
+         
+    """ 
+        Format results to encode html table cell markup in results        
     """
+
+    ret = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(None, None, None, measured_metrics_counts=new_measured_metrics_counts) # first get color codes on confidence
+    conf_colour_code = ret[0]
+    
     for row_index in range(len(results)):
-        artifact_index = results[row_index][1] + '-' + results[row_index][2]
+        artifact_index = results[row_index][0] + '-' + results[row_index][1] + '-' + results[row_index][2]
         
         for col_index in range(len(column_names)):
             
@@ -191,15 +149,13 @@ def index(request):
     else:
         summary_table = '<p><font size="4">No data available.</font></p>'
         
-    metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
-    conf_legend_table = DR.ConfidenceReporting(query_type='bannerlp', hyp_test='TTest').get_confidence_legend_table()
     summary_table = '<h4><u>Metrics Legend:</u></h4><div class="spacer"></div>' + metric_legend_table + \
     '<div class="spacer"></div><h4><u>Confidence Legend for Hypothesis Testing:</u></h4><div class="spacer"></div>' + conf_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + summary_table
 
+
         
     """ 
-        Prepare Live Plots 
-        ==================
+        Prepare Live Plots
     """
     
     """ compose a list of zero data """    
@@ -207,29 +163,22 @@ def index(request):
     for i in range(len(empty_data)):
         empty_data[i][0] = empty_data[i][0] * i *  sampling_interval
         
-    """ Create a interval loader objects """
-    ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
-    ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False)
-    ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False)
-        
-    """ Execute queries for campaign, banner, and landing page donations """        
-    #ir.run('20110603120000', '20110604000000', 2, 'donations', '',[])
-    ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
-    ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
-    ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
-    
     """ Extract data from interval reporting objects """        
-    cmpgn_data_dict = ir_cmpgn.get_data_lists(['C_', 'C11_'], empty_data)
+    cmpgn_data_dict = ir_cmpgn.get_data_lists(['C_', 'C11_', campaign_regexp_filter], empty_data)
     cmpgn_banner_dict = ir_banner.get_data_lists(['B_', 'B11_'], empty_data)
     cmpgn_lp_dict = ir_lp.get_data_lists(['L11_', '^cc'], empty_data)
         
-    """ combine the separate data sets """
-    dict_param = Hlp.combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict])
-    dict_param['summary_table'] = summary_table
-    dict_param['latest_log_end_time'] = latest_timestamp
-    dict_param['start_time'] = TP.timestamp_convert_format(start_time, 1, 2)
+        
+    """  
+        Build template parameters
+    """
     
-    return render_to_response('live_results/index.html', dict_param,  context_instance=RequestContext(request))
+    template_dict = Hlp.combine_data_lists([cmpgn_data_dict, cmpgn_banner_dict, cmpgn_lp_dict]) # combine the separate data sets
+    template_dict['summary_table'] = summary_table
+    template_dict['latest_log_end_time'] = end_time
+    template_dict['start_time'] = start_time
+    
+    return render_to_response('live_results/index.html', template_dict, context_instance=RequestContext(request))
 
 
 """
@@ -240,7 +189,7 @@ def index(request):
 def long_term_trends(request):
     
     cache = DC.LTT_DataCaching()
-    dict_param = cache.get_cached_data(view_keys.LTT_DICT_KEY)
+    dict_param = cache.retrieve_cached_data(view_keys.LTT_DICT_KEY)
     
     return render_to_response('live_results/long_term_trends.html', dict_param,  context_instance=RequestContext(request))
 

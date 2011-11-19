@@ -17,6 +17,7 @@ import sys, datetime, logging, shelve
 import config.settings as projSet
 import classes.DataReporting as DR
 import classes.DataLoader as DL
+import classes.FundraiserDataHandler as FDH
 
 import classes.TimestampProcessor as TP
 import classes.Helper as Hlp
@@ -35,10 +36,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 class DataCaching(object):
     
     DATA_DIR = projSet.__data_file_dir__
-    
-    def __init__(self):     
-        self._serialized_obj_ = None
-        
+         
     def cache_data(self, data, key):
         self._serialized_obj_[key] = data
                     
@@ -58,6 +56,7 @@ class LTT_DataCaching(DataCaching):
     
     def __init__(self):        
         self.open_serialized_obj()
+
     
     """ Close the connection to the serialized obj """
     def __del__(self):
@@ -65,19 +64,14 @@ class LTT_DataCaching(DataCaching):
 
     def open_serialized_obj(self, **kwargs):        
         self._serialized_obj_ = shelve.open(self.CACHING_HOME)
-    
-    def get_cached_data(self, key):
-        return self._serialized_obj_[key]
-    
+        
     """
         Executes the processing of data for the long term trends view in live results
     """
     def execute_process(self, key, **kwargs):
         
         logging.info('Commencing caching of long term trends data at:  %s' % self.CACHING_HOME)
-        
-        self.open_serialized_obj()
-        
+                
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-20), 1, hours=-self.VIEW_DURATION_HRS)
         
         """ set the metrics to plot """
@@ -116,5 +110,146 @@ class LTT_DataCaching(DataCaching):
         
         logging.info('Caching complete.')
         
+
+"""
+    LiveResults_DataCaching
+    
+    DataCaching for the long term trends view
+    
+"""
+class LiveResults_DataCaching(DataCaching):
+    
+    CACHING_HOME = projSet.__data_file_dir__ + 'live_results_vars.s'
+    DURATION_HRS = 6
+    
+    def __init__(self):        
+        self.open_serialized_obj()
         
+    
+    """ Close the connection to the serialized obj """
+    def __del__(self):
+        self._serialized_obj_.close()
+
+    def open_serialized_obj(self, **kwargs):        
+        self._serialized_obj_ = shelve.open(self.CACHING_HOME)
+        
+    """
+        Executes the processing of data for the long term trends view in live results
+    """
+    def execute_process(self, key, **kwargs):
+        
+        logging.info('Commencing caching of live results data at:  %s' % self.CACHING_HOME)
+        shelve_key = key
+        
+        """ Find the earliest and latest page views for a given campaign  """
+        lptl = DL.LandingPageTableLoader()
+            
+        query_name = 'report_summary_results.sql'
+        query_name_1S = 'report_summary_results_1S.sql'                    
+        campaign_regexp_filter = '^C_|^C11_'
+                
+        dl = DL.DataLoader()
+        end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-self.DURATION_HRS)
+        
+        """ Should a one-step query be used? """        
+        use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
+        
+        """ 
+            Retrieve the latest time for which impressions have been loaded
+            ===============================================================
+        """
+        
+        sql_stmnt = 'select max(end_time) as latest_ts from squid_log_record where log_completion_pct = 100.00'
+        
+        results = dl.execute_SQL(sql_stmnt)
+        latest_timestamp = results[0][0]
+        latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 2, 3)
+        latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
+    
+        ret = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
+        measured_metrics_counts = ret[1]
+        
+        """ Prepare Summary results """
+        
+        sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + query_name)
+        sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
+                                 start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
+                                 start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)        
+        
+        logging.info('Executing report_summary_results ...')
+        
+        results = dl.execute_SQL(sql_stmnt)
+        column_names = dl.get_column_names()
+        
+        if use_one_step:
+            
+            logging.info('... including one step artifacts ...')
+            
+            sql_stmnt_1S = Hlp.file_to_string(projSet.__sql_home__ + query_name_1S)
+            sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
+                                     start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
+                                     start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)
+            
+            results = list(results)        
+            results_1S = dl.execute_SQL(sql_stmnt_1S)
+            
+            """ Ensure that the results are unique """
+            one_step_keys = list()
+            for row in results_1S:
+                one_step_keys.append(str(row[0]) + str(row[1]) + str(row[2]))
+            
+            new_results = list()
+            for row in results:
+                key = str(row[0]) + str(row[1]) + str(row[2])
+                if not(key in one_step_keys):
+                    new_results.append(row)
+            results = new_results
+                
+            results.extend(list(results_1S))
+            
+        metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
+        conf_legend_table = DR.ConfidenceReporting(query_type='bannerlp', hyp_test='TTest').get_confidence_legend_table()
+
+        """ Create a interval loader objects """
+        
+        sampling_interval = 5 # 5 minute sampling interval for donation plots
+        
+        ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
+        ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False)
+        ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False)
+            
+        """ Execute queries """        
+        ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
+        ir_banner.run(start_time, end_time, sampling_interval, 'donations', '',{})
+        ir_lp.run(start_time, end_time, sampling_interval, 'donations', '',{})
+        
+        
+        """ Prepare serialized objects """
+        
+        dict_param = dict()
+
+        dict_param['metric_legend_table'] = metric_legend_table
+        dict_param['conf_legend_table'] = conf_legend_table
+        
+        dict_param['measured_metrics_counts'] = measured_metrics_counts
+        dict_param['results'] = results
+        dict_param['column_names'] = column_names
+
+        dict_param['interval'] = sampling_interval
+        dict_param['duration'] = self.DURATION_HRS    
+        
+        dict_param['start_time'] = TP.timestamp_convert_format(start_time,1,2)
+        dict_param['end_time'] = TP.timestamp_convert_format(end_time,1,2)
+        
+        dict_param['ir_cmpgn_counts'] = ir_cmpgn._counts_
+        dict_param['ir_banner_counts'] = ir_banner._counts_
+        dict_param['ir_lp_counts'] = ir_lp._counts_
+        
+        dict_param['ir_cmpgn_times'] = ir_cmpgn._times_
+        dict_param['ir_banner_times'] = ir_banner._times_
+        dict_param['ir_lp_times'] = ir_lp._times_
+        
+        self.cache_data(dict_param, shelve_key)
+        
+        logging.info('Caching complete.')
         
