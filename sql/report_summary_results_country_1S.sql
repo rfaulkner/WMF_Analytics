@@ -62,7 +62,6 @@ join
 -- from this the impressions can be normalized over several landing pages
 
 (select 
-utm_campaign,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source, 
 civicrm.civicrm_country.name as country,
 count(*) as total_views
@@ -72,10 +71,9 @@ join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicr
 join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
 where ts >= '%s' and ts < '%s'
-and (utm_campaign REGEXP '%s')
-group by 1,2,3) as lp_tot
+group by 1,2) as lp_tot
 
-on lp_tot.utm_campaign = lp.utm_campaign and lp_tot.utm_source = lp.utm_source and lp_tot.country = lp.country
+on lp_tot.utm_source = lp.utm_source and lp_tot.country = lp.country
 
 -- use a right join here since we are interested in campaigns that are tallying donations
 -- 

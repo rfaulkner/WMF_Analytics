@@ -57,17 +57,15 @@ join
 -- from this the impressions can be normalized over several landing pages
 
 (select 
-utm_campaign,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source, 
 count(*) as total_views
 
 from drupal.contribution_tracking
 
 where ts >= '%s' and ts < '%s'
-and (utm_campaign REGEXP '%s')
-group by 1,2) as lp_tot
+group by 1) as lp_tot
 
-on lp_tot.utm_campaign = lp.utm_campaign and lp_tot.utm_source = lp.utm_source
+on lp_tot.utm_source = lp.utm_source
 
 -- use a right join here since we are interested in campaigns that are tallying donations
 -- 
