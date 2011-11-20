@@ -75,7 +75,7 @@ class LTT_DataCaching(DataCaching):
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-20), 1, hours=-self.VIEW_DURATION_HRS)
         
         """ set the metrics to plot """
-        lttdl = DL.LongTermTrendsLoader()
+        lttdl = DL.LongTermTrendsLoader(db='db1025')
         metrics = ['impressions', 'views', 'donations', 'amount', 'click_rate', 'amount']
         metrics_index = [0, 1, 2, 2, 3, 4]
         
@@ -142,13 +142,13 @@ class LiveResults_DataCaching(DataCaching):
         shelve_key = key
         
         """ Find the earliest and latest page views for a given campaign  """
-        lptl = DL.LandingPageTableLoader()
+        lptl = DL.LandingPageTableLoader(db='storage3')
             
         query_name = 'report_summary_results.sql'
         query_name_1S = 'report_summary_results_1S.sql'                    
         campaign_regexp_filter = '^C_|^C11_'
                 
-        dl = DL.DataLoader()
+        dl = DL.DataLoader(db='storage3')
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-self.DURATION_HRS)
         
         """ Should a one-step query be used? """        
@@ -166,13 +166,13 @@ class LiveResults_DataCaching(DataCaching):
         latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 2, 3)
         latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
     
-        ret = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
+        ret = DR.ConfidenceReporting(query_type='', hyp_test='', db='storage3').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
         measured_metrics_counts = ret[1]
         
         """ Prepare Summary results """
         
         sql_stmnt = Hlp.file_to_string(projSet.__sql_home__ + query_name)
-        sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
+        sql_stmnt = sql_stmnt % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, \
                                  start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
                                  start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)        
         
@@ -186,7 +186,7 @@ class LiveResults_DataCaching(DataCaching):
             logging.info('... including one step artifacts ...')
             
             sql_stmnt_1S = Hlp.file_to_string(projSet.__sql_home__ + query_name_1S)
-            sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter, \
+            sql_stmnt_1S = sql_stmnt_1S % (start_time, latest_timestamp_flat, start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, \
                                      start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, start_time, end_time, campaign_regexp_filter, \
                                      start_time, latest_timestamp_flat, campaign_regexp_filter, start_time, latest_timestamp_flat, campaign_regexp_filter)
             
@@ -214,9 +214,9 @@ class LiveResults_DataCaching(DataCaching):
         
         sampling_interval = 5 # 5 minute sampling interval for donation plots
         
-        ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False)
-        ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False)
-        ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False)
+        ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False, db='storage3')
+        ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False, db='storage3')
+        ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False, db='storage3')
             
         """ Execute queries """        
         ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})

@@ -63,7 +63,7 @@ class DataLoader(object):
         
         Ensure that the query is run for each new object
     """
-    def __init__(self):
+    def __init__(self, **kwargs):
         
         self._query_names_ = dict()
         self._data_handler_ = None   # class that will define how to process the query fields
@@ -71,17 +71,26 @@ class DataLoader(object):
         self._results_ = None
         self._col_names_ = None
         self._was_run_ = False        
-    
-        self.init_db() 
-           
+        
+        
+        self.init_db(**kwargs) 
+            
         """ State for all new dataloader objects is set to indicate that the associated SQL has yet to be run """
         self._was_run_ = False
         
         
-    def init_db(self):
+    def init_db(self, **kwargs):
         
         """ Establish connection """
-        self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+        if 'db' in kwargs:
+            if kwargs['db'] == 'storage3':
+                self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+            elif kwargs['db'] == 'db1008':
+                self._db_ = MySQLdb.connect(host=projSet.__db_db1008__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+            elif kwargs['db'] == 'db1025':
+                self._db_ = MySQLdb.connect(host=projSet.__db_db1025__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+        else:
+            self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
         #self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
         
         """ Create cursor """
@@ -378,10 +387,10 @@ class LongTermTrendsLoader(DataLoader):
     _LT_DONATIONS_ = 2
     _LT_CLICK_RATE_ = 3
      
-    def __init__(self):
+    def __init__(self, **kwargs):
         
         """ Call constructor of parent """
-        DataLoader.__init__(self)
+        DataLoader.__init__(self, **kwargs)
         
         self._results_ = None
     
@@ -598,10 +607,10 @@ class LongTermTrendsLoader(DataLoader):
 class SummaryReportingLoader(DataLoader):
 
     
-    def __init__(self, query_type):
+    def __init__(self, query_type, **kwargs):
         
         """ Call constructor of parent """
-        DataLoader.__init__(self)
+        DataLoader.__init__(self, **kwargs)
         
         self._results_ = None
         
@@ -798,10 +807,10 @@ class IntervalReportingLoader(DataLoader):
         Setup query list
         
     """
-    def __init__(self, query_type):
+    def __init__(self, query_type, **kwargs):
                     
         """ Call constructor of parent """
-        DataLoader.__init__(self)
+        DataLoader.__init__(self, **kwargs)
         
         self._query_names_[FDH._QTYPE_BANNER_] = 'report_banner_metrics_minutely'
         self._query_names_[FDH._QTYPE_LP_] = 'report_LP_metrics_minutely'
@@ -1026,10 +1035,10 @@ class IntervalReportingLoader(DataLoader):
 class CampaignIntervalReportingLoader(DataLoader):
 
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         
         """ Call constructor of parent """
-        DataLoader.__init__(self)
+        DataLoader.__init__(self, **kwargs)
         
         self._query_type_ = 'campaign'
         
@@ -1093,10 +1102,10 @@ class CampaignIntervalReportingLoader(DataLoader):
 """
 class CampaignReportingLoader(DataLoader):
     
-    def __init__(self, query_type):
+    def __init__(self, query_type, **kwargs):
         
         """ Call constructor of parent """
-        DataLoader.__init__(self)
+        DataLoader.__init__(self, **kwargs)
 
         self.init_db()
         
@@ -1368,10 +1377,10 @@ class DonorBracketsReportingLoader(DataLoader):
                 FDH._QTYPE_LP_
                 FDH._QTYPE_CAMPAIGN_
     """
-    def __init__(self, query_type):
+    def __init__(self, query_type, **kwargs):
         
         """ Call constructor of parent """
-        DataLoader.__init__(self)
+        DataLoader.__init__(self, **kwargs)
         
         """ Use _query_names_ to store a single query name """
         self._query_names_ = 'report_donor_dollar_breakdown' # embed the query name in the class itself
@@ -1547,6 +1556,12 @@ class DonorBracketsReportingLoader(DataLoader):
 """
 class TableLoader(DataLoader):
     
+       
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        DataLoader.__init__(self, **kwargs)
+        
     def record_exists(self, **kwargs):
         return
     
@@ -1579,8 +1594,11 @@ class TableLoader(DataLoader):
 """
 class TTestLoaderHelp(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+         
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
+        
     
     def __del__(self):
         self.close_db()
@@ -1645,8 +1663,10 @@ class TTestLoaderHelp(TableLoader):
 """
 class TestTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -1879,8 +1899,10 @@ class TestTableLoader(TableLoader):
 """
 class SquidLogTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -2075,8 +2097,10 @@ class SquidLogTableLoader(TableLoader):
 """
 class CiviCRMLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -2295,8 +2319,10 @@ class CiviCRMLoader(TableLoader):
 """
 class ImpressionTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -2399,8 +2425,10 @@ class ImpressionTableLoader(TableLoader):
 """
 class LandingPageTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -2657,8 +2685,10 @@ class LandingPageTableLoader(TableLoader):
 """
 class IPCountryTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -2758,8 +2788,10 @@ class IPCountryTableLoader(TableLoader):
 """
 class MiningPatternsTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -2874,8 +2906,10 @@ class MiningPatternsTableLoader(TableLoader):
 """
 class DonorBracketsTableLoader(TableLoader):
     
-    def __init__(self):
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
     def __del__(self):
         self.close_db()
@@ -3003,9 +3037,10 @@ class DonorBracketsTableLoader(TableLoader):
 """
 class PageCategoryTableLoader(TableLoader):
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         
-        self.init_db()
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
     
         self._top_level_categories_ = ['Mathematics',
          'People',
@@ -3173,8 +3208,10 @@ class TrafficSamplesTableLoader(TableLoader):
     CREATE_IDX_2 = "create index idx_page_title on rfaulk.traffic_samples (page_title);"
     CREATE_IDX_3 = "create index idx_request_time on rfaulk.traffic_samples (request_time);"
     
-    def __init__(self):    
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
         
     def __del__(self):
         self.close_db()
@@ -3264,8 +3301,10 @@ class NormalizedCategoryScoresTableLoader(TableLoader):
     
     DROP_TABLE = 'drop table normalized_category_scores;'
 
-    def __init__(self):    
-        self.init_db()
+    def __init__(self, **kwargs):
+        
+        """ Call constructor of parent """
+        TableLoader.__init__(self, **kwargs)
         
     def __del__(self):
         self.close_db()
