@@ -78,25 +78,36 @@ class LTT_DataCaching(DataCaching):
             DATA CONFIG            
         """
         
+        countries = DL.CiviCRMLoader().get_ranked_donor_countries(start_time)
+        countries = countries[1:6]
+        
         """ set the metrics to plot """
         lttdl = DL.LongTermTrendsLoader(db='storage3')
-        metrics = ['impressions', 'views', 'donations', 'amount', 'click_rate', 'amount']
-        metrics_index = [0, 1, 2, 2, 3, 4]
+        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'click_rate', 'amount']
+        metrics_index = [0, 1, 2, 2, 2, 3, 4]
         
         """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
-        # country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)'], 'Other': ['(US|CA|JP|IN|NL)']}
-        # currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)'], 'Other': ['(USD|CAD|JPY|EUR)']}
         country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
         currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)']}
-        # language_groups = {'EN':'(en)', 'Other':'(en)'}
         lang_cntry_groups = {'US': ['US..', '.{4}'], 'EN' : ['[^U^S]en', '.{4}']}
         
-        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, country_groups, currency_groups]
+        top_cntry_groups = dict()
+        for country in countries:
+            top_cntry_groups[country] = ["'" + country + "'", '.{2}']
+        
+        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, country_groups, currency_groups]
         
         """  The metrics that are used to build a group string to be qualified via regex - the values of the list metrics are concatenated """ 
-        group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], ['country', 'language'], ['country', 'language'], ['currency']]
+        group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], ['country'], \
+                         ['country', 'language'], ['country', 'language'], ['currency']]
         
-        metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_AMOUNT_]
+        metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
+                        DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
+                        DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_AMOUNT_]
+        
+        include_totals = [True, True, True, False, True, True, True]
+        include_others = [True, True, True, False, True, True, True]
+        
         data = list()
         
         """ END CONFIG """
@@ -107,7 +118,8 @@ class LTT_DataCaching(DataCaching):
             
             dr = DR.DataReporting()
             
-            times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], groups=groups[index], group_metric=group_metrics[index], include_other=True)
+            times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], \
+                                            groups=groups[index], group_metric=group_metrics[index], include_other=include_others[index], include_total=include_totals[index])
             times = TP.normalize_timestamps(times, False, 1)
                 
             dr._counts_ = counts

@@ -409,6 +409,7 @@ class LongTermTrendsLoader(DataLoader):
         groups = {'*' : 'All'}
         group_metric = ['country']
         include_other = False
+        include_total = True
         
         """ Process keys -- Escape parameters """
         for key in kwargs_dict:
@@ -446,12 +447,20 @@ class LongTermTrendsLoader(DataLoader):
             elif key == 'include_other':
                 include_other = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
                 try:
-                    include_other = bool(metric_type)
+                    include_other = bool(kwargs_dict[key])
                 except:
                     logging.info('LTT Loader::process_kwargs - Not a valid boolean value for include_other kwarg')
                     pass
-                
-        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other
+            
+            elif key == 'include_total':
+                include_total = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
+                try:
+                    include_total = bool(kwargs_dict[key])
+                except:
+                    logging.info('LTT Loader::process_kwargs - Not a valid boolean value for include_total kwarg')
+                    pass
+
+        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total
     
     """
         Based on the query type provided execute a query
@@ -462,7 +471,7 @@ class LongTermTrendsLoader(DataLoader):
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
-        min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other = self.process_kwargs(kwargs)
+        min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total = self.process_kwargs(kwargs)
         
         if query_type == 0: 
             
@@ -508,7 +517,7 @@ class LongTermTrendsLoader(DataLoader):
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
-        
+
         key_indices = list()
         for metric in group_metric:
             key_indices.append(column_names.index(metric))
@@ -546,8 +555,11 @@ class LongTermTrendsLoader(DataLoader):
                     break
             
             """ Only include donations from the defined groups unless a bucket for 'Other' results is specified """
-            if not(key in groups.keys()) and include_other:
-                key = 'Other'
+            if not(key in groups.keys()):
+                if include_other:
+                    key = 'Other'
+                else:
+                    continue
             
             if not(key in counts.keys()):
                 counts[key] = list()
@@ -604,21 +616,22 @@ class LongTermTrendsLoader(DataLoader):
         
         
         """ Add in the totals """
-        num_data_points = len(counts[keys[0]])  # update this value
-        
-        counts['Total'] = list()        
-        times['Total'] = list()
-        
-        for index in range(num_data_points):
-            new_val = 0.0
-            for key in keys:
-                new_val = new_val + counts[key][index]
-                
-            if metric_type == self._MT_RATE_:
-                new_val = new_val / len(keys)
-                
-            counts['Total'].append(new_val)
-            times['Total'].append(ts_list[index])
+        if include_total:
+            num_data_points = len(counts[keys[0]])  # update this value
+            
+            counts['Total'] = list()        
+            times['Total'] = list()
+            
+            for index in range(num_data_points):
+                new_val = 0.0
+                for key in keys:
+                    new_val = new_val + counts[key][index]
+                    
+                if metric_type == self._MT_RATE_:
+                    new_val = new_val / len(keys)
+                    
+                counts['Total'].append(new_val)
+                times['Total'].append(ts_list[index])
         
         return times, counts
         
@@ -2322,7 +2335,30 @@ class CiviCRMLoader(TableLoader):
             campaigns.append(str(row[0]))
         
         return campaigns
-                
+    
+    """
+        Returns a ranked list of contries by number of contributions
+        
+        @param timestamp: look at donors after this date
+    """    
+    def get_ranked_donor_countries(self, timestamp):
+        
+        start_time = MySQLdb._mysql.escape_string(str(timestamp).strip())
+        
+        sql = "select iso_code as country, count(*) as donations, sum(total_amount) as amount " + \
+        "from civicrm.civicrm_contribution " + \
+        "join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+        "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+        "where receive_date >= '%s' group by 1 order by 2 desc limit 50" % (start_time)
+        
+        results = self.execute_SQL(sql)
+ 
+        countries = list()
+        for row in results:
+            countries.append(str(row[0]))
+            
+        return countries
+
 """
 
     CLASS :: ImpressionTableLoader

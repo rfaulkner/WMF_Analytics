@@ -20,16 +20,20 @@
 <div id="placeholder2" style="width:800px;height:600px;"></div>
 <p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
-<h3>Total USD</h3>
+<h3>Donations for the top 5 Countries after the US</h3>
 <div id="placeholder3" style="width:800px;height:600px;"></div>
 <p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
-<h3>Click Rate</h3>
+<h3>Total USD</h3>
 <div id="placeholder4" style="width:800px;height:600px;"></div>
+<p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
+<br><br>
+<h3>Click Rate</h3>
+<div id="placeholder5" style="width:800px;height:600px;"></div>
 <p>Click Rate over the last {{interval}} hours over 1 hour intervals.</p>
 <br><br>
 <h3>Currencies</h3>
-<div id="placeholder5" style="width:800px;height:600px;"></div>
+<div id="placeholder6" style="width:800px;height:600px;"></div>
 <p>Currency amounts in USD over the last {{interval}} hours over 1 hour intervals.</p>
 
 
@@ -37,7 +41,7 @@
 $(function () {
 
 
-    var total_plots = 6;
+    var total_plots = 7;
 
     // Extract the django variables
 	var data = {{ data }};
