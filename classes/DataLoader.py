@@ -407,7 +407,8 @@ class LongTermTrendsLoader(DataLoader):
         interval = 60
         metric_type = self._MT_AMOUNT_
         groups = {'*' : 'All'}
-        group_metric = 'country'
+        group_metric = ['country']
+        include_other = False
         
         """ Process keys -- Escape parameters """
         for key in kwargs_dict:
@@ -431,16 +432,26 @@ class LongTermTrendsLoader(DataLoader):
             
             # Contains the regex groups for the grouping metric
             elif key == 'groups':       
-                # groups is contains values that are read only and do not need escaping
+                # groups is contains values that are read only and not used in SQL queries and do not need escaping
                 if isinstance(kwargs_dict[key], dict):
                     groups = kwargs_dict[key]
             
             # metric to group on
             elif key == 'group_metric':
-                group_metric = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
+                if isinstance(kwargs_dict[key], list):                   
+                    group_metric = list() 
+                    for gm in kwargs_dict[key]:
+                        group_metric.append(MySQLdb._mysql.escape_string(str(gm)))
+            
+            elif key == 'include_other':
+                include_other = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
+                try:
+                    include_other = bool(metric_type)
+                except:
+                    logging.info('LTT Loader::process_kwargs - Not a valid boolean value for include_other kwarg')
+                    pass
                 
-                
-        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric
+        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other
     
     """
         Based on the query type provided execute a query
@@ -451,35 +462,38 @@ class LongTermTrendsLoader(DataLoader):
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
-        min_val, campaign, metric_name, interval, metric_type, groups, group_metric = self.process_kwargs(kwargs)
+        min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other = self.process_kwargs(kwargs)
         
         if query_type == 0: 
             
             logging.info('Executing query for long term banner impressions ...')
-            sql = "select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, country, sum(counts) as impressions from banner_impressions where on_minute >= '%s' and on_minute < '%s' group by 1,2 order by 1,2"
+            sql = "select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, country, lang as language, sum(counts) as impressions from banner_impressions " + \
+            "where on_minute >= '%s' and on_minute < '%s' group by 1,2,3 order by 1,2,3"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
         elif query_type == 1:
             
             logging.info('Executing query for long term LP impressions ...')
-            sql = "select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, country, count(*) as views from landing_page_requests where request_time >= '%s' and request_time < '%s' group by 1,2 order by 1,2"
+            sql = "select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, country, lang as language, count(*) as views from landing_page_requests " + \
+            "where request_time >= '%s' and request_time < '%s' group by 1,2,3 order by 1,2,3"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
         elif query_type == 2:
             
             logging.info('Executing query for long term donations based on country ...')
-            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, iso_code as country, count(*) as donations, sum(total_amount) as amount " + \
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, iso_code as country, language, count(*) as donations, sum(total_amount) as amount " + \
             "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
             "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
-            "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
+            "join drupal.contribution_tracking on civicrm.civicrm_contribution.id = drupal.contribution_tracking.contribution_id " + \
+            "where receive_date >= '%s' and receive_date < '%s' group by 1,2,3 order by 1,2,3"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
         elif query_type == 3:
             
             logging.info('Executing query for long term click rate ...')
-            sql = "select bi.hr, bi.country, views / impressions as click_rate from (select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, country, sum(counts) as impressions from banner_impressions " + \
-            "where on_minute >= '%s' and on_minute < '%s' group by 1,2) as bi join (select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, country, count(*) as views from landing_page_requests " + \
-            "where request_time >= '%s' and request_time < '%s'  group by 1,2 ) as lpi on bi.hr = lpi.hr and bi.country = lpi.country order by 1,2"
+            sql = "select bi.hr, bi.country, bi.lang as language, views / impressions as click_rate from (select concat(DATE_FORMAT(on_minute,'%sY%sm%sd%sH'), '0000') as hr, country, lang, sum(counts) as impressions from banner_impressions " + \
+            "where on_minute >= '%s' and on_minute < '%s' group by 1,2,3) as bi join (select concat(DATE_FORMAT(request_time,'%sY%sm%sd%sH'), '0000') as hr, country, lang, count(*) as views from landing_page_requests " + \
+            "where request_time >= '%s' and request_time < '%s'  group by 1,2,3) as lpi on bi.hr = lpi.hr and bi.country = lpi.lang and bi.country = lpi.lang order by 1,2,3"
             sql = sql % ('%', '%', '%', '%', start_time, end_time, '%', '%', '%', '%', start_time, end_time)
         
         elif query_type == 4:
@@ -494,7 +508,10 @@ class LongTermTrendsLoader(DataLoader):
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
-        key_index = column_names.index(group_metric)
+        
+        key_indices = list()
+        for metric in group_metric:
+            key_indices.append(column_names.index(metric))
 
         counts = dict()
         times = dict()
@@ -503,27 +520,35 @@ class LongTermTrendsLoader(DataLoader):
         group_counts = dict()
         
         for row in self._results_:
-                        
-            key = row[key_index] 
             
-            """ Ensure the key is a string """
-            if not(isinstance(key, str)):
-                key = '' 
-               
+            """ The key for group matching is a concatenation of the metric field values (e.g. "USen" for country and language ) """
+            key = ''
+            for key_index in key_indices:     
+                
+                """ Ensure the key is a string """
+                if isinstance(row[key_index], str):
+                    key = key + row[key_index] 
+                           
             timestamp = row[0]
             count = float(row[metric_index])                    
                 
-            """  Evaluate the regex for each pattern"""
+            """  Evaluate the regex for each pattern"""            
             for gkey in groups:
-                if cmp(gkey,'Other') == 0: 
-                    regex = not(re.search(groups[gkey], key))
-                else:
-                    regex = re.search(groups[gkey], key)
-                                
-                if regex:                    
+                regex_eval = True
+            
+                for pattern in groups[gkey]:
+                    regex = re.search(pattern, key)
+                    if not(regex):
+                        regex_eval = False     
+                
+                if regex_eval:                    
                     key = gkey                                        
                     break
-
+            
+            """ Only include donations from the defined groups unless a bucket for 'Other' results is specified """
+            if not(key in groups.keys()) and include_other:
+                key = 'Other'
+            
             if not(key in counts.keys()):
                 counts[key] = list()
                 times[key] = list()
@@ -594,7 +619,7 @@ class LongTermTrendsLoader(DataLoader):
                 
             counts['Total'].append(new_val)
             times['Total'].append(ts_list[index])
-
+        
         return times, counts
         
 """
@@ -726,7 +751,7 @@ class SummaryReportingLoader(DataLoader):
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
             sql_stmnt = Hlp.file_to_string(filename )
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views])        
-            
+            print sql_stmnt
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             
@@ -1042,8 +1067,8 @@ class CampaignIntervalReportingLoader(DataLoader):
         
         self._query_type_ = 'campaign'
         
-        self._irl_artifacts_ = IntervalReportingLoader('campaign')
-        self._irl_totals_ = IntervalReportingLoader('campaign_total')
+        self._irl_artifacts_ = IntervalReportingLoader(query_type='campaign')
+        self._irl_totals_ = IntervalReportingLoader(query_type='campaign_total')
         
         
     """

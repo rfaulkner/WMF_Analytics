@@ -52,7 +52,7 @@ class DataCaching(object):
 class LTT_DataCaching(DataCaching):
     
     CACHING_HOME = projSet.__data_file_dir__ + 'ltt_vars.s'
-    VIEW_DURATION_HRS = 72
+    VIEW_DURATION_HRS = projSet.__HRS_BACK_LTT__
     
     def __init__(self):        
         self.open_serialized_obj()
@@ -74,26 +74,40 @@ class LTT_DataCaching(DataCaching):
                 
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-20), 1, hours=-self.VIEW_DURATION_HRS)
         
+        """
+            DATA CONFIG            
+        """
+        
         """ set the metrics to plot """
-        lttdl = DL.LongTermTrendsLoader(db='db1025')
+        lttdl = DL.LongTermTrendsLoader(db='storage3')
         metrics = ['impressions', 'views', 'donations', 'amount', 'click_rate', 'amount']
         metrics_index = [0, 1, 2, 2, 3, 4]
         
-        country_groups = {'US':'(US)', 'CA':'(CA)', 'JP':'(JP)', 'IN':'(IN)', 'NL':'(NL)', 'Other':'(US|CA|JP|IN|NL)'}
-        currency_groups = {'USD':'(USD)', 'CAD':'(CAD)', 'JPY':'(JPY)', 'EUR':'(EUR)', 'Other':'(USD|CAD|JPY|EUR)'}
+        """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
+        # country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)'], 'Other': ['(US|CA|JP|IN|NL)']}
+        # currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)'], 'Other': ['(USD|CAD|JPY|EUR)']}
+        country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
+        currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)']}
+        # language_groups = {'EN':'(en)', 'Other':'(en)'}
+        lang_cntry_groups = {'US': ['US..', '.{4}'], 'EN' : ['[^U^S]en', '.{4}']}
         
-        groups = [country_groups, country_groups, country_groups, country_groups, country_groups, currency_groups]
-        group_metrics = ['country', 'country', 'country', 'country', 'country', 'currency']
+        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, country_groups, currency_groups]
+        
+        """  The metrics that are used to build a group string to be qualified via regex - the values of the list metrics are concatenated """ 
+        group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], ['country', 'language'], ['country', 'language'], ['currency']]
         
         metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_AMOUNT_]
         data = list()
+        
+        """ END CONFIG """
+        
         
         """ For each metric use the LongTermTrendsLoader to generate the data to plot """
         for index in range(len(metrics)):
             
             dr = DR.DataReporting()
             
-            times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], groups=groups[index], group_metric=group_metrics[index])
+            times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], groups=groups[index], group_metric=group_metrics[index], include_other=True)
             times = TP.normalize_timestamps(times, False, 1)
                 
             dr._counts_ = counts
@@ -120,7 +134,7 @@ class LTT_DataCaching(DataCaching):
 class LiveResults_DataCaching(DataCaching):
     
     CACHING_HOME = projSet.__data_file_dir__ + 'live_results_vars.s'
-    DURATION_HRS = 6
+    DURATION_HRS = projSet.__HRS_BACK_LIVE_RESULTS__
     
     def __init__(self):        
         self.open_serialized_obj()
