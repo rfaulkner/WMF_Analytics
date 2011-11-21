@@ -71,8 +71,7 @@ class DataLoader(object):
         self._results_ = None
         self._col_names_ = None
         self._was_run_ = False        
-        
-        
+                
         self.init_db(**kwargs) 
             
         """ State for all new dataloader objects is set to indicate that the associated SQL has yet to be run """
@@ -86,9 +85,9 @@ class DataLoader(object):
             if kwargs['db'] == 'storage3':
                 self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
             elif kwargs['db'] == 'db1008':
-                self._db_ = MySQLdb.connect(host=projSet.__db_db1008__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+                self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
             elif kwargs['db'] == 'db1025':
-                self._db_ = MySQLdb.connect(host=projSet.__db_db1025__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+                self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
         else:
             self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
         #self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
@@ -607,10 +606,11 @@ class LongTermTrendsLoader(DataLoader):
 class SummaryReportingLoader(DataLoader):
 
     
-    def __init__(self, query_type, **kwargs):
+    def __init__(self, **kwargs):
         
         """ Call constructor of parent """
         DataLoader.__init__(self, **kwargs)
+        query_type = kwargs['query_type']
         
         self._results_ = None
         
@@ -807,7 +807,7 @@ class IntervalReportingLoader(DataLoader):
         Setup query list
         
     """
-    def __init__(self, query_type, **kwargs):
+    def __init__(self, **kwargs):
                     
         """ Call constructor of parent """
         DataLoader.__init__(self, **kwargs)
@@ -822,7 +822,7 @@ class IntervalReportingLoader(DataLoader):
         self._query_names_[FDH._QTYPE_LP_ + FDH._QTYPE_TIME_] = 'report_lp_metrics_minutely_all'
         self._query_names_[FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_] = 'report_campaign_metrics_minutely_all'
         
-        self._query_type_ = query_type
+        self._query_type_ = kwargs['query_type']
     
         """ hardcode the data handler for now """
         self._data_handler_ = FDH
@@ -1102,7 +1102,7 @@ class CampaignIntervalReportingLoader(DataLoader):
 """
 class CampaignReportingLoader(DataLoader):
     
-    def __init__(self, query_type, **kwargs):
+    def __init__(self, **kwargs):
         
         """ Call constructor of parent """
         DataLoader.__init__(self, **kwargs)
@@ -1115,7 +1115,7 @@ class CampaignReportingLoader(DataLoader):
         self._query_names_[FDH._TESTTYPE_LP_] = 'report_campaign_lps'
         self._query_names_[FDH._TESTTYPE_BANNER_LP_] = 'report_campaign_bannerlps'
         
-        self._query_type_ = query_type
+        self._query_type_ = kwargs['query_type']
         
             
     """ Close the connection """
@@ -1377,14 +1377,14 @@ class DonorBracketsReportingLoader(DataLoader):
                 FDH._QTYPE_LP_
                 FDH._QTYPE_CAMPAIGN_
     """
-    def __init__(self, query_type, **kwargs):
+    def __init__(self, **kwargs):
         
         """ Call constructor of parent """
         DataLoader.__init__(self, **kwargs)
         
         """ Use _query_names_ to store a single query name """
         self._query_names_ = 'report_donor_dollar_breakdown' # embed the query name in the class itself
-        self._query_type_ = query_type
+        self._query_type_ = kwargs['query_type']
         
     """ Close the connection """
     def __del__(self):

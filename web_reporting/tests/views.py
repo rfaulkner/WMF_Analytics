@@ -189,7 +189,7 @@ def test(request):
                             
         except KeyError:
     
-            test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(''))  # submit an empty query type           
+            test_type_var, labels = FDH.get_test_type(utm_campaign_var, start_time_var, end_time_var, DL.CampaignReportingLoader(query_type=''))  # submit an empty query type           
             labels = labels.__str__() 
         
         label_dict = dict()
@@ -459,7 +459,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     summary_end_time = DL.CiviCRMLoader().get_latest_donation(campaign)
     
-    srl = DL.SummaryReportingLoader(test_type)
+    srl = DL.SummaryReportingLoader(query_type=test_type)
     srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var)
     
     columns = srl.get_column_names()
@@ -503,7 +503,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         '<div class="spacer"></div><h4><u>Confidence Legend for Hypothesis Testing:</u></h4><div class="spacer"></div>' + conf_legend_table + '<div class="spacer"></div><div class="spacer"></div>' + html_table
             
     """ Generate totals for the test summary """
-    srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
+    srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
     srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var)
     html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
         
@@ -539,7 +539,7 @@ def generate_summary(request):
             GENERATE A REPORT SUMMARY TABLE
             ===============================
         """
-        srl = DL.SummaryReportingLoader(FDH._TESTTYPE_BANNER_LP_)
+        srl = DL.SummaryReportingLoader(query_type=FDH._TESTTYPE_BANNER_LP_)
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1)    
         
         columns = srl.get_column_names()
@@ -550,7 +550,7 @@ def generate_summary(request):
         html_table = DR.DataReporting()._write_html_table(summary_results, columns, use_standard_metric_names=True)    
         
         """ Generate totals """
-        srl = DL.SummaryReportingLoader(FDH._QTYPE_TOTAL_)
+        srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1)
         
         total_summary_results = srl.get_results()

@@ -486,14 +486,14 @@ class IntervalReporting(DataReporting):
     """
     def __init__(self, **kwargs):
         
-        self._data_loader_ = DL.IntervalReportingLoader('')
+        self._data_loader_ = DL.IntervalReportingLoader(query_type='')
         
         for key in kwargs:
             if key == 'query_type':                          # Set custom data loaders
                 if kwargs[key] == 'campaign':
-                    self._data_loader_ = DL.CampaignIntervalReportingLoader()
+                    self._data_loader_ = DL.CampaignIntervalReportingLoader(**kwargs)
                 else:
-                    self._data_loader_ = DL.IntervalReportingLoader(kwargs[key])
+                    self._data_loader_ = DL.IntervalReportingLoader(**kwargs)
             
             elif key == 'was_run':
                 self._was_run_ = kwargs[key]
@@ -704,7 +704,7 @@ class ConfidenceReporting(DataReporting):
             logging.error(err_msg)
             raise self.KwargDefError(err_msg)
         else:
-            self._data_loader_ = DL.IntervalReportingLoader(kwargs['query_type'])
+            self._data_loader_ = DL.IntervalReportingLoader(**kwargs)
             
         if not('hyp_test' in kwargs.keys()):
             err_msg = 'ConfidenceReporting obj must be created with a hypothesis test type'
@@ -1145,7 +1145,7 @@ class DonorBracketReporting(DataReporting):
             elif key == 'was_run':
                 self._was_run_ = kwargs[key]
             
-        self._data_loader_ = DL.DonorBracketsReportingLoader(query_type)
+        self._data_loader_ = DL.DonorBracketsReportingLoader(query_type=query_type)
             
         """ Call constructor of parent """
         DataReporting.__init__(self, **kwargs)

@@ -48,7 +48,7 @@ def index(request):
     start_time, end_time, min_donation, view_order = process_post_vars(request)
     logging.debug('Finding live landing pages from %s to %s.' % (start_time, end_time))
     
-    live_lps, columns = DL.CampaignReportingLoader('').query_live_landing_pages(start_time, end_time, min_donation=min_donation, view_order=view_order)
+    live_lps, columns = DL.CampaignReportingLoader(query_type='').query_live_landing_pages(start_time, end_time, min_donation=min_donation, view_order=view_order)
     
     if len(live_lps) == 0:
         html_table = '<br><p color="red"><b>No landing page data found.<b></p><br>'

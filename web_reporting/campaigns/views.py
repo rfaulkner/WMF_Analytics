@@ -49,7 +49,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 """
 def index(request, **kwargs):
     
-    crl = DL.CampaignReportingLoader('totals')
+    crl = DL.CampaignReportingLoader(query_type='totals')
     filter_data = True
             
     """ Determine the start and end times for the query """ 
@@ -253,7 +253,7 @@ def show_campaigns(request, utm_campaign, **kwargs):
         ir.run(start_time_est, end_time_est, interval, 'views', utm_campaign, {}, one_step=one_step)
             
         """ Determine the type of test (if not overridden) and retrieve the artifacts  """
-        test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(''), test_type_var)
+        test_type, artifact_name_list = FDH.get_test_type(utm_campaign, start_time, end_time, DL.CampaignReportingLoader(query_type=''), test_type_var)
         
         return render_to_response('campaigns/show_campaigns.html', {'utm_campaign' : utm_campaign, 'test_name' : test_name, 'start_time' : start_time_est, 'end_time' : end_time_est, 'one_step' : one_step, \
                                                                     'artifacts' : artifact_name_list, 'test_type' : test_type, 'err_msg' : err_msg}, context_instance=RequestContext(request))    
