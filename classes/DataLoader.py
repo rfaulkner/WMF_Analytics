@@ -85,9 +85,9 @@ class DataLoader(object):
             if kwargs['db'] == 'storage3':
                 self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
             elif kwargs['db'] == 'db1008':
-                self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+                self._db_ = MySQLdb.connect(host=projSet.__db_db1008__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
             elif kwargs['db'] == 'db1025':
-                self._db_ = MySQLdb.connect(host=projSet.__db_storage3__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
+                self._db_ = MySQLdb.connect(host=projSet.__db_db1025__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
         else:
             self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__, passwd=projSet.__pass__)
         #self._db_ = MySQLdb.connect(host=projSet.__db_server__, user=projSet.__user__, db=projSet.__db__, port=projSet.__db_port__)
