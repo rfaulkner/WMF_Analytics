@@ -82,10 +82,8 @@ class LTT_DataCaching(DataCaching):
         countries = countries[1:6]
         
         """ set the metrics to plot """
-        lttdl = DL.LongTermTrendsLoader(db='storage3')
-        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'click_rate', 'amount']
-        metrics_index = [0, 1, 2, 2, 2, 3, 4]
-        
+        lttdl = DL.LongTermTrendsLoader(db='db1025')
+                
         """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
         country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
         currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)']}
@@ -93,20 +91,25 @@ class LTT_DataCaching(DataCaching):
         
         top_cntry_groups = dict()
         for country in countries:
-            top_cntry_groups[country] = ["'" + country + "'", '.{2}']
+            top_cntry_groups[country] = [country, '.{2}']
         
-        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, country_groups, currency_groups]
+        # To include click rate
+        # groups = [ lang_cntry_groups] metrics = ['click_rate'] metrics_index = [3]
+        # group_metrics = [DL.LongTermTrendsLoader._MT_RATE_] metric_types = ['country', 'language'] include_totals = [True] include_others = [True]
+        
+        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount']
+        metrics_index = [0, 1, 2, 2, 2, 4]
+        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, currency_groups]
         
         """  The metrics that are used to build a group string to be qualified via regex - the values of the list metrics are concatenated """ 
-        group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], ['country'], \
+        group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], \
                          ['country', 'language'], ['country', 'language'], ['currency']]
         
         metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
-                        DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
-                        DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_AMOUNT_]
+                        DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_]
         
-        include_totals = [True, True, True, False, True, True, True]
-        include_others = [True, True, True, False, True, True, True]
+        include_totals = [True, True, True, False, True, True]
+        include_others = [True, True, True, False, True, True]
         
         data = list()
         
@@ -170,8 +173,8 @@ class LiveResults_DataCaching(DataCaching):
         """ Find the earliest and latest page views for a given campaign  """
         lptl = DL.LandingPageTableLoader(db='storage3')
             
-        query_name = 'report_summary_results.sql'
-        query_name_1S = 'report_summary_results_1S.sql'                    
+        query_name = 'report_summary_results_country.sql'
+        query_name_1S = 'report_summary_results_country_1S.sql'                    
         campaign_regexp_filter = '^C_|^C11_'
                 
         dl = DL.DataLoader(db='storage3')
