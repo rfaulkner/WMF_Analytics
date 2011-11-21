@@ -917,7 +917,7 @@ class FundraiserDataMapper(DataMapper):
                 """ If country is confused with the language use the ip """
                 if country == country.lower():
                     
-                    logging.info('Using geo-locator to set ip-address: %s', landing_url)
+                    # logging.info('Using geo-locator to set ip-address: %s', landing_url)
                     country = ipctl.localize_IP(ip_add) 
                                 
                 """ Ensure fields providing request ID exist """
