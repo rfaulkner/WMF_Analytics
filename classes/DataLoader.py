@@ -2644,8 +2644,8 @@ class LandingPageTableLoader(TableLoader):
         
         timestamps = list()
         
-        start_time = MySQLdb._mysql.escape_string(str(start_time))
-        end_time = MySQLdb._mysql.escape_string(str(end_time))
+        start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
+        end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
         sql = "select distinct(start_timestamp) from landing_page_requests where request_time >= '%s' and request_time < '%s'" % (start_time, end_time)
         results = self.execute_SQL(sql)
@@ -2708,6 +2708,8 @@ class LandingPageTableLoader(TableLoader):
     """
     def is_one_step(self, start_time, end_time, campaign_filter):
         
+        start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
+        end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         campaign_filter = MySQLdb._mysql.escape_string(str(campaign_filter))
         
         sql = "select ecomm.utm_campaign, ecomm.landing_page, if(lp.views, lp.views, 0) as lp_views, if(ecomm.views, ecomm.views, 0) as ecomm_views from " + \
