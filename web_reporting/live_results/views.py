@@ -73,7 +73,19 @@ def index(request):
     
     except:
         min_donation = 0
-                
+    
+    # Filter on ISO codes to include matched countries
+    try:
+        iso_filter = MySQLdb._mysql.escape_string(request.POST['iso_filter'].strip())        
+    
+    except:
+        iso_filter = '.*'
+        
+    
+    """
+        Call up cached results
+    """     
+    
     cache = DC.LiveResults_DataCaching()
     dict_param = cache.retrieve_cached_data(view_keys.LIVE_RESULTS_DICT_KEY)
     
@@ -104,14 +116,18 @@ def index(request):
     
     """ Filtering -- donations and artifacts """
     
+    country_index = column_names.index('country')
     donations_index = column_names.index('donations')
     campaign_index = column_names.index('utm_campaign')
     new_results = list()
-    # min_donation = 1
     
+    # minimum d
     for row in results:
-        if row[donations_index] > min_donation and re.search(campaign_regexp_filter, row[campaign_index]):
-            new_results.append(list(row))
+        try:
+            if row[donations_index] > min_donation and re.search(campaign_regexp_filter, row[campaign_index]) and re.search(iso_filter, row[country_index]):
+                new_results.append(list(row))
+        except:
+            logging.error('live_results/views.py -- Could not process row: %s' % str(row))
 
     results = new_results
     
