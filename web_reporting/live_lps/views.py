@@ -46,7 +46,7 @@ def index(request):
 
     """ Process POST """     
     start_time, end_time, min_donation, view_order = process_post_vars(request)
-    logging.debug('Finding live landing pages from %s to %s.' % (start_time, end_time))
+    logging.info('Finding live landing pages from %s to %s.' % (start_time, end_time))
     
     live_lps, columns = DL.CampaignReportingLoader(query_type='').query_live_landing_pages(start_time, end_time, min_donation=min_donation, view_order=view_order)
     
