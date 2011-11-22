@@ -806,16 +806,17 @@ class SummaryReportingLoader(DataLoader):
             return '[Invalid items]', '[Invalid items]', 'null'
         
         """ Retrieve indices """
-        key_index = QD.get_key_index(self._query_name_)
         metric_index = QD.get_metric_index(self._query_name_, metric)        
         metric_list = list()
         
         """ Get rows for given metrics - use 'label_indices' to map metrics back to labels """
         label_indices = list()
+        print self._results_
         for row in self._results_:
-            if row[key_index] in item_list:
+            item_label = QD.get_key_label(self._query_name_, row)
+            if item_label in item_list:
                 metric_list.append(float(row[metric_index]))
-                label_indices.append(item_list.index(row[key_index]))
+                label_indices.append(item_list.index(item_label))
                 
         """ Compute ranking and increase """
         winning_index = metric_list.index(max(metric_list))
@@ -984,10 +985,9 @@ class IntervalReportingLoader(DataLoader):
             sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, campaign, interval], **kwargs)
             
         """ Get Indexes into Query """
-        key_index = QD.get_key_index(query_name)
         metric_index = QD.get_metric_index(query_name, metric_name)
         time_index = QD.get_metric_index(query_name, 'day_hr')
-        
+
         """ Compose the data for each separate donor pipeline artifact """
         try:
             """ ONLY EXECUTE THE QUERY IF IT HASN'T BEEN BEFORE """
@@ -1009,8 +1009,9 @@ class IntervalReportingLoader(DataLoader):
             interval_obj = datetime.timedelta(minutes=interval)        # timedelta object used to shift times by _interval_ minutes
             
             for row in self._results_:
+
+                key_name = QD.get_key_label(query_name, row)
                 
-                key_name = row[key_index]
                 time_obj = TP.timestamp_to_obj(row[time_index], 1)  # format = 1, 14-digit TS 
                 
                 """ For each new dictionary index by key name start a new list if its not already there """    
@@ -1213,7 +1214,6 @@ class CampaignReportingLoader(DataLoader):
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time])
         
         """ Get Indexes into Query """
-        key_index = QD.get_key_index(query_name)
         metric_index = QD.get_metric_index(query_name, metric_name)
         
         data = Hlp.AutoVivification()
@@ -1228,7 +1228,7 @@ class CampaignReportingLoader(DataLoader):
             
             for row in results:
                 
-                key_name = row[key_index]
+                key_name = QD.get_key_label(query_name, row)
                 data[key_name] = float(row[metric_index])
                 raw_data[key_name] = row
          
@@ -1264,9 +1264,6 @@ class CampaignReportingLoader(DataLoader):
         sql_stmnt = Hlp.file_to_string(filename)        
         sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_time, end_time, utm_campaign])
         
-        """ Get Indexes into Query """
-        key_index = QD.get_key_index(query_name)     
-        
         data = list()
         
         """ Compose the data for each separate donor pipeline artifact """
@@ -1277,17 +1274,12 @@ class CampaignReportingLoader(DataLoader):
             results = self._cur_.fetchall()
             
             for row in results:
-                if isinstance(key_index, list):
-                    artifact = ''
-                    for key in key_index:
-                        artifact = artifact + row[key] + '-'
-                    artifact = artifact[:-1]
-                    data.append(artifact)
-                else:
-                    data.append(row[key_index])
+                label = QD.get_key_label(self._query_type_, row)
+                data.append(label)
                 # key_name = row[key_index]
                 
         except Exception as inst:
+            
             logging.error(type(inst))     # the exception instance
             logging.error(inst.args)    # arguments stored in .args
             logging.error(inst)           # __str__ allows args to printed directly

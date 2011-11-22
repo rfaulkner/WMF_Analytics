@@ -492,17 +492,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     columns = srl.get_column_names()
     summary_results = srl.get_results()
-        
-    summary_results_list = list()
     
-    """ Add label links """
-    for row in summary_results:
-        artifact_name = row[0]
-        new_row = list(row)
-        new_row[0] = link_item % (artifact_name, label_dict_full[artifact_name])
-        summary_results_list.append(new_row)
-    
-    summary_results = summary_results_list
+    """    
+        REMOVED - links to pipeline artifacts, this was broken and should be implemented properly later
+    """
     
     """ Get Winners, Losers, and percent increase """
     

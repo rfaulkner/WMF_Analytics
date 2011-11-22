@@ -248,10 +248,30 @@ def get_key_index(query_name):
     elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics' \
     or query_name == 'report_banner_metrics_1S' or query_name == 'report_LP_metrics_1S' or query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_total_metrics_1S':
         return 0
+    elif query_name == 'report_bannerLP_metrics' or query_name == 'report_bannerLP_metrics_1S':
+        return [0, 1, 2]
     else:
         return 1
 
+"""     
+    Returns the key value of a given query
+"""
+def get_key_label(query_name, row):
+    
+    if cmp(query_name,'report_bannerLP_metrics') == 0 or cmp(query_name,'report_bannerLP_metrics_1S') == 0:
+        return row[0] + '-' + row[1] + '-' + row[2]
+    
+    elif cmp(query_name,'report_campaign_bannerlps') == 0:
+        return row[0] + '-' + row[1] + '-' + row[2]
+    
+    else:
+        index = get_key_index(query_name)
+        return row[index]
 
+#    elif cmp(query_type,'report_summary_results') == 0 or cmp(query_type,'report_summary_results_1S') == 0 or cmp(query_type,'report_summary_country_results') == 0 or cmp(query_type,'report_summary_results_country_1S') == 0:
+#        return row[0] + '-' + row[1] + '-' + row[2]
+    
+    
 def get_metric_index(query_name, metric_name):
     
     if query_name == 'report_campaign_logs_by_min':
@@ -265,8 +285,9 @@ def get_metric_index(query_name, metric_name):
             return 4 
         
     elif query_name == 'report_LP_metrics_minutely' or query_name == 'report_LP_metrics_minutely_1S':
-        
-        if metric_name == 'views':
+        if metric_name == 'day_hr' or metric_name == 'ts':
+            return 0
+        elif metric_name == 'views':
             return 2
         elif metric_name == 'donations':
             return 3
@@ -286,7 +307,9 @@ def get_metric_index(query_name, metric_name):
             return -1
         
     elif query_name == 'report_banner_metrics_minutely' or query_name == 'report_banner_metrics_minutely_1S':
-        if metric_name == 'imp' or metric_name == 'impressions':
+        if metric_name == 'day_hr' or metric_name == 'ts':
+            return 0
+        elif metric_name == 'imp' or metric_name == 'impressions':
             return 2
         elif metric_name == 'donations':
             return 4
@@ -306,7 +329,9 @@ def get_metric_index(query_name, metric_name):
             return -1
         
     elif re.search('report_campaign_metrics_minutely', query_name) and not(query_name == 'report_campaign_metrics_minutely_all'):
-        if metric_name == 'donations':
+        if metric_name == 'day_hr' or metric_name == 'ts':
+            return 0
+        elif metric_name == 'donations':
             return 3
         elif metric_name == 'views':
             return 2
@@ -330,7 +355,9 @@ def get_metric_index(query_name, metric_name):
             return -1
     
     elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
-        if metric_name == 'donations':
+        if metric_name == 'day_hr' or metric_name == 'ts':
+            return 0
+        elif metric_name == 'donations':
             return 2
         elif metric_name == 'clicks':
             return 3
@@ -338,7 +365,9 @@ def get_metric_index(query_name, metric_name):
             return -1
     
     elif query_name == 'report_bannerLP_metrics_minutely' or query_name == 'report_bannerLP_metrics_minutely_1S':
-        if metric_name == 'imp' or metric_name == 'impressions':
+        if metric_name == 'day_hr' or metric_name == 'ts':
+            return 0
+        elif metric_name == 'imp' or metric_name == 'impressions':
             return 2
         elif metric_name == 'views':
             return 3
@@ -433,6 +462,7 @@ def get_metric_index(query_name, metric_name):
 
     
 def get_metric_full_name(metric_name):
+    
     if metric_name == 'imp':
         return 'Banner Impressions'
     elif metric_name == 'imp':
