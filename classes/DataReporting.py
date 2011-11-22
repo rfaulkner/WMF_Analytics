@@ -666,9 +666,19 @@ class IntervalReporting(DataReporting):
                 labels = self._counts_.keys()
             
             """ Generate plots given data """
-            self._gen_plot(self._counts_, self._times_, title, xlabel, ylabel, ranges, subplot_index, fname, labels)
-
-        
+            try:
+                self._gen_plot(self._counts_, self._times_, title, xlabel, ylabel, ranges, subplot_index, fname, labels)
+            
+            except Exception as inst:
+                
+                logging.error('IntervalReporting -- Could not generate plot object ')
+                logging.error(type(inst))     # the exception instance
+                logging.error(inst.args)      # arguments stored in .args
+                logging.error(inst)           # __str__ allows args to printed directly            
+                
+                pass
+    
+            
     
 """
 
@@ -902,9 +912,19 @@ class ConfidenceReporting(DataReporting):
         ylabel = QD.get_metric_full_name(metric_name)
         labels = [label_1, label_2]
         
-        # self._gen_plot(means_1, means_2, std_devs_1, std_devs_2, times_indices, title, xlabel, ylabel, ranges, subplot_index, labels, fname)
-        self._gen_box_plot([metrics_1, metrics_2], title, ylabel, subplot_index, labels, fname)
-                
+        try:
+            # self._gen_plot(means_1, means_2, std_devs_1, std_devs_2, times_indices, title, xlabel, ylabel, ranges, subplot_index, labels, fname)
+            self._gen_box_plot([metrics_1, metrics_2], title, ylabel, subplot_index, labels, fname)
+        
+        except Exception as inst:
+            
+            logging.error('ConfidenceReporting -- Could not generate plot object ')
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly            
+            
+            pass
+        
         return [confidence, colour_code]
 
 
@@ -1192,9 +1212,20 @@ class DonorBracketReporting(DataReporting):
             """ Generate plots given data """
             bracket_names = data[0]
             bracket_names = bracket_names[bracket_names.keys()[0]]
-            self._gen_plot(bracket_names, data[1], 'donations', plot_title, fname)
-            self._gen_plot(bracket_names, data[2], 'amounts', plot_title, fname)
-        
+            
+            try:
+                self._gen_plot(bracket_names, data[1], 'donations', plot_title, fname)
+                self._gen_plot(bracket_names, data[2], 'amounts', plot_title, fname)
+            
+            except Exception as inst:
+            
+                logging.error('DonorBracketReporting -- Could not generate plot object ')
+                logging.error(type(inst))     # the exception instance
+                logging.error(inst.args)      # arguments stored in .args
+                logging.error(inst)           # __str__ allows args to printed directly            
+                
+                pass
+
 
 
 class CategoryReporting(DataReporting):
