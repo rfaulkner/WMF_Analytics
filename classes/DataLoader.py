@@ -218,10 +218,10 @@ class DataLoader(object):
         
         try:
             return self._query_names_[self._query_type_]
+        
         except KeyError:
             logging.error('Could not find a query for type: ' + self._query_type_)  
-            sys.exit(2)
-
+        
     """
         Executes a SQL statement and return the raw results.  This is good for generic queries.
         
@@ -1048,7 +1048,6 @@ class IntervalReportingLoader(DataLoader):
             logging.error(inst)           # __str__ allows args to printed directly
             
             self._db_.rollback()
-            # sys.exit(0)
         
 
         """ Ensure that the last time in the list is the endtime less the interval """
@@ -1240,8 +1239,6 @@ class CampaignReportingLoader(DataLoader):
             logging.error(inst)           # __str__ allows args to printed directly
             
             self._db_.rollback()
-            sys.exit(0)
-
 
         return data, raw_data
     
@@ -1296,7 +1293,6 @@ class CampaignReportingLoader(DataLoader):
             logging.error(inst)           # __str__ allows args to printed directly
             
             self._db_.rollback()
-            sys.exit(0)
 
 
         return data
@@ -1479,9 +1475,7 @@ class DonorBracketsReportingLoader(DataLoader):
             logging.error(inst.args)    # arguments stored in .args
             logging.error(inst)           # __str__ allows args to printed directly
             
-            self._db_.rollback()
-            sys.exit(0)
-        
+            self._db_.rollback()        
         
         """ Dictionaries to store the results - results are keyed by the artifact name (banner, LP, campaign) """
         
@@ -1683,9 +1677,13 @@ class TTestLoaderHelp(TableLoader):
                 p = float(results[0])
             else:
                 p = .0005
-        except:
+        except Exception as inst:
+            
+            logging.error(type(inst))     # the exception instance
+            logging.error(inst.args)      # arguments stored in .args
+            logging.error(inst)           # __str__ allows args to printed directly
+
             self._db_.rollback()
-            sys.exit('Could not execute: ' + select_stmnt)
             
         return p
 
@@ -1821,7 +1819,6 @@ class TestTableLoader(TableLoader):
                 results = None
                 self._db_.rollback()
                 logging.error('Could not execute: ' + select_stmnt)
-                # sys.exit('Could not execute: ' + select_stmnt)
 
             if results is None:
                 return False
@@ -1863,7 +1860,6 @@ class TestTableLoader(TableLoader):
             results = None
             self._db_.rollback()
             logging.error('Could not execute: ' + select_stmnt)
-            # sys.exit('Could not execute: ' + select_stmnt)
         
         return results
         
@@ -2006,7 +2002,6 @@ class SquidLogTableLoader(TableLoader):
             logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
-            # sys.exit('Could not execute: ' + insert_stmnt)
 
         return 0
 
@@ -2041,7 +2036,6 @@ class SquidLogTableLoader(TableLoader):
             results = None
             self._db_.rollback()
             logging.error('Could not execute: ' + select_stmnt)
-            # sys.exit('Could not execute: ' + select_stmnt)
         
         return results
     
@@ -2459,7 +2453,6 @@ class ImpressionTableLoader(TableLoader):
             logging.error('Could not execute: ' + insert_stmnt)
             
             return -1
-            # sys.exit('Could not execute: ' + insert_stmnt)
 
         return 0
     
