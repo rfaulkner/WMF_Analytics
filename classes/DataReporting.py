@@ -953,11 +953,6 @@ class ConfidenceReporting(DataReporting):
     """
     def get_confidence_on_time_range(self, start_time, end_time, campaign, **kwargs):
         
-        use_one_step = False
-        if 'one_step' in kwargs:
-            if isinstance(kwargs['one_step'], bool):
-                use_one_step = kwargs['one_step']
-        
         sampling_interval = 1
         if 'sampling_interval' in kwargs:
             if isinstance(kwargs['sampling_interval'], int):
