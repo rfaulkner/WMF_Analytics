@@ -17,8 +17,13 @@ FLOOR(MINUTE(request_time) / %s) * %s as dt_min,
 utm_source as banner, 
 landing_page,
 count(*) as views
+
 from landing_page_requests
-where request_time >=  '%s' and request_time < '%s' and utm_campaign = '%s'
+
+where request_time >=  '%s' and request_time < '%s' 
+and utm_campaign regexp '%s'
+and country regexp '%s'
+
 group by 1,2,3,4) as lp
 
 left join
@@ -33,10 +38,14 @@ sum(not isnull(drupal.contribution_tracking.contribution_id)) as donations
 
 from
 
-drupal.contribution_tracking LEFT JOIN civicrm.civicrm_contribution
-ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+drupal.contribution_tracking join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
-where receive_date >=  '%s' and receive_date < '%s' and utm_campaign = '%s'
+where receive_date >=  '%s' and receive_date < '%s' 
+and utm_campaign regexp '%s'
+and iso_code regexp '%s'
+
 group by 1,2,3,4) as ecomm
 
 on ecomm.banner = lp.banner and ecomm.landing_page = lp.landing_page and ecomm.hr = lp.dt_hr and ecomm.dt_min = lp.dt_min

@@ -79,7 +79,7 @@ def index(request):
         iso_filter = MySQLdb._mysql.escape_string(request.POST['iso_filter'].strip())        
     
     except:
-        iso_filter = '.*'
+        iso_filter = '.{2}'
         
     
     """

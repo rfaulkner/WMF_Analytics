@@ -29,6 +29,7 @@ utm_source,
 sum(counts) as impressions
 from banner_impressions 
 where on_minute > '%s' and on_minute < '%s' 
+and country regexp '%s' 
 group by 1) as imp
 
 join
@@ -38,8 +39,15 @@ SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source,
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, 
 count(*) as views,
 utm_campaign
-from drupal.contribution_tracking  
-where ts >= '%s' and ts < '%s' and utm_campaign REGEXP '%s'
+
+from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
+
+where ts >= '%s' and ts < '%s' 
+and utm_campaign REGEXP '%s'
+and iso_code regexp '%s' 
+
 group by 1,2) as lp
 
 on imp.utm_source =  lp.utm_source
@@ -50,9 +58,13 @@ join
 SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as utm_source, 
 count(*) as total_views
 
-from drupal.contribution_tracking
+from drupal.contribution_tracking left join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
 where ts >= '%s' and ts < '%s'
+and iso_code regexp '%s' 
+
 group by 1) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source 
@@ -78,10 +90,13 @@ SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
 total_amount as amount
 
 from
-drupal.contribution_tracking join civicrm.civicrm_contribution
-ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+drupal.contribution_tracking join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
+where receive_date >= '%s' and receive_date <'%s'
+and utm_campaign REGEXP '%s'
+and iso_code regexp '%s' 
 ) as all_contributions
 
 join 
@@ -91,10 +106,13 @@ SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner,
 avg(total_amount) as avg_amount
 
 from
-drupal.contribution_tracking left join civicrm.civicrm_contribution
-ON (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+drupal.contribution_tracking join civicrm.civicrm_contribution on (drupal.contribution_tracking.contribution_id = civicrm.civicrm_contribution.id)
+join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id
+join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id
 
-where receive_date >= '%s' and receive_date <'%s' and utm_campaign REGEXP '%s'
+where receive_date >= '%s' and receive_date <'%s' 
+and utm_campaign REGEXP '%s'
+and iso_code regexp '%s' 
 group by 1) as avg_contributions
 
 on all_contributions.banner = avg_contributions.banner

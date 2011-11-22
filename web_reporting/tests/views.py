@@ -50,14 +50,17 @@ _end_time_ = '99990011223344'
 """
     Index page for tests ... lists all existing tests and allows a new test to be run
 """
-def index(request):
+def index(request, **kwargs):
     
     """ 
         PROCESS POST DATA
         ================= 
     """
     
-    err_msg = ''
+    if 'err_msg' in kwargs:
+        err_msg = kwargs['err_msg']
+    else:        
+        err_msg = ''
 
     try:
         
@@ -158,7 +161,7 @@ def test_summaries(request):
 def test(request):
     
     try:
-            
+                
         """ 
             PROCESS POST DATA
             ================= 
@@ -170,7 +173,9 @@ def test(request):
         utm_campaign_var = MySQLdb._mysql.escape_string(request.POST['utm_campaign'].strip())
         start_time_var = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
         end_time_var = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())    
-        one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'].strip())
+        one_step_var = MySQLdb._mysql.escape_string(request.POST['one_step'].strip())        
+        country = MySQLdb._mysql.escape_string(request.POST['iso_filter'])
+                
         
         """ Convert timestamp format if necessary """
         if TP.is_timestamp(start_time_var, 2):
@@ -283,7 +288,7 @@ def test(request):
         
         measured_metric, winner, loser, percent_win, confidence, html_table_pm_banner, html_table_pm_lp, html_table_language, html_table \
         =  generate_reporting_objects(test_name_var, start_time_var, end_time_var, utm_campaign_var, label_dict, label_dict_full, \
-                                      sample_interval, test_interval, test_type_var, metric_types, one_step_var)
+                                      sample_interval, test_interval, test_type_var, metric_types, one_step_var, country)
         
         winner_var = winner[0]
         
@@ -339,7 +344,7 @@ def test(request):
     
 
 """
-def generate_reporting_objects(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types, one_step_var):
+def generate_reporting_objects(test_name, start_time, end_time, campaign, label_dict, label_dict_full, sample_interval, test_interval, test_type, metric_types, one_step_var, country):
 
     """ Labels will always be metric names in this case """
     # e.g. labels = {'Static banner':'20101227_JA061_US','Fading banner':'20101228_JAFader_US'}
@@ -353,6 +358,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         ================================
     """
     try:
+        logging.info('')
+        logging.info('Determining Donations Distribution:')
+        logging.info('===================================\n')
+        
         DR.DonorBracketReporting(query_type=FDH._QTYPE_LP_, file_path=projSet.__web_home__ + 'tests/static/images/').run(start_time, end_time, campaign)
     except:
         pass
@@ -371,6 +380,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     """
     html_language = ''
     if(1):
+        logging.info('')
+        logging.info('Determining Languages Distribution:')
+        logging.info('===================================\n')
+        
         columns, data = DL.CiviCRMLoader().get_donor_by_language(campaign, start_time, end_time)
         html_language = DR.DataReporting()._write_html_table(data, columns)
         
@@ -378,7 +391,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         DETERMINE PAYMENT METHODS 
         =========================
     """
-    
+    logging.info('')
+    logging.info('Determining Payment Methods:')
+    logging.info('============================\n')
+        
     ccl = DL.CiviCRMLoader()
     pm_data_banner, pm_data_lp  = ccl.get_payment_methods(campaign, start_time, end_time)
     
@@ -417,22 +433,30 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         GENERATE PLOTS FOR EACH METRIC OF INTEREST 
         ==========================================
     """
+    logging.info('')
+    logging.info('Determining Metric Minutely Counts:')
+    logging.info('==================================\n')
+    
     for metric in metric_types:
-        ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict, one_step=one_step_var)
+        ir.run(start_time, end_time, sample_interval, metric, campaign, label_dict, one_step=one_step_var, country=country)
                     
     
     """ 
         CHECK THE CAMPAIGN VIEWS AND DONATIONS 
         ======================================
     """
-    ir_cmpgn.run(start_time, end_time, sample_interval, 'views', campaign, {}, one_step=one_step_var)
-    ir_cmpgn.run(start_time, end_time, sample_interval, 'donations', campaign, {}, one_step=one_step_var)
+    ir_cmpgn.run(start_time, end_time, sample_interval, 'views', campaign, {}, one_step=one_step_var, country=country)
+    ir_cmpgn.run(start_time, end_time, sample_interval, 'donations', campaign, {}, one_step=one_step_var, country=country)
     
     
     """ 
         PERFORM HYPOTHESIS TESTING 
         ==========================
     """
+    
+    logging.info('')
+    logging.info('Executing Confidence Queries:')
+    logging.info('============================\n')
     
     column_colours = dict()
     confidence = list()
@@ -441,7 +465,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     
     for metric in measured_metric:
         
-        ret = cr.run(test_name, campaign, metric, label_dict, start_time, end_time, sample_interval, one_step=one_step_var)
+        ret = cr.run(test_name, campaign, metric, label_dict, start_time, end_time, sample_interval, one_step=one_step_var, country=country)
         
         confidence.append(ret[0])
         column_colours[metric] = ret[1]
@@ -452,6 +476,10 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
         ===============================
     """
     
+    logging.info('')
+    logging.info('Generating Summary Report:')
+    logging.info('=========================\n')
+    
     if one_step_var == True:
         summary_start_time = DL.CiviCRMLoader().get_earliest_donation(campaign)
     else:
@@ -460,7 +488,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     summary_end_time = DL.CiviCRMLoader().get_latest_donation(campaign)
     
     srl = DL.SummaryReportingLoader(query_type=test_type)
-    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var)
+    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var,country=country)
     
     columns = srl.get_column_names()
     summary_results = srl.get_results()
@@ -504,7 +532,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
             
     """ Generate totals for the test summary """
     srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
-    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var)
+    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var, country=country)
     html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
         
 
@@ -518,6 +546,9 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
 def generate_summary(request):
     
     try:
+        
+        err_msg = ''
+        
         """ 
             PROCESS POST DATA
             ================= 
@@ -525,33 +556,105 @@ def generate_summary(request):
             Escape all user input that can be entered in text fields 
             
         """
-        utm_campaign = MySQLdb._mysql.escape_string(request.POST['utm_campaign'].strip())
-        start_time = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
-        end_time = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())
+        if 'utm_campaign' in request.POST:
+            utm_campaign = MySQLdb._mysql.escape_string(request.POST['utm_campaign'])
+        
+        if 'start_time' in request.POST:
+            start_time = MySQLdb._mysql.escape_string(request.POST['start_time'].strip())
+            
+            if not(TP.is_timestamp(start_time, 1)) and not(TP.is_timestamp(start_time, 2)):            
+                err_msg = 'Incorrectly formatted start timestamp.'
+                raise Exception()
+            
+        if 'end_time' in request.POST:
+            end_time = MySQLdb._mysql.escape_string(request.POST['end_time'].strip())
+            
+            if not(TP.is_timestamp(end_time, 1)) and not(TP.is_timestamp(end_time, 2)):            
+                err_msg = 'Incorrectly formatted end timestamp.'
+                raise Exception()
+        
+        if 'iso_filter' in request.POST:
+            country = MySQLdb._mysql.escape_string(request.POST['iso_filter'])
+        else:
+            country = '.{2}'
+            
+        if 'measure_confidence' in request.POST:
+            if cmp(request.POST['measure_confidence'], 'yes') == 0:
+                measure_confidence = True 
+            else:
+                measure_confidence = False
+        else:
+            measure_confidence = False
         
         """ Convert timestamp format if necessary """
+        
         if TP.is_timestamp(start_time, 2):
             start_time = TP.timestamp_convert_format(start_time, 2, 1)
         if TP.is_timestamp(end_time, 2):
             end_time = TP.timestamp_convert_format(end_time, 2, 1)
-         
+        
+    
+        """ =============================================== """
+        
+        
+        """ 
+            Should a one-step query be used? 
+            ================================
+        """
+        lptl = DL.LandingPageTableLoader(db='db1008')        
+        use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
+            
+                     
         """ 
             GENERATE A REPORT SUMMARY TABLE
             ===============================
         """
         srl = DL.SummaryReportingLoader(query_type=FDH._TESTTYPE_BANNER_LP_)
-        srl.run_query(start_time, end_time, utm_campaign, min_views=-1)    
-        
-        columns = srl.get_column_names()
+        srl.run_query(start_time, end_time, utm_campaign, min_views=-1, country=country)            
+    
+        column_names = srl.get_column_names()
         summary_results = srl.get_results()
+        
         if not(summary_results):
             summary_results = '<p>No data available for %s.' % utm_campaign
+        else:
+            summary_results_list = list()
+            for row in summary_results:
+                summary_results_list.append(list(row))
+            summary_results = summary_results_list
             
-        html_table = DR.DataReporting()._write_html_table(summary_results, columns, use_standard_metric_names=True)    
+        """ 
+            Format results to encode html table cell markup in results        
+        """
+        if measure_confidence:
+            
+            ret = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, utm_campaign, one_step=use_one_step, country=country) # first get color codes on confidence
+            conf_colour_code = ret[0]
+            
+            for row_index in range(len(summary_results)):
+                
+                artifact_index = summary_results[row_index][0] + '-' + summary_results[row_index][1] + '-' + summary_results[row_index][2]
+                
+                for col_index in range(len(column_names)):
+                    
+                    is_coloured_cell = False
+                    if column_names[col_index] in conf_colour_code.keys():
+                        if artifact_index in conf_colour_code[column_names[col_index]].keys():
+                            summary_results[row_index][col_index] = '<td style="background-color:' + conf_colour_code[column_names[col_index]][artifact_index] + ';">' + str(summary_results[row_index][col_index]) + '</td>'
+                            is_coloured_cell = True
+                            
+                    if not(is_coloured_cell):
+                        summary_results[row_index][col_index] = '<td>' + str(summary_results[row_index][col_index]) + '</td>'
+        
+            html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True, omit_cell_markup=True)
+            
+        else:
+            
+            html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True)    
         
         """ Generate totals """
         srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
-        srl.run_query(start_time, end_time, utm_campaign, min_views=-1)
+        srl.run_query(start_time, end_time, utm_campaign, min_views=-1, country=country)
         
         total_summary_results = srl.get_results()
         if not(total_summary_results):
@@ -582,14 +685,20 @@ def generate_summary(request):
         html_table_pm_banner = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_banner_mapped, ['Payment Method', 'Portion of Donations'], 'Banner')
         html_table_pm_lp = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_lp_mapped, ['Payment Method', 'Portion of Donations'], 'Landing Page')
         
-        html_table = html_table + '<h4><u>Payment Methods Breakdown:</u></h4><div class="spacer"></div>' + html_table_pm_banner + '<div class="spacer"></div>' + \
+        html_table = html_table + '<div class="spacer"></div><h4><u>Payment Methods Breakdown:</u></h4><div class="spacer"></div>' + html_table_pm_banner + '<div class="spacer"></div>' + \
             html_table_pm_lp + '<div class="spacer"></div><div class="spacer"></div>'
         
         return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))
-    
-    except:
+
+    except Exception as inst:
         
-        return render_to_response('tests/index.html', {'err_msg' : 'Could not generate campaign tabular results.'}, context_instance=RequestContext(request))
+        print inst
+        
+        if cmp(err_msg, '') == 0:
+            err_msg = 'Could not generate campaign tabular results.'
+        
+        return index(request, err_msg=err_msg)
+        # return render_to_response('tests/index.html', {'err_msg' : err_msg}, context_instance=RequestContext(request))
     
 """
     Inserts a comment into an existing report

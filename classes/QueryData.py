@@ -37,7 +37,15 @@ import classes.TimestampProcessor as TP
 import classes.FundraiserDataHandler as FDH
 import datetime, re
 
-def format_query(query_name, sql_stmnt, args):
+def format_query(query_name, sql_stmnt, args, **kwargs):
+    
+    if 'country' in kwargs:
+        if cmp(kwargs['country'], '') == 0:
+            country = '.{2}'
+        else:
+            country = kwargs['country']
+    else:
+        country = '.{2}'
     
     if cmp(query_name, 'report_campaign_ecomm') == 0:
         start_time = args[0]
@@ -96,7 +104,7 @@ def format_query(query_name, sql_stmnt, args):
         else:
             min_views = 'where lp.views > ' + str(min_views) + ' '
             
-        sql_stmnt = str(sql_stmnt % (start_time, end_time, campaign, start_time, end_time, campaign, start_time, end_time, campaign, min_views))
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, campaign, country, start_time, end_time, campaign, country, start_time, end_time, campaign, country, min_views))
         
     elif cmp(query_name, 'report_banner_metrics') == 0 or cmp(query_name, 'report_bannerLP_metrics') == 0 or cmp(query_name, 'report_total_metrics') == 0 or \
     cmp(query_name, 'report_banner_metrics_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_1S') == 0 or cmp(query_name, 'report_total_metrics_1S') == 0:
@@ -105,14 +113,16 @@ def format_query(query_name, sql_stmnt, args):
         end_time = args[1]
         campaign = args[2]
         min_views = args[3]
-        
+            
         """ Format the condition for minimum views """
         if cmp(str(min_views), '-1') == 0:
             min_views = ' '
         else:
             min_views = 'where lp.views > ' + str(min_views) + ' '
             
-        sql_stmnt = str(sql_stmnt % (start_time, end_time, start_time, end_time, campaign, start_time, end_time, start_time, end_time, campaign, start_time, end_time, campaign, min_views))
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, country, start_time, end_time, campaign, country, start_time, end_time, country, \
+                                     start_time, end_time, campaign, country, start_time, end_time, campaign, country, min_views))
+        
     
     elif cmp(query_name, 'report_latest_campaign') == 0:
         start_time = args[0]
@@ -144,8 +154,8 @@ def format_query(query_name, sql_stmnt, args):
         imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
         imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
         
-        sql_stmnt = str(sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
-                                 start_time, end_time, campaign, campaign))
+        sql_stmnt = str(sql_stmnt % ('%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, country, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, country, \
+                                 start_time, end_time, campaign, country, campaign))
     
     elif cmp(query_name, 'report_banner_metrics_minutely') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely') == 0 or cmp(query_name, 'report_banner_metrics_minutely_1S') == 0 or cmp(query_name, 'report_bannerLP_metrics_minutely_1S') == 0:
     
@@ -159,8 +169,11 @@ def format_query(query_name, sql_stmnt, args):
         imp_start_time_obj = start_time_obj + datetime.timedelta(seconds=-1)
         imp_start_time_obj_str = TP.timestamp_from_obj(imp_start_time_obj, 1, 3)
         
-        sql_stmnt = str(sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
-                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, start_time, end_time, campaign, campaign))
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%',  '%', interval, interval, imp_start_time_obj_str, end_time, \
+                                     country, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, country, \
+                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, country, \
+                                '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, \
+                                country, start_time, end_time, campaign, country, campaign, ))
     
     elif cmp(query_name, 'report_campaign_metrics_minutely') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_1S') == 0 or cmp(query_name, 'report_campaign_metrics_minutely_total') == 0 \
     or cmp(query_name, 'report_campaign_metrics_minutely_total_1S') == 0:
@@ -169,8 +182,8 @@ def format_query(query_name, sql_stmnt, args):
         campaign = args[2]
         interval = args[3]
         
-        sql_stmnt = str(sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign))
-    
+        sql_stmnt = str(sql_stmnt % (campaign, '%', '%', '%',  '%', interval, interval, start_time, end_time, campaign, country, '%', '%',  '%',  '%', interval, interval, start_time, end_time, campaign, country))
+        
     elif cmp(query_name, 'report_campaign_totals') == 0:
         start_time = args[0]
         end_time = args[1]
@@ -425,15 +438,15 @@ def get_metric_index(query_name, metric_name):
     elif query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_bannerLP_metrics':
         
         if metric_name == 'click_rate':
-            return 6
+            return 8
         elif metric_name == 'don_per_imp':
-            return 7
-        elif metric_name == 'amt_norm_per_imp':
             return 9
+        elif metric_name == 'amt_norm_per_imp':
+            return 11
         elif metric_name == 'don_per_view':
-            return 10
-        elif metric_name == 'amt_norm_per_view':
             return 12
+        elif metric_name == 'amt_norm_per_view':
+            return 14
         
     elif query_name == 'report_total_metrics' or query_name == 'report_total_metrics_1S':
         

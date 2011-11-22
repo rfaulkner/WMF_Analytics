@@ -603,14 +603,7 @@ class IntervalReporting(DataReporting):
     
         if 'generate_plot' in kwargs:
             self._generate_plot_ = kwargs['generate_plot']
-        
-        if 'one_step' in kwargs:
-            one_step_var = kwargs['one_step']
-            
-            if not(isinstance(one_step_var, bool)):
-                one_step_var = False
-        else:
-            one_step_var = False
+
             
         if 'include_all_artifacts' in kwargs:
             artifact_keys_var = self._counts_.keys()
@@ -622,7 +615,7 @@ class IntervalReporting(DataReporting):
         artifact_keys_var = label_dict.keys()
         
         """ Execute the query that generates interval reporting data """
-        return_val = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign, one_step=one_step_var)
+        return_val = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign, **kwargs)
         self._counts_ = return_val[0]
         self._times_ = return_val[1]
         
@@ -847,20 +840,7 @@ class ConfidenceReporting(DataReporting):
     """
     def run(self, test_name, campaign, metric_name, items, start_time, end_time, interval, **kwargs):
         
-        """ 
-            PROCESS KWARGS
-            ==============
-        """
-        
-        if 'one_step' in kwargs:
-            one_step_var = kwargs['one_step']
-            
-            if not(isinstance(one_step_var, bool)):
-                one_step_var = False
-        else:
-            one_step_var = False
-        
-            
+    
         """ TEMPORARY - map TODO : this should be more generalized """
         counter = 1
         for key in items.keys():
@@ -875,7 +855,7 @@ class ConfidenceReporting(DataReporting):
         artifact_keys_var = items.keys()
         
         """ Retrieve values from database """
-        results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign, one_step=one_step_var)
+        results = self._data_loader_.run_query(start_time, end_time, interval, metric_name, campaign, **kwargs)
         self._counts_ = results[0]
         self._times_ = results[1]
         
@@ -981,8 +961,8 @@ class ConfidenceReporting(DataReporting):
         sampling_interval = 1
         if 'sampling_interval' in kwargs:
             if isinstance(kwargs['sampling_interval'], int):
-                sampling_interval = kwargs['sampling_interval']
-        
+                sampling_interval = kwargs['sampling_interval']        
+
         
         derived_metrics = ['click_rate', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
         measured_metrics = ['impressions', 'views', 'donations', 'amount_normal']
@@ -1001,7 +981,7 @@ class ConfidenceReporting(DataReporting):
         else:
             
             for metric in measured_metrics:                                
-                ir.run(start_time, end_time, sampling_interval, metric, campaign, {}, include_all_artifacts=True, generate_plot=False, one_step=use_one_step)
+                ir.run(start_time, end_time, sampling_interval, metric, campaign, {}, include_all_artifacts=True, generate_plot=False, **kwargs)
                 measured_metrics_counts[metric] = ir._counts_
         
         """ Generate the Table only if there is data available  """
