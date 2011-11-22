@@ -480,15 +480,18 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     logging.info('Generating Summary Report:')
     logging.info('=========================\n')
     
+    """
+    
     if one_step_var == True:
         summary_start_time = DL.CiviCRMLoader().get_earliest_donation(campaign)
     else:
         summary_start_time = DL.LandingPageTableLoader().get_earliest_campaign_view(campaign)
     
     summary_end_time = DL.CiviCRMLoader().get_latest_donation(campaign)
+    """
     
     srl = DL.SummaryReportingLoader(query_type=test_type)
-    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var,country=country)
+    srl.run_query(start_time, end_time, campaign, one_step=one_step_var,country=country)
     
     columns = srl.get_column_names()
     summary_results = srl.get_results()
@@ -525,7 +528,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
             
     """ Generate totals for the test summary """
     srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
-    srl.run_query(summary_start_time, summary_end_time, campaign, one_step=one_step_var, country=country)
+    srl.run_query(start_time, end_time, campaign, one_step=one_step_var, country=country)
     html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
         
 
