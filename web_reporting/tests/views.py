@@ -299,7 +299,8 @@ def test(request):
         template_var_dict = {'results' : results,  \
                   'utm_campaign' : utm_campaign_var, 'metric_names_full' : metric_types_full, \
                   'summary_table': html_table, 'sample_interval' : sample_interval, \
-                  'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language}
+                  'banner_pm_table' : html_table_pm_banner, 'lp_pm_table' : html_table_pm_lp, 'html_table_language' : html_table_language, \
+                  'start_time' : TP.timestamp_convert_format(start_time_var, 1, 2) , 'end_time' : TP.timestamp_convert_format(end_time_var, 1, 2)}
         
         html = render_to_response('tests/results_' + test_type_var + '.html', template_var_dict, context_instance=RequestContext(request))
     
