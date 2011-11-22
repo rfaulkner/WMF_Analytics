@@ -811,7 +811,7 @@ class SummaryReportingLoader(DataLoader):
         
         """ Get rows for given metrics - use 'label_indices' to map metrics back to labels """
         label_indices = list()
-        print self._results_
+
         for row in self._results_:
             item_label = QD.get_key_label(self._query_name_, row)
             if item_label in item_list:
