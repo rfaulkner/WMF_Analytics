@@ -9,8 +9,7 @@
      METHODS:
         
             format_query         
-            get_query             
-            get_query_header     
+            get_query            
             get_key_index
             get_count_index
             get_time_index
@@ -18,8 +17,6 @@
             get_banner_index
             get_landing_page_index
             get_metric_index
-            get_plot_title
-            get_plot_ylabel
             get_metric_full_name
        
 
@@ -223,17 +220,6 @@ def format_query(query_name, sql_stmnt, args, **kwargs):
 
     return sql_stmnt
 
-
-def get_query_header(query_name):
-    if query_name == 'report_contribution_tracking':
-        return ['Time','Banner','Landing Page','Campaign','Converted Amount', 'Suffix']
-    elif query_name == 'report_ecomm_by_amount':
-        return ['Timestamp','First Name','Last Name','Country','ISO Code', 'Amount', 'First Donation?', 'Date of First']
-    elif query_name == 'report_ecomm_by_contact':
-        return ['Timestamp','First Name','Last Name','Country','ISO Code', 'Amount']
-    else:
-        return 'no such table'
-
 """     
     Returns the index of the key for the query data 
 """
@@ -256,7 +242,7 @@ def get_key_index(query_name):
     elif query_name == 'report_campaign_lps':
         return 0
     elif query_name == 'report_campaign_bannerlps':
-        return [0, 1]
+        return [0, 1, 2]
     elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
         return 1
     elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics' \
@@ -264,44 +250,6 @@ def get_key_index(query_name):
         return 0
     else:
         return 1
-    
-"""     
-    Returns the index of the timestamp for the query data 
-"""
-def get_time_index(query_name):
-    if query_name == 'report_campaign_logs_by_min':
-        return 0
-    elif query_name == 'report_campaign_logs_by_hr':
-        return 0
-    elif query_name == 'report_non_US_clicks':
-        return 0
-    elif query_name == 'report_contribution_tracking':
-        return 0
-    elif query_name == 'report_bannerLP_metrics':
-        return 0
-    elif query_name == 'report_latest_campaign':
-        return 1
-    elif query_name == 'report_banner_impressions_by_hour':
-        return 0
-    elif query_name == 'report_lp_views_by_hour':
-        return 0
-    elif re.search('report_banner_metrics_minutely', query_name):
-        return 0
-    elif re.search('report_bannerLP_metrics_minutely', query_name):
-        return 0
-    elif re.search('report_LP_metrics_minutely', query_name):
-        return 0
-    elif re.search('report_campaign_metrics_minutely', query_name):
-        return 0
-    elif query_name == 'report_campaign_metrics_minutely_total':
-        return 0
-    elif query_name == 'report_campaign_totals':
-        return 0
-    elif query_name == 'report_campaign_metrics_minutely_all' or query_name == 'report_banner_metrics_minutely_all' or query_name == 'report_lp_metrics_minutely_all':
-        return 0
-    else:
-        return -1
-
 
 
 def get_metric_index(query_name, metric_name):
@@ -483,39 +431,6 @@ def get_metric_index(query_name, metric_name):
     else:
         return 'no such table'
 
-"""
-    Based on a cursor object retrieve the index of a column name in the data object returned
-    
-    @param cursor: MySQLdb.cursor object
-    @param column_name: string column name
-    
-    @return: index of the column in the data results
-"""
-def get_columnn_index(cursor, column_name):
-    
-    query_cols = list()
-    for col in cursor.description:
-        query_cols.append(col[0])
-                        
-    return query_cols.index(column_name)
-    
-
-
-def get_plot_title(query_name):
-    if query_name == 'report_banner_impressions_by_hour':
-        return 'Banner Impressions Over the Past 24 Hours'
-    elif query_name == 'report_lp_views_by_hour':
-        return 'Landing Page Views Over the Past 24 Hours'
-    else:
-        return 'no such table'
-    
-def get_plot_ylabel(query_name):
-    if query_name == 'report_banner_impressions_by_hour':
-        return 'IMPRESSIONS'
-    elif query_name == 'report_lp_views_by_hour':
-        return 'VIEWS'
-    else:
-        return'no such table'
     
 def get_metric_full_name(metric_name):
     if metric_name == 'imp':

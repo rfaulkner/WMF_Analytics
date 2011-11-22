@@ -986,7 +986,7 @@ class IntervalReportingLoader(DataLoader):
         """ Get Indexes into Query """
         key_index = QD.get_key_index(query_name)
         metric_index = QD.get_metric_index(query_name, metric_name)
-        time_index = QD.get_time_index(query_name)
+        time_index = QD.get_metric_index(query_name, 'day_hr')
         
         """ Compose the data for each separate donor pipeline artifact """
         try:
