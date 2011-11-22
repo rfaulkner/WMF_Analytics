@@ -1274,7 +1274,7 @@ class CampaignReportingLoader(DataLoader):
             results = self._cur_.fetchall()
             
             for row in results:
-                label = QD.get_key_label(self._query_type_, row)
+                label = QD.get_key_label(query_name, row)
                 data.append(label)
                 # key_name = row[key_index]
                 
