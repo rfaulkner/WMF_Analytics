@@ -39,8 +39,8 @@ class DataFilter(object):
         Execution method.  The base class simply performs the logging.
     """
     def execute(self):
-        logging.info(self.__str__() + ' -- filtering...')
-         
+        # logging.info(self.__str__() + ' -- filtering...')
+        return
     
     
 """
