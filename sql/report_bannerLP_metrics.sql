@@ -120,7 +120,7 @@ group by 1,2) as avg_contributions
 on all_contributions.banner = avg_contributions.banner
 and all_contributions.landing_page = avg_contributions.landing_page
 
-group by 1,2
+group by 1,2,3
 ) as ecomm
 
 on ecomm.banner = lp.utm_source and ecomm.landing_page = lp.landing_page
