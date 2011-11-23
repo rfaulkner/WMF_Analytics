@@ -207,7 +207,7 @@ def long_term_trends(request):
     cache = DC.LTT_DataCaching()
     dict_param = cache.retrieve_cached_data(view_keys.LTT_DICT_KEY)
     
-    return render_to_response('live_results/long_term_trends.html', dict_param,  context_instance=RequestContext(request))
+    return render_to_response('live_results/long_term_trends.html', dict_param, context_instance=RequestContext(request))
 
 
 
@@ -272,3 +272,21 @@ def impression_list(request):
     imp_table = DR.DataReporting()._write_html_table(results, column_names)
     
     return render_to_response('live_results/impression_list.html', {'imp_table' : imp_table.decode("utf-8"), 'err_msg' : err_msg, 'start' : TP.timestamp_convert_format(start_time, 1, 2), 'end' : TP.timestamp_convert_format(end_time, 1, 2)},  context_instance=RequestContext(request))
+
+
+"""
+    Produces 
+"""
+def json_out(request, utm_campaign, banner):    
+    
+    dl = DL.DataLoader(db='db1025')
+
+    sql = "select round(views / impressions, 6) from (select sum(counts) as impressions from banner_impressions where utm_source = '%s') as bi, " + \
+    "(select count(*) as views from landing_page_requests where utm_source = '%s' and utm_campaign = '%s') as lp" 
+    sql = sql % (banner, banner, utm_campaign)
+    
+    results = dl.execute_SQL(sql)
+    
+    json = '{"click_rate": %s}' % results[0][0]
+    
+    return render_to_response('live_results/json_out.html', {'html' : json}, context_instance=RequestContext(request))
