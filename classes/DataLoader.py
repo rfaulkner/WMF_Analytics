@@ -2376,7 +2376,21 @@ class CiviCRMLoader(TableLoader):
     | counts          | int(10) unsigned | YES  |     | NULL                |                             | 
     | on_minute       | timestamp        | NO   |     | 0000-00-00 00:00:00 |                             | 
     +-----------------+------------------+------+-----+---------------------+-----------------------------+
-            
+    
+    storage3.pmtpa.wmnet.faulkner.banner_impressions_raw:
+    
+    +--------------+----------------+------+-----+-------------------+-----------------------------+
+    | Field        | Type           | Null | Key | Default           | Extra                       |
+    +--------------+----------------+------+-----+-------------------+-----------------------------+
+    | utm_source   | varbinary(128) | YES  |     | NULL              |                             |
+    | referrer     | varbinary(128) | YES  |     | NULL              |                             |
+    | country      | varbinary(128) | YES  |     | NULL              |                             |
+    | lang         | varbinary(20)  | YES  |     | NULL              |                             |
+    | request_time | timestamp      | NO   |     | CURRENT_TIMESTAMP | on update CURRENT_TIMESTAMP |
+    | ip           | varbinary(20)  | YES  |     | NULL              |                             |
+    | user_agent   | varbinary(500) | YES  |     | NULL              |                             |
+    +--------------+----------------+------+-----+-------------------+-----------------------------+
+
 """
 class ImpressionTableLoader(TableLoader):
     
@@ -2398,6 +2412,9 @@ class ImpressionTableLoader(TableLoader):
         lang =  'NULL'
         counts = 'NULL'
         on_minute = 'NULL'
+        ip = 'NULL'
+        user_agent = 'NULL'
+        request_time = 'NULL'
                 
         """ Process kwargs - Escape parameters """                
         for key in kwargs_dict:
@@ -2418,23 +2435,53 @@ class ImpressionTableLoader(TableLoader):
                 counts = self.stringify(counts)
             elif key == 'on_minute_arg':
                 on_minute = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+            
             elif key == 'start_timestamp_arg':
                 start_timestamp = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
-                start_timestamp = self.stringify(start_timestamp)
-        
-        return [start_timestamp, utm_source, referrer, country, lang, counts, on_minute]
+            
+            elif key == 'ip':
+                ip = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+                ip = self.stringify(ip)
+                
+            elif key == 'user_agent':
+                user_agent = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+                user_agent = self.stringify(user_agent)
+            
+            elif key == 'request_time':
+                request_time = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
+
+                
+        return start_timestamp, utm_source, referrer, country, lang, counts, on_minute, ip, user_agent, request_time
     
     
     def insert_row(self, **kwargs):
         
-        insert_stmnt = 'insert into banner_impressions values '
+        if 'use_raw' in kwargs:
+            use_raw = kwargs['use_raw']
+            if not(isinstance(use_raw, bool)):
+                use_raw = False
+                
+            if use_raw:
+                insert_stmnt = 'insert into banner_impressions_raw values '
+            else:
+                insert_stmnt = 'insert into banner_impressions values '
+        else:
+            use_raw = False
+            insert_stmnt = 'insert into banner_impressions values '
         
-        start_timestamp, utm_source, referrer, country, lang, counts, on_minute = self.process_kwargs(kwargs)
+        start_timestamp, utm_source, referrer, country, lang, counts, on_minute, ip, user_agent, request_time = self.process_kwargs(kwargs)
         
-        start_timestamp = "convert('" + start_timestamp + "00', datetime)"
-        on_minute = "convert('" + on_minute + "00', datetime)"
-        val = '(' + start_timestamp + ',' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' \
-                                    + counts + ',' + on_minute + ');'
+        if use_raw:
+            
+            request_time = "convert('" + request_time + "', datetime)"
+            val = '(' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' \
+                    + request_time + ',' + ip + ',' + user_agent + ');'            
+        else:
+            
+            start_timestamp = "convert('" + start_timestamp + "', datetime)"
+            on_minute = "convert('" + on_minute + "', datetime)"
+            val = '(' + start_timestamp + ',' + utm_source + ',' + referrer + ',' + country + ',' + lang + ',' \
+                                        + counts + ',' + on_minute + ');'
                                     
         insert_stmnt = insert_stmnt + val
 

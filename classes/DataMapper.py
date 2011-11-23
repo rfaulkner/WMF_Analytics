@@ -472,13 +472,10 @@ class FundraiserDataMapper(DataMapper):
         start = self.get_first_timestamp_from_log(logFileName)
 
         end = time_stamps[1]
-        start_timestamp_in = start
         curr_time = TP.timestamp_from_obj(datetime.datetime.now(),1,3)
                                 
         """ Initialization - open the file """
-        logFile, total_lines_in_file = self.open_logfile(logFileName)
-        
-        
+        logFile, total_lines_in_file = self.open_logfile(logFileName)        
         queryIndex = 4;
     
         counts = Hlp.AutoVivification()
@@ -523,7 +520,7 @@ class FundraiserDataMapper(DataMapper):
                 time_bits = time_stamp.split('T')
                 date_fields = time_bits[0].split('-')
                 time_fields = time_bits[1].split(':')                
-                time_stamp = date_fields[0] + date_fields[1] + date_fields[2] + time_fields[0] + time_fields[1]
+                time_stamp = date_fields[0] + date_fields[1] + date_fields[2] + time_fields[0] + time_fields[1] + '00'
                 
             except (ValueError, IndexError):
                 line = logFile.readline()
@@ -624,7 +621,7 @@ class FundraiserDataMapper(DataMapper):
                             timestamp = timestampKeys[timestamp_ind]
                             count = timestampCounts[timestamp]
                                                     
-                            itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=timestamp, start_timestamp_arg=start_timestamp_in)
+                            itl.insert_row(utm_source_arg=banner, referrer_arg=project, country_arg=country, lang_arg=lang, counts_arg=str(count), on_minute_arg=timestamp, start_timestamp_arg=start)
                             
         
 
@@ -1173,5 +1170,101 @@ class FundraiserDataMapper(DataMapper):
                 tstl = DL.TrafficSamplesTableLoader()
                 tstl.insert_multiple_rows(ref_ids, referrers, request_times)
                 
+    
+    def mine_squid_impression_requests_raw(self, logFileName):
+        
+        logging.info('Begin mining of raw banner impressions in %s' % logFileName)
+        
+        itl = DL.ImpressionTableLoader()
+                                        
+        """ Initialization - open the file """
+        logFile, total_lines_in_file = self.open_logfile(logFileName)                
+        queryIndex = 4;
+    
+        
+        """
+            PROCESS LOG FILE
+            ================
+        """
+        
+        line_count = 0
+        
+        line = logFile.readline()
+        while (line != ''):
+            
+            lineArgs = line.split()
+            
+            """ 
+                Parse the Timestamp:
+            """
+            try:
+                time_stamp = lineArgs[2]
+                time_bits = time_stamp.split('T')
+                date_fields = time_bits[0].split('-')
+                time_fields = time_bits[1].split(':')                
+                time_stamp = date_fields[0] + date_fields[1] + date_fields[2] + time_fields[0] + time_fields[1]
                 
+            except (ValueError, IndexError):
+                line = logFile.readline()
+                total_lines_in_file = total_lines_in_file - 1
+                continue
+                # pass
+ 
+            """ 
+                Extract the URL, referrer, user agent, and IP from the request:
+            """                
+            try:
+                url = lineArgs[8]
+                ip = lineArgs[4]
+                referrer_url = lineArgs[11]
+                user_agent = lineArgs[13]
+            
+            except:
+                line = logFile.readline()
+                line_count = line_count + 1
+                continue
+
+
+            """ 
+                Parse the URL:
+            """    
+            parsedUrl = up.urlparse(url)
+            query = parsedUrl[queryIndex]
+            queryBits = cgi.parse_qs(query)
+    
+            """ Extract - project, banner, language, & country data from the url """
+            project = ''
+            if ('db' in queryBits.keys()):
+                project = queryBits['db'][0]
+    
+            if (project == '' and 'sitename' in queryBits.keys()):
+                sitename = queryBits['sitename'][0];
+                if sitename:
+                    project = sitename
+                else:
+                    project = 'NONE'
+    
+            if ('banner' in queryBits.keys()):
+                banner = queryBits['banner'][0]
+            else:
+                banner = 'NONE'
+    
+            if ('userlang' in queryBits.keys()):
+                lang = queryBits['userlang'][0]
+            else:
+                lang = 'NONE'
+    
+            if ('country' in queryBits.keys()):
+                country = queryBits['country'][0]
+            else:
+                country = 'NONE'
+    
+            itl.insert_row(use_raw=True, utm_source_arg=banner, referrer_arg=referrer_url, country_arg=country, lang_arg=lang, request_time=time_stamp, ip=ip, user_agent=user_agent)
+
+            line = logFile.readline()
+            line_count = line_count + 1
+            
+
+        """ ====== FILE COMPLETE ====== """
+        logFile.close()
                 
