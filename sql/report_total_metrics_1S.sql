@@ -9,7 +9,7 @@
 
 select
 
-concat(ecomm.utm_campaign,' Totals') as campaign,
+concat(lp.utm_campaign,' Totals') as campaign,
 sum(floor(impressions * (views / total_views))) as impressions, 
 sum(views) as views,
 sum(donations) as donations,
@@ -69,7 +69,7 @@ group by 1) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source
 
-right join
+left join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 

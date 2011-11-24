@@ -9,7 +9,7 @@
 
 select
 
-ecomm.landing_page,
+lp.landing_page,
 views,
 donations,
 amount,
@@ -35,7 +35,7 @@ and country regexp '%s'
 
 group by 1) as lp
 
-right join
+left join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 

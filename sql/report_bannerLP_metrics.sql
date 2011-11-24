@@ -9,9 +9,9 @@
 
 select
 
-ecomm.utm_campaign,
-ecomm.banner as utm_source,
-ecomm.landing_page,
+lp.utm_campaign,
+lp.utm_source,
+lp.landing_page,
 floor(impressions * (views / total_views)) as impressions, 
 views,
 donations,
@@ -66,7 +66,7 @@ group by 1) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source
 
-right join
+left join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 
