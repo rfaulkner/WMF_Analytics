@@ -771,7 +771,7 @@ class SummaryReportingLoader(DataLoader):
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
             sql_stmnt = Hlp.file_to_string(filename )
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views], country=country)        
-
+            
             logging.info('Using query: ' + self._query_name_)
             self._results_ = self.execute_SQL(sql_stmnt)
             
@@ -2503,7 +2503,24 @@ class ImpressionTableLoader(TableLoader):
         
         self.execute_SQL(deleteStmnt)
     
-
+    """
+        Pulls all of the records out of banner_impressions_raw grouped on IP/User Agent and returns list
+    """
+    def get_raw_impressions(self):
+        
+        sql = 'select ip, user_agent, count(*) as hits from banner_impressions_raw group by 1,2 order by 3'
+        
+        results = self.execute_SQL(sql)
+        
+        labeled_samples = Hlp.AutoVivification()
+        unlabeled_samples = list()
+        
+        for row in results:
+            unlabeled_samples.append(int(row[2]))
+            labeled_samples[row[0]][row[1]] = int(row[2])
+            
+        return labeled_samples, unlabeled_samples
+        
 """
 
     CLASS :: LandingPageTableLoader
