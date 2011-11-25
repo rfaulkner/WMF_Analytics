@@ -2499,6 +2499,7 @@ class ImpressionTableLoader(TableLoader):
     def delete_row(self, start_timestamp):
         
         start_timestamp = self.process_kwargs({ 'start_timestamp_arg' : start_timestamp})[0]
+        start_timestamp = "convert('" + start_timestamp + "', datetime)"
         deleteStmnt = 'delete from banner_impressions where start_timestamp = ' + start_timestamp + ';'
         
         self.execute_SQL(deleteStmnt)
