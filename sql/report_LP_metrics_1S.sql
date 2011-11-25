@@ -37,7 +37,7 @@ and iso_code regexp '%s'
 
 group by 1) as lp
 
-left join
+right join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 

@@ -59,7 +59,7 @@ group by 1) as lp_tot
 
 on imp.utm_source =  lp_tot.utm_source 
 
-left join
+right join
 
 -- Temporary table that stores rows of donation data from civicrm and drupal tables
 -- 
