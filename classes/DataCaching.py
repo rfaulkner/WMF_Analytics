@@ -72,7 +72,8 @@ class LTT_DataCaching(DataCaching):
         
         logging.info('Commencing caching of long term trends data at:  %s' % self.CACHING_HOME)
                 
-        end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-20), 1, hours=-self.VIEW_DURATION_HRS)
+        end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-60), 1, \
+                                                          hours=-self.VIEW_DURATION_HRS, resolution=1)
         
         """
             DATA CONFIG            
@@ -85,7 +86,8 @@ class LTT_DataCaching(DataCaching):
         lttdl = DL.LongTermTrendsLoader(db='db1025')
                 
         """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
-        country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
+        # country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
+        # payment_groups = {'Credit Card' : ['(cc)'], 'Paypal': ['(pp)']}
         currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)']}
         lang_cntry_groups = {'US': ['US..', '.{4}'], 'EN' : ['[^U^S]en', '.{4}']}
         
@@ -97,19 +99,23 @@ class LTT_DataCaching(DataCaching):
         # groups = [ lang_cntry_groups] metrics = ['click_rate'] metrics_index = [3]
         # group_metrics = [DL.LongTermTrendsLoader._MT_RATE_] metric_types = ['country', 'language'] include_totals = [True] include_others = [True]
         
-        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount']
-        metrics_index = [0, 1, 2, 2, 2, 4]
-        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, currency_groups]
+        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount', 'pct_diff_don', 'pct_diff_don']
+        metrics_index = [0, 1, 2, 2, 2, 4, 5, 5]
+        groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, currency_groups, \
+                  lang_cntry_groups, lang_cntry_groups]
         
         """  The metrics that are used to build a group string to be qualified via regex - the values of the list metrics are concatenated """ 
         group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], \
-                         ['country', 'language'], ['country', 'language'], ['currency']]
+                         ['country', 'language'], ['country', 'language'], ['currency'], ['country', 'language'], \
+                         ['country', 'language']]
         
         metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
-                        DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_]
+                        DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
+                        DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_RATE_,]
         
-        include_totals = [True, True, True, False, True, True]
-        include_others = [True, True, True, False, True, True]
+        include_totals = [True, True, True, False, True, True, False, False]
+        include_others = [True, True, True, False, True, True, True, True]
+        hours_back = [24, 24, 24, 24, 24, 24, 24, 168]
         
         data = list()
         
@@ -122,15 +128,17 @@ class LTT_DataCaching(DataCaching):
             dr = DR.DataReporting()
             
             times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], \
-                                            groups=groups[index], group_metric=group_metrics[index], include_other=include_others[index], include_total=include_totals[index])
+                                            groups=groups[index], group_metric=group_metrics[index], include_other=include_others[index], \
+                                            include_total=include_totals[index], hours_back=hours_back[index])
+            
             times = TP.normalize_timestamps(times, False, 1)
-                
+            
             dr._counts_ = counts
             dr._times_ = times
-    
-            empty_data = [0] * len(times['Total'])
+                        
+            empty_data = [0] * len(times[times.keys()[0]])
             data.append(dr.get_data_lists([''], empty_data))
-        
+            
         dict_param = Hlp.combine_data_lists(data)
         dict_param['interval'] = self.VIEW_DURATION_HRS    
         dict_param['end_time'] = TP.timestamp_convert_format(end_time,1,2)

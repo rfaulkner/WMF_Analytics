@@ -410,6 +410,7 @@ class LongTermTrendsLoader(DataLoader):
         group_metric = ['country']
         include_other = False
         include_total = True
+        hours_back = 24
         
         """ Process keys -- Escape parameters """
         for key in kwargs_dict:
@@ -445,7 +446,6 @@ class LongTermTrendsLoader(DataLoader):
                         group_metric.append(MySQLdb._mysql.escape_string(str(gm)))
             
             elif key == 'include_other':
-                include_other = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
                 try:
                     include_other = bool(kwargs_dict[key])
                 except:
@@ -453,14 +453,20 @@ class LongTermTrendsLoader(DataLoader):
                     pass
             
             elif key == 'include_total':
-                include_total = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
                 try:
                     include_total = bool(kwargs_dict[key])
                 except:
                     logging.info('LTT Loader::process_kwargs - Not a valid boolean value for include_total kwarg')
                     pass
+            
+            elif key == 'hours_back':
+                try:
+                    hours_back = int(kwargs_dict[key])
+                except:
+                    logging.info('LTT Loader::process_kwargs - Not a valid integer value for hours_back kwarg')
+                    pass
 
-        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total
+        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total, hours_back
     
     """
         Based on the query type provided execute a query
@@ -471,7 +477,8 @@ class LongTermTrendsLoader(DataLoader):
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
-        min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total = self.process_kwargs(kwargs)
+        min_val, campaign, metric_name, interval, metric_type, groups, \
+        group_metric, include_other, include_total, hours_back = self.process_kwargs(kwargs)
         
         if query_type == 0: 
             
@@ -513,6 +520,48 @@ class LongTermTrendsLoader(DataLoader):
             "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
             "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
+            
+        elif query_type == 5:
+
+            logging.info('Executing query for percentage difference in donations ...')
+            
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, iso_code as country, language, count(*) as donations, sum(total_amount) as amount " + \
+            "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+            "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+            "join drupal.contribution_tracking on civicrm.civicrm_contribution.id = drupal.contribution_tracking.contribution_id " + \
+            "where receive_date >= '%s' and receive_date < '%s' group by 1,2,3 order by 1,2,3"
+            
+            end_time_obj = TP.timestamp_to_obj(end_time, 1)
+            start_time_obj = TP.timestamp_to_obj(end_time, 1) + datetime.timedelta(hours=-24)
+            start_time = TP.timestamp_from_obj(start_time_obj, 1, 1)
+            
+            end_time_1 = TP.timestamp_from_obj(end_time_obj + datetime.timedelta(hours=-hours_back), 1, 1)
+            start_time_1 = TP.timestamp_from_obj(start_time_obj + datetime.timedelta(hours=-hours_back), 1, 1)
+            start_time_2 = start_time
+            end_time_2 = end_time
+            
+            sql_1 = sql % ('%', '%', '%', '%', start_time_1, end_time_1)
+            sql_2 = sql % ('%', '%', '%', '%', start_time_2, end_time_2)
+            start_time = start_time_2
+            end_time = end_time_2
+            
+            sql = "select t2.hr, t1.country, t1.language," + \
+            "round((t2.donations - t1.donations) / t2.donations, 4) * 100 as pct_diff_don, " + \
+            "round((t2.amount - t1.amount) / t2.amount, 4) * 100.0 as pct_diff_amt " + \
+            "from (%s) as t1 join (%s) as t2 on substring(t1.hr,9,2) = substring(t2.hr,9,2) and t1.country = t2.country and t1.language = t2.language"
+            sql  = sql % (sql_1, sql_2)
+            
+        elif query_type == 6:
+            
+            logging.info('Executing query for long term donations based on payment method ...')
+            
+            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, substring_index(utm_source, '.', -1) as payment_method, count(*) as donations, sum(total_amount) as amount " + \
+            "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+            "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+            "join drupal.contribution_tracking on civicrm.civicrm_contribution.id = drupal.contribution_tracking.contribution_id " + \
+            "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
+            sql = sql % ('%', '%', '%', '%', start_time, end_time)
+
 
         self._results_ = self.execute_SQL(sql)
         column_names = self.get_column_names()

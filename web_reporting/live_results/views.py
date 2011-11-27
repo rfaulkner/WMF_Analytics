@@ -206,7 +206,7 @@ def long_term_trends(request):
     
     cache = DC.LTT_DataCaching()
     dict_param = cache.retrieve_cached_data(view_keys.LTT_DICT_KEY)
-    
+    print dict_param
     return render_to_response('live_results/long_term_trends.html', dict_param, context_instance=RequestContext(request))
 
 
@@ -321,7 +321,7 @@ def json_out(request, utm_campaign):
     
     """ Build JSON, compute click rates """
     click_rate = dict()
-    json = '{ '
+    json = 'insertStatistics({ '
     err_str = ''
     for row in results: 
         try:
@@ -333,6 +333,6 @@ def json_out(request, utm_campaign):
         except:
             err_str = err_str + utm_source + ' '
     
-    json = json[:-2] + '}'
+    json = json[:-2] + '});'
         
     return render_to_response('live_results/json_out.html', {'html' : json}, context_instance=RequestContext(request))

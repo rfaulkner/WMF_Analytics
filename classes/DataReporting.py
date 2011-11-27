@@ -413,14 +413,20 @@ class DataReporting(object):
         data = list()
         labels = '!'
         counts = list()
-        max_data = 0
+        max_data = 0.0
+        min_data = 0.0
         
-        """ Find the key with the highest count """
-        max = 0
+        """ Find the key with the highest count
+        max = 0.0
+        min = 0.0
         for key in self._counts_.keys():
-            val = sum(self._counts_[key])
-            if val > max:
-                max = val
+            val_max = max(self._counts_[key]) * 1.5
+            val_min = min(self._counts_[key]) * 1.5
+            if val_max > max:
+                max = val_max
+            if val_min < min:
+                min = val_min
+        """
         
         """ Only add keys with enough counts """
         data_index = 0
@@ -433,8 +439,8 @@ class DataReporting(object):
                 else:
                     isFormed = isFormed or re.search(pattern, key)
                     
-            if sum(self._counts_[key]) > 0.01 * max and isFormed:
-                
+            # if sum(self._counts_[key]) > 0.01 * max and isFormed:
+            if isFormed:
                 data.append(list())
                 
                 if key == None or key == '':
@@ -448,6 +454,8 @@ class DataReporting(object):
                     data[data_index].append([self._times_[key][i], self._counts_[key][i]])
                     if self._counts_[key][i] > max_data:
                         max_data = self._counts_[key][i]
+                    if self._counts_[key][i] < min_data:
+                        min_data = self._counts_[key][i]
                         
                 data_index = data_index + 1
             
@@ -455,9 +463,9 @@ class DataReporting(object):
         
         """ Use the default empty data if there is none """
         if not data:
-            return {'num_elems' : 1, 'counts' : [len(empty_data)], 'labels' : '!no_data?!', 'data' : empty_data, 'max_data' : 0.0}
+            return {'num_elems' : 1, 'counts' : [len(empty_data)], 'labels' : '!no_data?!', 'data' : empty_data, 'max_data' : 0.0, 'min_data' : 0.0}
         else:
-            return {'num_elems' : data_index, 'counts' : counts, 'labels' : labels, 'data' : data, 'max_data' : max_data}
+            return {'num_elems' : data_index, 'counts' : counts, 'labels' : labels, 'data' : data, 'max_data' : max_data, 'min_data' : min_data}
 
 """
 

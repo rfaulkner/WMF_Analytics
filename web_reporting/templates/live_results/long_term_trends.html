@@ -31,6 +31,16 @@
 <h3>Currencies</h3>
 <div id="placeholder5" style="width:800px;height:600px;"></div>
 <p>Currency amounts in USD over the last {{interval}} hours over 1 hour intervals.</p>
+<br><br>
+<h3>Percentage Difference in Donations compared with this hour yesterday</h3>
+<div id="placeholder6" style="width:800px;height:600px;"></div>
+<p>% difference over the last 24 hours over 1 hour intervals.</p>
+<br><br>
+<h3>Percentage Difference in Donations compared with this hour last week</h3>
+<div id="placeholder7" style="width:800px;height:600px;"></div>
+<p>% difference over the last 24 hours over 1 hour intervals.</p>
+
+
 <!--   
 <h3>Click Rate</h3>
 <div id="placeholder6" style="width:800px;height:600px;"></div>
@@ -43,11 +53,12 @@
 $(function () {
 
 
-    var total_plots = 6;
+    var total_plots = 8;
 
     // Extract the django variables
 	var data = {{ data }};
 	var max_data = {{ max_data }};
+	var min_data = {{ min_data }};
 	var counts = {{ counts }};
 	var num_elems = {{ num_elems }};
 	var labels = "{{ labels }}";
@@ -85,7 +96,8 @@ $(function () {
 	        points: { show: true }
 		    },
 		    grid: { hoverable: true, clickable: true },
-		    yaxis: { min: 0, max: max_data[plot_index] * 1.6 }
+		    // min_data must be non-positive and max_data must be non-negative
+		    yaxis: { min: min_data[plot_index] * 1.4, max: max_data[plot_index] * 1.4 }
 	  	});
 	    //document.write ("<br><br><br><br>");
 		enable_plothover("#placeholder" + plot_index.toString());

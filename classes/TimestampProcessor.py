@@ -57,6 +57,11 @@ TS_FORMAT_FORMAT1 = 2
 """
 def timestamps_for_interval(start_time_obj, timestamp_format, **kwargs):
    
+    resolution = 3
+    if 'resolution' in kwargs:
+        if isinstance(kwargs['resolution'], int) and kwargs['resolution'] >= 0 and kwargs['resolution'] <= 3:
+            resolution = kwargs['resolution']
+    
     for key in kwargs:
         
         if key == 'minutes':
@@ -64,8 +69,8 @@ def timestamps_for_interval(start_time_obj, timestamp_format, **kwargs):
         elif key == 'hours':
             end_time_obj = start_time_obj + datetime.timedelta(hours=kwargs[key])
         
-        start_timestamp = timestamp_from_obj(start_time_obj, timestamp_format, 3)
-        end_timestamp = timestamp_from_obj(end_time_obj, timestamp_format, 3)
+        start_timestamp = timestamp_from_obj(start_time_obj, timestamp_format, resolution)
+        end_timestamp = timestamp_from_obj(end_time_obj, timestamp_format, resolution)
          
         return [start_timestamp, end_timestamp]
    
