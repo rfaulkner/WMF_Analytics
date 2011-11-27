@@ -87,7 +87,7 @@ class LTT_DataCaching(DataCaching):
                 
         """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
         # country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
-        # payment_groups = {'Credit Card' : ['(cc)'], 'Paypal': ['(pp)']}
+        payment_groups = {'Credit Card' : ['^cc$'], 'Paypal': ['^pp$']}
         currency_groups = {'USD' : ['(USD)'], 'CAD': ['(CAD)'], 'JPY': ['(JPY)'], 'EUR': ['(EUR)']}
         lang_cntry_groups = {'US': ['US..', '.{4}'], 'EN' : ['[^U^S]en', '.{4}']}
         
@@ -99,23 +99,24 @@ class LTT_DataCaching(DataCaching):
         # groups = [ lang_cntry_groups] metrics = ['click_rate'] metrics_index = [3]
         # group_metrics = [DL.LongTermTrendsLoader._MT_RATE_] metric_types = ['country', 'language'] include_totals = [True] include_others = [True]
         
-        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount', 'pct_diff_don', 'pct_diff_don']
-        metrics_index = [0, 1, 2, 2, 2, 4, 5, 5]
+        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount', 'pct_diff_don', 'pct_diff_don', 'donations', 'conversion_rate']
+        metrics_index = [0, 1, 2, 2, 2, 4, 5, 5, 6, 6]
         groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, currency_groups, \
-                  lang_cntry_groups, lang_cntry_groups]
+                  lang_cntry_groups, lang_cntry_groups, payment_groups, payment_groups]
         
         """  The metrics that are used to build a group string to be qualified via regex - the values of the list metrics are concatenated """ 
         group_metrics = [['country', 'language'], ['country', 'language'], ['country', 'language'], \
                          ['country', 'language'], ['country', 'language'], ['currency'], ['country', 'language'], \
-                         ['country', 'language']]
+                         ['country', 'language'], ['payment_method'], ['payment_method']]
         
         metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
                         DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
-                        DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_RATE_,]
+                        DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
+                        DL.LongTermTrendsLoader._MT_RATE_]
         
-        include_totals = [True, True, True, False, True, True, False, False]
-        include_others = [True, True, True, False, True, True, True, True]
-        hours_back = [24, 24, 24, 24, 24, 24, 24, 168]
+        include_totals = [True, True, True, False, True, True, False, False, False, True]
+        include_others = [True, True, True, False, True, True, True, True, True, False]
+        hours_back = [24, 24, 24, 24, 24, 24, 24, 168, 24, 24]
         
         data = list()
         

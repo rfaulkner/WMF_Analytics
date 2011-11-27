@@ -555,18 +555,19 @@ class LongTermTrendsLoader(DataLoader):
             
             logging.info('Executing query for long term donations based on payment method ...')
             
-            sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, substring_index(utm_source, '.', -1) as payment_method, count(*) as donations, sum(total_amount) as amount " + \
-            "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
-            "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
-            "join drupal.contribution_tracking on civicrm.civicrm_contribution.id = drupal.contribution_tracking.contribution_id " + \
-            "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
+            sql = "select concat(DATE_FORMAT(ts,'%sY%sm%sd%sH'), '0000') as hr, substring_index(utm_source, '.', -1) as payment_method, " + \
+            "sum(not isnull(drupal.contribution_tracking.contribution_id)) as donations, sum(total_amount) as amount, " + \
+            "sum(not isnull(drupal.contribution_tracking.contribution_id)) / count(*) as conversion_rate " + \
+            "from drupal.contribution_tracking left join civicrm.civicrm_contribution on civicrm.civicrm_contribution.id = drupal.contribution_tracking.contribution_id " + \
+            "where ts >= '%s' and ts < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
-
-
+            
+            
         self._results_ = self.execute_SQL(sql)
+
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
-
+            
         key_indices = list()
         for metric in group_metric:
             key_indices.append(column_names.index(metric))
@@ -589,7 +590,7 @@ class LongTermTrendsLoader(DataLoader):
                            
             timestamp = row[0]
             count = float(row[metric_index])                    
-                
+                            
             """  Evaluate the regex for each pattern"""            
             for gkey in groups:
                 regex_eval = True
@@ -609,7 +610,7 @@ class LongTermTrendsLoader(DataLoader):
                     key = 'Other'
                 else:
                     continue
-            
+
             if not(key in counts.keys()):
                 counts[key] = list()
                 times[key] = list()
@@ -631,13 +632,13 @@ class LongTermTrendsLoader(DataLoader):
                         
         keys = counts.keys()[:] # make a copy of the key array
         
-        """ If the metric is a rate ensure that all of the are averaged over the number of keys """        
+        """ If the metric is a rate ensure that all of the samples are averaged over the number of keys """        
         if metric_type == self._MT_RATE_:      
             for key in counts:
                 for index in range(len(counts[key])):
                     counts[key][index] = counts[key][index] / group_counts[key][index]      
-                    if counts[key][index] > 0.1:
-                        counts[key][index] = 0.1
+                    #if counts[key][index] > 0.1:
+                    #    counts[key][index] = 0.1
             
         """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
         

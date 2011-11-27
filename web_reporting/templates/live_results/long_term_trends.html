@@ -39,6 +39,14 @@
 <h3>Percentage Difference in Donations compared with this hour last week</h3>
 <div id="placeholder7" style="width:800px;height:600px;"></div>
 <p>% difference over the last 24 hours over 1 hour intervals.</p>
+<br><br>
+<h3>Payment Method Donations</h3>
+<div id="placeholder8" style="width:800px;height:600px;"></div>
+<p>Donations for payment methods over the last {{interval}} hours over 1 hour intervals.</p>
+<br><br>
+<h3>Payment Method Conversion Rates</h3>
+<div id="placeholder9" style="width:800px;height:600px;"></div>
+<p>Conversion Rates for payment methods over the last {{interval}} hours over 1 hour intervals.</p>
 
 
 <!--   
@@ -53,7 +61,7 @@
 $(function () {
 
 
-    var total_plots = 8;
+    var total_plots = 10;
 
     // Extract the django variables
 	var data = {{ data }};
