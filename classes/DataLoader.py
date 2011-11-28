@@ -380,6 +380,7 @@ class LongTermTrendsLoader(DataLoader):
     """ Metric Types """
     _MT_AMOUNT_ = 1
     _MT_RATE_ = 2
+    _MT_RATE_WEIGHTED_ = 3
     
     _LT_BANNER_IMPRESSIONS_ = 0
     _LT_LP_IMPRESSIONS_ = 1
@@ -422,6 +423,10 @@ class LongTermTrendsLoader(DataLoader):
             # name of metric to sample
             elif key == 'metric_name':       
                 metric_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+
+            # name of metric to sample
+            elif key == 'weight_name':       
+                weight_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
             
             # sampling interval of data
             elif key == 'interval':       
@@ -466,7 +471,7 @@ class LongTermTrendsLoader(DataLoader):
                     logging.info('LTT Loader::process_kwargs - Not a valid integer value for hours_back kwarg')
                     pass
 
-        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total, hours_back
+        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total, hours_back, weight_name
     
     """
         Based on the query type provided execute a query
@@ -478,7 +483,7 @@ class LongTermTrendsLoader(DataLoader):
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
         
         min_val, campaign, metric_name, interval, metric_type, groups, \
-        group_metric, include_other, include_total, hours_back = self.process_kwargs(kwargs)
+        group_metric, include_other, include_total, hours_back, weight_name = self.process_kwargs(kwargs)
         
         if query_type == 0: 
             
@@ -540,16 +545,17 @@ class LongTermTrendsLoader(DataLoader):
             start_time_2 = start_time
             end_time_2 = end_time
             
-            sql_1 = sql % ('%', '%', '%', '%', start_time_1, end_time_1)
-            sql_2 = sql % ('%', '%', '%', '%', start_time_2, end_time_2)
+            sql_old = sql % ('%', '%', '%', '%', start_time_1, end_time_1)
+            sql_new = sql % ('%', '%', '%', '%', start_time_2, end_time_2)
             start_time = start_time_2
             end_time = end_time_2
             
-            sql = "select t2.hr, t1.country, t1.language," + \
-            "round((t2.donations - t1.donations) / t2.donations, 4) * 100 as pct_diff_don, " + \
-            "round((t2.amount - t1.amount) / t2.amount, 4) * 100.0 as pct_diff_amt " + \
-            "from (%s) as t1 join (%s) as t2 on substring(t1.hr,9,2) = substring(t2.hr,9,2) and t1.country = t2.country and t1.language = t2.language"
-            sql  = sql % (sql_1, sql_2)
+            sql = "select t_new.hr, t_new.country, t_new.language," + \
+            "(t_new.donations - t_old.donations) * 100.0 as diff_don, " + \
+            "(t_new.amount - t_old.amount) * 100.0 as diff_amt, " + \
+            "t_old.donations, t_old.amount " + \
+            "from (%s) as t_new join (%s) as t_old on substring(t_new.hr,9,2) = substring(t_old.hr,9,2) and t_new.country = t_old.country and t_new.language = t_old.language"
+            sql  = sql % (sql_new, sql_old)
             
         elif query_type == 6:
             
@@ -567,7 +573,10 @@ class LongTermTrendsLoader(DataLoader):
 
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
-            
+        
+        if metric_type == self._MT_RATE_WEIGHTED_:
+            weight_index = column_names.index(weight_name)
+        
         key_indices = list()
         for metric in group_metric:
             key_indices.append(column_names.index(metric))
@@ -577,6 +586,7 @@ class LongTermTrendsLoader(DataLoader):
 
         """ Parse data from query results - organize into keys based on country """
         group_counts = dict()
+        weight_counts = dict()
         
         for row in self._results_:
             
@@ -589,7 +599,10 @@ class LongTermTrendsLoader(DataLoader):
                     key = key + row[key_index] 
                            
             timestamp = row[0]
-            count = float(row[metric_index])                    
+            count = float(row[metric_index])
+            
+            if metric_type == self._MT_RATE_WEIGHTED_:
+                weight = float(row[weight_index])                    
                             
             """  Evaluate the regex for each pattern"""            
             for gkey in groups:
@@ -611,24 +624,37 @@ class LongTermTrendsLoader(DataLoader):
                 else:
                     continue
 
+            # Assumes timestamps are in order
+            # If the key does not yet exist
             if not(key in counts.keys()):
                 counts[key] = list()
-                times[key] = list()
-                group_counts[key] = list()
-                
+                times[key] = list()                
                 times[key].append(timestamp)
                 counts[key].append(count)
-                group_counts[key].append(1.0)
+                
+                if metric_type == self._MT_RATE_: 
+                    group_counts[key] = [1.0]
+                elif metric_type == self._MT_RATE_WEIGHTED_:                     
+                    weight_counts[key] = [weight]
                 
             elif timestamp in times[key]:                
                 t_index = times[key].index(timestamp)
-                counts[key][t_index] = counts[key][t_index] + count
-                group_counts[key][t_index] = group_counts[key][t_index] + 1.0
+                counts[key][t_index] = counts[key][t_index] + count                
                 
+                if metric_type == self._MT_RATE_: 
+                    group_counts[key][t_index] = group_counts[key][t_index] + 1.0
+                elif metric_type == self._MT_RATE_WEIGHTED_:                     
+                    weight_counts[key][t_index] = weight_counts[key][t_index] + weight
+            
+            # If the timestamp for that key does not yet exist
             else:
                 times[key].append(timestamp)
                 counts[key].append(count)
-                group_counts[key].append(1.0)
+                
+                if metric_type == self._MT_RATE_: 
+                    group_counts[key].append(1.0)
+                elif metric_type == self._MT_RATE_WEIGHTED_:                     
+                    weight_counts[key].append(weight)
                         
         keys = counts.keys()[:] # make a copy of the key array
         
@@ -639,6 +665,11 @@ class LongTermTrendsLoader(DataLoader):
                     counts[key][index] = counts[key][index] / group_counts[key][index]      
                     #if counts[key][index] > 0.1:
                     #    counts[key][index] = 0.1
+        elif metric_type == self._MT_RATE_WEIGHTED_:      
+            for key in counts:
+                for index in range(len(counts[key])):
+                    counts[key][index] = float(counts[key][index]) / float(weight_counts[key][index])      
+            
             
         """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
         

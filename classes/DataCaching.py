@@ -72,7 +72,7 @@ class LTT_DataCaching(DataCaching):
         
         logging.info('Commencing caching of long term trends data at:  %s' % self.CACHING_HOME)
                 
-        end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow() + datetime.timedelta(minutes=-60), 1, \
+        end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, \
                                                           hours=-self.VIEW_DURATION_HRS, resolution=1)
         
         """
@@ -99,7 +99,8 @@ class LTT_DataCaching(DataCaching):
         # groups = [ lang_cntry_groups] metrics = ['click_rate'] metrics_index = [3]
         # group_metrics = [DL.LongTermTrendsLoader._MT_RATE_] metric_types = ['country', 'language'] include_totals = [True] include_others = [True]
         
-        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount', 'pct_diff_don', 'pct_diff_don', 'donations', 'conversion_rate']
+        metrics = ['impressions', 'views', 'donations', 'donations', 'amount', 'amount', 'diff_don', 'diff_don', 'donations', 'conversion_rate']
+        weights = ['', '', '', '', '', '', 'donations', 'donations', '', '']
         metrics_index = [0, 1, 2, 2, 2, 4, 5, 5, 6, 6]
         groups = [lang_cntry_groups, lang_cntry_groups, lang_cntry_groups, top_cntry_groups, lang_cntry_groups, currency_groups, \
                   lang_cntry_groups, lang_cntry_groups, payment_groups, payment_groups]
@@ -111,7 +112,7 @@ class LTT_DataCaching(DataCaching):
         
         metric_types = [DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
                         DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
-                        DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_RATE_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
+                        DL.LongTermTrendsLoader._MT_RATE_WEIGHTED_, DL.LongTermTrendsLoader._MT_RATE_WEIGHTED_, DL.LongTermTrendsLoader._MT_AMOUNT_, \
                         DL.LongTermTrendsLoader._MT_RATE_]
         
         include_totals = [True, True, True, False, True, True, False, False, False, True]
@@ -130,7 +131,7 @@ class LTT_DataCaching(DataCaching):
             
             times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], \
                                             groups=groups[index], group_metric=group_metrics[index], include_other=include_others[index], \
-                                            include_total=include_totals[index], hours_back=hours_back[index])
+                                            include_total=include_totals[index], hours_back=hours_back[index], weight_name=weights[index])
             
             times = TP.normalize_timestamps(times, False, 1)
             
