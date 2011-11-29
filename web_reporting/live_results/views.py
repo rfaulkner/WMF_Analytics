@@ -200,16 +200,47 @@ def index(request):
 """
     View for Long Term results over all Fundraising campaigns hour by hour
 """
-
-
 def long_term_trends(request):
     
     cache = DC.LTT_DataCaching()
     dict_param = cache.retrieve_cached_data(view_keys.LTT_DICT_KEY)
-    print dict_param
+    
     return render_to_response('live_results/long_term_trends.html', dict_param, context_instance=RequestContext(request))
 
 
+"""
+    View for Long Term results over all Fundraising campaigns hour by hour
+"""
+def fundraiser_totals(request):
+    
+    cache = DC.Fundraiser_Totals_DataCaching()
+    data = cache.retrieve_cached_data(view_keys.FR_TOT_DICT_KEY)
+    
+    dict_param = data['Total']
+    dict_param['err_msg'] = ''
+    dict_param['country'] = 'Total'
+    
+    return render_to_response('live_results/fundraiser_totals.html', dict_param, context_instance=RequestContext(request))
+
+"""
+    View for Long Term results over all Fundraising campaigns hour by hour
+"""
+def fundraiser_totals_cntry(request, country):
+    
+    cache = DC.Fundraiser_Totals_DataCaching()
+    data = cache.retrieve_cached_data(view_keys.FR_TOT_DICT_KEY)
+    
+    try: 
+        dict_param_country = data[country]
+        dict_param_country['err_msg'] = ''
+        dict_param_country['country'] = country
+        return render_to_response('live_results/fundraiser_totals.html', dict_param_country, context_instance=RequestContext(request))
+    
+    except:
+        dict_param = data['Total']
+        dict_param['err_msg'] = 'Could not find totals for that country.'
+        dict_param['country'] = 'Total'
+        return render_to_response('live_results/fundraiser_totals.html', dict_param, context_instance=RequestContext(request))
 
 """
     Generates a listing of impressions for all countries and banners

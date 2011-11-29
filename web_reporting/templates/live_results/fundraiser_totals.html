@@ -2,66 +2,28 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Long Term Trends:</h1>
+{% if country == 'Total' %}
+	<h1>Fundraiser Totals:</h1>
+{% else %}
+	<h1>Fundraiser Totals for {{ country }}:</h1>
+{% endif %}
 <div class="spacer"></div>
 
-<h2>The plots below are representative of the latest Fundraiser results up to {{ end_time }}:</h2><br>
+{% if err_msg != '' %}
+	<br><font size="3" color="red">{{err_msg|safe}}</font><br><br>
+{% endif %}
 
 <!-- jscript for live plots -->
 
-<h3>Banner Impressions</h3>
 <div id="placeholder0" style="width:800px;height:600px;"></div>
-<p>Impressions over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Landing Page Impressions</h3>
-<div id="placeholder1" style="width:800px;height:600px;"></div>
-<p>Views over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Total Donations</h3>
-<div id="placeholder2" style="width:800px;height:600px;"></div>
-<p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Donations for the top 5 Countries after the US</h3>
-<div id="placeholder3" style="width:800px;height:600px;"></div>
-<p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Total USD</h3>
-<div id="placeholder4" style="width:800px;height:600px;"></div>
-<p>Donations over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Currencies</h3>
-<div id="placeholder5" style="width:800px;height:600px;"></div>
-<p>Currency amounts in USD over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Percentage Difference in Donations compared with this hour yesterday</h3>
-<div id="placeholder6" style="width:800px;height:600px;"></div>
-<p>% difference over the last 24 hours over 1 hour intervals.</p>
-<br><br>
-<h3>Percentage Difference in Donations compared with this hour last week</h3>
-<div id="placeholder7" style="width:800px;height:600px;"></div>
-<p>% difference over the last 24 hours over 1 hour intervals.</p>
-<br><br>
-<h3>Payment Method Donations</h3>
-<div id="placeholder8" style="width:800px;height:600px;"></div>
-<p>Donations for payment methods over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
-<h3>Payment Method Conversion Rates</h3>
-<div id="placeholder9" style="width:800px;height:600px;"></div>
-<p>Conversion Rates for payment methods over the last {{interval}} hours over 1 hour intervals.</p>
-
-<!--   
-<h3>Click Rate</h3>
-<div id="placeholder6" style="width:800px;height:600px;"></div>
-<p>Click Rate over the last {{interval}} hours over 1 hour intervals.</p>
-<br><br>
--->
+<p>Total amounts by day.</p>
 
 
 <script type="text/javascript">
 $(function () {
 
 
-    var total_plots = 10;
+    var total_plots = 1;
 
     // Extract the django variables
 	var data = {{ data }};
@@ -70,7 +32,10 @@ $(function () {
 	var counts = {{ counts }};
 	var num_elems = {{ num_elems }};
 	var labels = "{{ labels }}";
-	
+
+	var plot_bars = [true]
+	var plot_lines = [false]
+	         	
 	labels = labels.split("!")
 	var num_label_lists = (labels.length - 1) / 2;
 	var new_labels = new Array(num_label_lists);
@@ -85,11 +50,9 @@ $(function () {
 		labels[plot_index] = labels[plot_index].split("?")
 
 		var all_data = new Array(num_elems[plot_index]);
-		var plot_bars = [false, false, false, false, false, false, false, false, false, false, true]
-		var plot_lines = [true, true, true, true, true, true, true, true, true, true, false]
 		         		
 		for (x = 0; x < num_elems[plot_index]; x++) { 
-			//document.write (data[plot_index][x]);
+			// document.write (plot_index);
 			var elem = new Object();
 			elem["data"] = data[plot_index][x];
 			elem["label"] = labels[plot_index][x];

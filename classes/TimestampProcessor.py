@@ -49,6 +49,11 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 TS_FORMAT_FLAT = 1
 TS_FORMAT_FORMAT1 = 2
 
+"""  Time unit indices"""
+HOUR = 1
+DAY =  0
+
+
 """
     Get timestamps for interval
     
@@ -521,17 +526,22 @@ def normalize_intervals(times, metrics, interval):
      
 
 """
-def timestamp_convert_format(ts, format_from, format_to):
+def timestamp_convert_format(ts, format_from, format_to, **kwargs):
     
-    if format_from == 1:
-        
-        if format_to == 2:
+    format_from = getTimestampFormat(ts)
+    
+    if format_from == 1:        
+        if format_to == 1:
+            new_timestamp = ts
+        elif format_to == 2:
             new_timestamp = ts[0:4] + '-' + ts[4:6] + '-' + ts[6:8] + ' ' + ts[8:10] + ':' + ts[10:12] + ':' + ts[12:14]
             
     elif format_from == 2:
         if format_to == 1:
             new_timestamp = ts[0:4] + ts[5:7] + ts[8:10] + ts[11:13] + ts[14:16] + ts[17:19]
-            
+        elif format_to == 2:
+            new_timestamp = ts
+             
     return new_timestamp
 
 """

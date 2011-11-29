@@ -66,7 +66,7 @@ def combine_data_lists(dict_list):
         template_keys = dict_list[0].keys()
         num_elems = len(dict_list)
     except:
-        logging.error(projSet.__web_home__ + '/live_results/views.py: No template data found.')
+        logging.error(projSet.__web_home__ + 'live_results/views.py: No template data found.')
         return -1
 
     combined_dict = dict()

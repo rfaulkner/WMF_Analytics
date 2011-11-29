@@ -405,7 +405,6 @@ class LongTermTrendsLoader(DataLoader):
         min_val = '0' # filters no campaigns
         campaign = ''
         metric_name = ''
-        interval = 60
         metric_type = self._MT_AMOUNT_
         groups = {'*' : 'All'}
         group_metric = ['country']
@@ -417,6 +416,7 @@ class LongTermTrendsLoader(DataLoader):
         for key in kwargs_dict:
             if key == 'min_val':       
                 min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
+            
             elif key == 'campaign':       
                 min_val = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))
             
@@ -427,11 +427,7 @@ class LongTermTrendsLoader(DataLoader):
             # name of metric to sample
             elif key == 'weight_name':       
                 weight_name = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
-            
-            # sampling interval of data
-            elif key == 'interval':       
-                interval = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                    
-            
+
             # metric data type for operations (rates, amounts)
             elif key == 'metric_type':       
                 metric_type = MySQLdb._mysql.escape_string(str(kwargs_dict[key]))                                    
@@ -471,7 +467,17 @@ class LongTermTrendsLoader(DataLoader):
                     logging.info('LTT Loader::process_kwargs - Not a valid integer value for hours_back kwarg')
                     pass
 
-        return min_val, campaign, metric_name, interval, metric_type, groups, group_metric, include_other, include_total, hours_back, weight_name
+            elif key == 'time_unit':
+                try:
+                    time_unit = int(kwargs_dict[key])
+
+                except:
+                    logging.info('LTT Loader::process_kwargs - Not a valid integer value for time_unit kwarg')
+                    pass
+
+
+        return min_val, campaign, metric_name, metric_type, groups, group_metric, include_other, \
+                    include_total, hours_back, weight_name, time_unit
     
     """
         Based on the query type provided execute a query
@@ -481,10 +487,25 @@ class LongTermTrendsLoader(DataLoader):
         """ Escape timestamps """
         start_time = MySQLdb._mysql.escape_string(str(start_time).strip())
         end_time = MySQLdb._mysql.escape_string(str(end_time).strip())
+                
+        min_val, campaign, metric_name, metric_type, groups, \
+        group_metric, include_other, include_total, hours_back, weight_name, time_unit = self.process_kwargs(kwargs)
         
-        min_val, campaign, metric_name, interval, metric_type, groups, \
-        group_metric, include_other, include_total, hours_back, weight_name = self.process_kwargs(kwargs)
-        
+        if time_unit == TP.DAY:            
+            start_time = TP.timestamp_convert_format(start_time, 0, 1)
+            start_time = start_time[:8] + '000000'
+            end_time = TP.timestamp_convert_format(end_time, 0, 1)
+            end_time = end_time[:8] + '000000'
+
+        elif time_unit == TP.HOUR:
+            start_time = TP.timestamp_convert_format(start_time, 0, 1)
+            start_time = start_time[:10] + '0000'
+            end_time = TP.timestamp_convert_format(end_time, 0, 1)
+            end_time = end_time[:10] + '0000'
+
+        """
+            FORMAT ND EXECUTE QUERY
+        """
         if query_type == 0: 
             
             logging.info('Executing query for long term banner impressions ...')
@@ -521,8 +542,7 @@ class LongTermTrendsLoader(DataLoader):
 
             logging.info('Executing query for long term donations based on currency ...')
             sql = "select concat(DATE_FORMAT(receive_date,'%sY%sm%sd%sH'), '0000') as hr, substring(source,1,3) as currency, count(*) as donations, sum(total_amount) as amount " + \
-            "from civicrm.civicrm_contribution join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
-            "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+            "from civicrm.civicrm_contribution " + \
             "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
@@ -568,26 +588,231 @@ class LongTermTrendsLoader(DataLoader):
             "where ts >= '%s' and ts < '%s' group by 1,2 order by 1,2"
             sql = sql % ('%', '%', '%', '%', start_time, end_time)
             
+        elif query_type == 7:
             
-        self._results_ = self.execute_SQL(sql)
+            self.run_fundrasing_totals(end_time)
+             
+            
+        if not(query_type == 7):        
+            self._results_ = self.execute_SQL(sql)
+        
 
+        """ Parse data from query results - organize into keys based on country """
+
+        counts = dict()
+        times = dict()
+        group_counts = dict()
+        weight_counts = dict()
+        
+        self.parse_results(self._results_, times, counts, groups, group_counts, weight_counts, weight_name, include_other, metric_name, metric_type, group_metric)
+                                                
+        """ If the metric is a rate ensure that all of the samples are averaged over the number of keys """        
+        self.average_rates(counts, metric_type, weight_counts=weight_counts, group_counts=group_counts)
+                        
+        """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
+        self.normalize_data(start_time, end_time, counts, times, time_unit)
+                
+        """ Add in the totals """
+        if include_total:
+            self.add_totals(counts, times, metric_type, weight_counts=weight_counts)
+        
+        return times, counts
+    
+
+    """
+        Executes queries for fundraiser totals
+    """
+    def run_fundrasing_totals(self, end_time, **kwargs):
+        
+        ret = self.process_kwargs(kwargs)
+        
+        metric_name = ret[2]  
+        metric_type = ret[3] 
+        groups = ret[4]
+        group_metric = ret[5]
+        include_other = ret[6]
+        weight_name = ret[7]
+        
+        logging.info('Executing query for Fundraiser totals ...')
+        
+        start_time_2010 = '20101111000000'
+        start_time_2011 = '20111116000000'                        
+
+        end_time_2010 = '20110101000000'
+        end_time = TP.timestamp_from_obj(datetime.datetime.utcnow(), 1, 3)
+        
+        sql = "select DATEDIFF ( receive_date , '%s' ) as day, iso_code as country, " + \
+        " DATE_FORMAT(receive_date,'%sY') as year, " + \
+        "count(*) as donations, sum(total_amount) as amount " + \
+        "from civicrm.civicrm_contribution " + \
+        "join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+        "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+        "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
+              
+        sql_2010 = sql % (start_time_2010, '%', start_time_2010, end_time_2010)
+        sql_2011 = sql % (start_time_2011, '%', start_time_2011, end_time)
+        
+        self._results_ = list(self.execute_SQL(sql_2010))
+        self._results_.extend(list(self.execute_SQL(sql_2011)))
+
+        """ Parse data from query results - organize into keys based on country """
+
+        counts = dict()
+        times = dict()
+        group_counts = dict()
+        weight_counts = dict()
+        
+        self.parse_results(self._results_, times, counts, groups, group_counts, weight_counts, weight_name, include_other, metric_name, metric_type, group_metric)
+        self.average_rates(counts, metric_type, weight_counts=weight_counts, group_counts=group_counts)
+
+        """  Process relative times  """
+
+        max_len = 0
+        for key in times:
+            if len(times[key]) > max_len:
+                max_len = len(times[key])
+
+        for key in times:
+            
+            """ Ensure time index lists are all the same length """
+            if len(times[key]) < max_len:
+                for index in range(len(times[key]), max_len):
+                    times[key].append(index)
+                    counts[key].append(0.0)
+            
+            """ Offset times for 2011 """
+            for index in range(len(times[key])):
+                if re.search('2011', key):                
+                    times[key][index] = float(times[key][index]) + 0.3
+                     
+                else:
+                    times[key][index] = int(times[key][index])
+                    
+        return times, counts
+
+    
+    """
+        HELPER - Adds up the totals for all other keys
+        
+        Assumes:
+         
+            1) The keys of times and counts are the same
+            2) The number of elements for each key value is the same
+            3) times key elements are chronological integers with "no gaps"
+    """
+    def add_totals(self, counts, times, metric_type, **kwargs):
+                
+        keys = counts.keys()[:] # make a copy of the key array
+        ts_list = times[keys[0]] # get a list of timestamps to add to totals
+        num_data_points = len(counts[keys[0]])  # update this value
+            
+        counts['Total'] = list()        
+        times['Total'] = list()
+
+        if metric_type == self._MT_RATE_WEIGHTED_:
+            weight_counts = kwargs['weight_counts']        
+        
+        for index in range(num_data_points):
+            
+            new_val = 0.0
+            total_weight = 0.0
+            
+            """ For each key sum the total - ensure rates are normalized"""
+            for key in keys:
+                
+                if metric_type == self._MT_RATE_WEIGHTED_:
+                    new_val = new_val + counts[key][index]
+                    total_weight = total_weight + weight_counts[key][index]
+                else:
+                    new_val = new_val + counts[key][index]
+                    total_weight = total_weight + 1.0
+                    
+            if metric_type == self._MT_RATE_ or metric_type == self._MT_RATE_WEIGHTED_:                
+                new_val = new_val / total_weight
+                            
+            counts['Total'].append(new_val)
+            times['Total'].append(ts_list[index])
+            
+    """
+        HELPER - Averages rates combined over several groups
+        
+        Assumes:
+         
+            1) weight or group counts exist accordingly
+    """
+    def average_rates(self, counts, metric_type, **kwargs):
+
+        if metric_type == self._MT_RATE_:      
+            group_counts = kwargs['group_counts']
+            for key in counts:
+                for index in range(len(counts[key])):
+                    counts[key][index] = counts[key][index] / group_counts[key][index]      
+
+        elif metric_type == self._MT_RATE_WEIGHTED_:     
+            weight_counts = kwargs['weight_counts'] 
+            for key in counts:
+                for index in range(len(counts[key])):
+                    counts[key][index] = float(counts[key][index]) / float(weight_counts[key][index])   
+        
+        
+        
+    """
+        HELPER - Parses time and measured data, ensures that
+        
+        Assumes:
+         
+            1) The keys of times and counts are the same
+            2) The number of elements for each key value is the same
+            3) times key elements are flat timestamps  (e.g. '20111210052000')
+    """
+    def normalize_data(self, start_time, end_time, counts, times, time_unit):
+        
+        for key in counts:
+
+            start_time_obj = TP.timestamp_to_obj(start_time, 1)
+            end_time_obj = TP.timestamp_to_obj(end_time, 1)
+            diff = end_time_obj - start_time_obj
+            
+            if time_unit == TP.HOUR:
+                num_hours = diff.seconds / (60 * 60) + diff.days * 24            
+                ts_list = TP.create_timestamp_list(start_time_obj, num_hours, 60)
+            
+            elif time_unit == TP.DAY:
+                num_days = diff.seconds / (24 * 60 * 60) + diff.days            
+                ts_list = TP.create_timestamp_list(start_time_obj, num_days, 60 * 24)
+            
+            new_counts = list()
+            count_index = 0
+            for ts in ts_list:
+                if not(ts in times[key]):                
+                    new_counts.append(0.0)
+                else:
+                    new_counts.append(counts[key][count_index])
+                    count_index = count_index + 1
+                    
+            counts[key] = new_counts
+            times[key] = ts_list
+        
+    
+    """
+        HELPER - Parses SQL query results into measured count and time lists
+        
+        Assumes:
+         
+            1) 
+    """    
+    def parse_results(self, results, times, counts, groups, group_counts, weight_counts, weight_name, include_other, metric_name, metric_type, group_metric):
+        
         column_names = self.get_column_names()
         metric_index = column_names.index(metric_name)
         
         if metric_type == self._MT_RATE_WEIGHTED_:
             weight_index = column_names.index(weight_name)
-        
+            
         key_indices = list()
         for metric in group_metric:
             key_indices.append(column_names.index(metric))
-
-        counts = dict()
-        times = dict()
-
-        """ Parse data from query results - organize into keys based on country """
-        group_counts = dict()
-        weight_counts = dict()
-        
+            
         for row in self._results_:
             
             """ The key for group matching is a concatenation of the metric field values (e.g. "USen" for country and language ) """
@@ -604,7 +829,8 @@ class LongTermTrendsLoader(DataLoader):
             if metric_type == self._MT_RATE_WEIGHTED_:
                 weight = float(row[weight_index])                    
                             
-            """  Evaluate the regex for each pattern"""            
+            """  Evaluate the regex for each pattern"""           
+            key_list = list()   # stores all keys that match the pattern
             for gkey in groups:
                 regex_eval = True
             
@@ -614,108 +840,50 @@ class LongTermTrendsLoader(DataLoader):
                         regex_eval = False     
                 
                 if regex_eval:                    
-                    key = gkey                                        
-                    break
+                    key_list.append(gkey)                                        
+
             
             """ Only include donations from the defined groups unless a bucket for 'Other' results is specified """
-            if not(key in groups.keys()):
+            if len(key_list) == 0:
                 if include_other:
-                    key = 'Other'
+                    key_list.append('Other')
                 else:
                     continue
 
             # Assumes timestamps are in order
             # If the key does not yet exist
-            if not(key in counts.keys()):
-                counts[key] = list()
-                times[key] = list()                
-                times[key].append(timestamp)
-                counts[key].append(count)
+            for key in key_list:
                 
-                if metric_type == self._MT_RATE_: 
-                    group_counts[key] = [1.0]
-                elif metric_type == self._MT_RATE_WEIGHTED_:                     
-                    weight_counts[key] = [weight]
+                if not(key in counts.keys()):
+                    counts[key] = list()
+                    times[key] = list()                
+                    times[key].append(timestamp)
+                    counts[key].append(count)
+                    
+                    if metric_type == self._MT_RATE_: 
+                        group_counts[key] = [1.0]
+                    elif metric_type == self._MT_RATE_WEIGHTED_:                     
+                        weight_counts[key] = [weight]
+                    
+                elif timestamp in times[key]:                
+                    t_index = times[key].index(timestamp)
+                    counts[key][t_index] = counts[key][t_index] + count                
+                    
+                    if metric_type == self._MT_RATE_: 
+                        group_counts[key][t_index] = group_counts[key][t_index] + 1.0
+                    elif metric_type == self._MT_RATE_WEIGHTED_:                     
+                        weight_counts[key][t_index] = weight_counts[key][t_index] + weight
                 
-            elif timestamp in times[key]:                
-                t_index = times[key].index(timestamp)
-                counts[key][t_index] = counts[key][t_index] + count                
-                
-                if metric_type == self._MT_RATE_: 
-                    group_counts[key][t_index] = group_counts[key][t_index] + 1.0
-                elif metric_type == self._MT_RATE_WEIGHTED_:                     
-                    weight_counts[key][t_index] = weight_counts[key][t_index] + weight
-            
-            # If the timestamp for that key does not yet exist
-            else:
-                times[key].append(timestamp)
-                counts[key].append(count)
-                
-                if metric_type == self._MT_RATE_: 
-                    group_counts[key].append(1.0)
-                elif metric_type == self._MT_RATE_WEIGHTED_:                     
-                    weight_counts[key].append(weight)
-                        
-        keys = counts.keys()[:] # make a copy of the key array
-        
-        """ If the metric is a rate ensure that all of the samples are averaged over the number of keys """        
-        if metric_type == self._MT_RATE_:      
-            for key in counts:
-                for index in range(len(counts[key])):
-                    counts[key][index] = counts[key][index] / group_counts[key][index]      
-                    #if counts[key][index] > 0.1:
-                    #    counts[key][index] = 0.1
-        elif metric_type == self._MT_RATE_WEIGHTED_:      
-            for key in counts:
-                for index in range(len(counts[key])):
-                    counts[key][index] = float(counts[key][index]) / float(weight_counts[key][index])      
-            
-            
-        """ Normalize the data for missing hours - this should be rare given the nature of the data but is needed to be conceptually complete """
-        
-        for key in counts:
-
-            start_time_obj = TP.timestamp_to_obj(start_time[:10] + '0000', 1)
-            end_time_obj = TP.timestamp_to_obj(end_time[:10] + '0000', 1)
-            diff = end_time_obj - start_time_obj
-            
-            num_hours = diff.seconds / (interval * 60) + diff.days * 24
-            
-            ts_list = TP.create_timestamp_list(start_time_obj, num_hours, interval)
-    
-            new_counts = list()
-            count_index = 0
-            for ts in ts_list:
-                if not(ts in times[key]):                
-                    new_counts.append(0.0)
+                # If the timestamp for that key does not yet exist
                 else:
-                    new_counts.append(counts[key][count_index])
-                    count_index = count_index + 1
+                    times[key].append(timestamp)
+                    counts[key].append(count)
                     
-            counts[key] = new_counts
-            times[key] = ts_list
-        
-        
-        """ Add in the totals """
-        if include_total:
-            num_data_points = len(counts[keys[0]])  # update this value
-            
-            counts['Total'] = list()        
-            times['Total'] = list()
-            
-            for index in range(num_data_points):
-                new_val = 0.0
-                for key in keys:
-                    new_val = new_val + counts[key][index]
-                    
-                if metric_type == self._MT_RATE_:
-                    new_val = new_val / len(keys)
-                    
-                counts['Total'].append(new_val)
-                times['Total'].append(ts_list[index])
-        
-        return times, counts
-        
+                    if metric_type == self._MT_RATE_: 
+                        group_counts[key].append(1.0)
+                    elif metric_type == self._MT_RATE_WEIGHTED_:                     
+                        weight_counts[key].append(weight)
+    
 """
 
     This Loader inherits the functionality of DaatLoader and handles SQL queries that group data by time intervals.  These are generally preferable for most

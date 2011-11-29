@@ -36,12 +36,112 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 class DataCaching(object):
     
     DATA_DIR = projSet.__data_file_dir__
-         
+        
     def cache_data(self, data, key):
         self._serialized_obj_[key] = data
                     
     def retrieve_cached_data(self, key):
         return self._serialized_obj_[key]
+    
+"""
+    LTT_DataCaching
+    
+    DataCaching for the long term trends view
+    
+"""
+class Fundraiser_Totals_DataCaching(DataCaching):
+
+    CACHING_HOME = projSet.__data_file_dir__ + 'fundraiser_totals_vars.s'
+    ALL_COUNTRIES = 'Total'
+    
+    def __init__(self):        
+        self.open_serialized_obj()
+
+    
+    """ Close the connection to the serialized obj """
+    def __del__(self):
+        self._serialized_obj_.close()
+
+    def open_serialized_obj(self, **kwargs):        
+        self._serialized_obj_ = shelve.open(self.CACHING_HOME)
+        
+    """
+        Executes the processing of data for the long term trends view in live results
+    """
+    def execute_process(self, key, **kwargs):
+        
+        logging.info('Commencing caching of fundraiser totals data at:  %s' % self.CACHING_HOME)
+                
+        end_time = TP.timestamp_from_obj(datetime.datetime.utcnow(), 1, 3)
+        
+        """ DATA CONFIG """
+        
+        """ set the metrics to plot """
+        lttdl = DL.LongTermTrendsLoader(db='db1025')
+        
+        start_of_2011_fundraiser = '20111116000000'
+        countries = DL.CiviCRMLoader().get_ranked_donor_countries(start_of_2011_fundraiser)
+        countries.append('Total')
+        
+        """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
+        year_groups = dict()
+        for country in countries:
+            if cmp(country, 'Total') == 0:
+                year_groups['2011 Total'] = ['2011..']
+                year_groups['2010 Total'] = ['2010..']
+            else:                
+                year_groups['2011 ' + country] = ['2011' + country]
+                year_groups['2010 ' + country] = ['2010' + country]
+
+        metrics = 'amount'
+        weights = ''
+        groups = year_groups
+        group_metrics = ['year', 'country']
+        
+        metric_types = DL.LongTermTrendsLoader._MT_AMOUNT_
+        
+        include_totals = False
+        include_others = False
+        hours_back = 0
+        time_unit = TP.DAY
+                        
+        """ END CONFIG """
+        
+        
+        """ For each metric use the LongTermTrendsLoader to generate the data to plot """
+            
+        dr = DR.DataReporting()
+        
+        times, counts = lttdl.run_fundrasing_totals(end_time, metric_name=metrics, metric_type=metric_types, groups=groups, group_metric=group_metrics, include_other=include_others, \
+                                        include_total=include_totals, hours_back=hours_back, weight_name=weights, time_unit=time_unit)
+        dict_param = dict()
+
+        for country in countries:
+            
+            key_2011 = '2011 ' +  country
+            key_2010 = '2010 ' +  country
+            
+            new_counts = dict()
+            new_counts[key_2010] = counts[key_2010]
+            new_counts[key_2011] = counts[key_2011]
+            
+            new_times = dict()
+            new_times[key_2010] = times[key_2010]
+            new_times[key_2011] = times[key_2011]
+            
+            dr._counts_ = new_counts
+            dr._times_ = new_times
+
+            empty_data = [0] * len(new_times[new_times.keys()[0]])
+            data = list()
+            data.append(dr.get_data_lists([''], empty_data))
+            
+            dict_param[country] = Hlp.combine_data_lists(data)
+        
+        self.cache_data(dict_param, key)
+        
+        logging.info('Caching complete.')
+    
     
 """
     LTT_DataCaching
@@ -75,9 +175,7 @@ class LTT_DataCaching(DataCaching):
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, \
                                                           hours=-self.VIEW_DURATION_HRS, resolution=1)
         
-        """
-            DATA CONFIG            
-        """
+        """ DATA CONFIG """
         
         countries = DL.CiviCRMLoader().get_ranked_donor_countries(start_time)
         countries = countries[1:6]
@@ -117,7 +215,8 @@ class LTT_DataCaching(DataCaching):
         
         include_totals = [True, True, True, False, True, True, False, False, False, True]
         include_others = [True, True, True, False, True, True, True, True, True, False]
-        hours_back = [24, 24, 24, 24, 24, 24, 24, 168, 24, 24]
+        hours_back = [0, 0, 0, 0, 0, 0, 24, 168, 0, 0]
+        time_unit = [TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR, TP.HOUR]
         
         data = list()
         
@@ -131,10 +230,11 @@ class LTT_DataCaching(DataCaching):
             
             times, counts = lttdl.run_query(start_time, end_time, metrics_index[index], metric_name=metrics[index], metric_type=metric_types[index], \
                                             groups=groups[index], group_metric=group_metrics[index], include_other=include_others[index], \
-                                            include_total=include_totals[index], hours_back=hours_back[index], weight_name=weights[index])
-            
-            times = TP.normalize_timestamps(times, False, 1)
-            
+                                            include_total=include_totals[index], hours_back=hours_back[index], weight_name=weights[index], \
+                                            time_unit=time_unit[index])
+                        
+            times = TP.normalize_timestamps(times, False, time_unit[index])
+
             dr._counts_ = counts
             dr._times_ = times
                         
