@@ -645,9 +645,10 @@ class LongTermTrendsLoader(DataLoader):
         " DATE_FORMAT(receive_date,'%sY') as year, " + \
         "count(*) as donations, sum(total_amount) as amount " + \
         "from civicrm.civicrm_contribution " + \
-        "join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
-        "join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+        "left join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+        "left join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
         "where receive_date >= '%s' and receive_date < '%s' group by 1,2 order by 1,2"
+
               
         sql_2010 = sql % (start_time_2010, '%', start_time_2010, end_time_2010)
         sql_2011 = sql % (start_time_2011, '%', start_time_2011, end_time)

@@ -36,13 +36,21 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 class DataCaching(object):
     
     DATA_DIR = projSet.__data_file_dir__
-        
+    
+    def open_serialized_obj(self, **kwargs): 
+        self._serialized_obj_ = None
+
     def cache_data(self, data, key):
         self._serialized_obj_[key] = data
                     
     def retrieve_cached_data(self, key):
         return self._serialized_obj_[key]
     
+    def clear_cached_data(self, key):        
+        self._serialized_obj_[key] = None
+        
+        
+        
 """
     LTT_DataCaching
     
@@ -55,8 +63,7 @@ class Fundraiser_Totals_DataCaching(DataCaching):
     ALL_COUNTRIES = 'Total'
     
     def __init__(self):        
-        self.open_serialized_obj()
-
+        self.open_serialized_obj()        
     
     """ Close the connection to the serialized obj """
     def __del__(self):
@@ -71,6 +78,7 @@ class Fundraiser_Totals_DataCaching(DataCaching):
     def execute_process(self, key, **kwargs):
         
         logging.info('Commencing caching of fundraiser totals data at:  %s' % self.CACHING_HOME)
+        self.clear_cached_data(key)
                 
         end_time = TP.timestamp_from_obj(datetime.datetime.utcnow(), 1, 3)
         
@@ -87,8 +95,8 @@ class Fundraiser_Totals_DataCaching(DataCaching):
         year_groups = dict()
         for country in countries:
             if cmp(country, 'Total') == 0:
-                year_groups['2011 Total'] = ['2011..']
-                year_groups['2010 Total'] = ['2010..']
+                year_groups['2011 Total'] = ['2011.*']
+                year_groups['2010 Total'] = ['2010.*']
             else:                
                 year_groups['2011 ' + country] = ['2011' + country]
                 year_groups['2010 ' + country] = ['2010' + country]
@@ -156,7 +164,6 @@ class LTT_DataCaching(DataCaching):
     
     def __init__(self):        
         self.open_serialized_obj()
-
     
     """ Close the connection to the serialized obj """
     def __del__(self):
@@ -171,7 +178,8 @@ class LTT_DataCaching(DataCaching):
     def execute_process(self, key, **kwargs):
         
         logging.info('Commencing caching of long term trends data at:  %s' % self.CACHING_HOME)
-                
+        self.clear_cached_data(key)
+        
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, \
                                                           hours=-self.VIEW_DURATION_HRS, resolution=1)
         
@@ -262,8 +270,7 @@ class LiveResults_DataCaching(DataCaching):
     DURATION_HRS = projSet.__HRS_BACK_LIVE_RESULTS__
     
     def __init__(self):        
-        self.open_serialized_obj()
-        
+        self.open_serialized_obj()      
     
     """ Close the connection to the serialized obj """
     def __del__(self):
@@ -279,6 +286,7 @@ class LiveResults_DataCaching(DataCaching):
         
         logging.info('Commencing caching of live results data at:  %s' % self.CACHING_HOME)
         shelve_key = key
+        self.clear_cached_data(shelve_key)
         
         """ Find the earliest and latest page views for a given campaign  """
         lptl = DL.LandingPageTableLoader(db='storage3')
