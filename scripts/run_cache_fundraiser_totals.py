@@ -16,6 +16,7 @@ import settings as projSet
 sys.path.append(projSet.__project_home__)
 
 """ Import Analytics modules """
+import classes.SystemMonitor as SM
 import classes.DataCaching as DC
 import data.web_reporting_view_keys as view_keys
 
@@ -35,10 +36,27 @@ class Usage(Exception):
     Execution body of main
 """
 def main(args):
+
+    user = projSet.__system_user__
+    cmd_pattern = 'run_cache_fundraiser_totals'
     
-    ft_dc = DC.Fundraiser_Totals_DataCaching()
-    ft_dc.execute_process(view_keys.FR_TOT_DICT_KEY) 
+    sm = SM.SystemMonitor()
     
+    if sm.check_for_process_in_PIDfile(user, cmd_pattern): 
+
+        try:
+            ft_dc = DC.Fundraiser_Totals_DataCaching()
+            ft_dc.execute_process(view_keys.FR_TOT_DICT_KEY)         
+            sm.remove_process_from_PIDfile(user, cmd_pattern)
+        except Exception as inst:
+            logging.info('Unable to produce fundraising totals: %s' % str(inst))
+        finally:
+            sm.remove_process_from_PIDfile(user, cmd_pattern)           
+   
+    else:
+        
+        logging.info('Process for "run_cache_fundraiser_totals" is already running.')
+        
     return 0
 
 """

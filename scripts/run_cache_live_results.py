@@ -16,6 +16,7 @@ import settings as projSet
 sys.path.append(projSet.__project_home__)
 
 """ Import Analytics modules """
+import classes.SystemMonitor as SM
 import classes.DataCaching as DC
 import data.web_reporting_view_keys as view_keys
 
@@ -36,9 +37,25 @@ class Usage(Exception):
 """
 def main(args):
     
-    lr_dc = DC.LiveResults_DataCaching()
-    lr_dc.execute_process(view_keys.LIVE_RESULTS_DICT_KEY) 
+    user = projSet.__system_user__
+    cmd_pattern = 'run_cache_live_results'
     
+    sm = SM.SystemMonitor()
+   
+    if sm.check_for_process_in_PIDfile(user, cmd_pattern):
+        
+        try:
+            lr_dc = DC.LiveResults_DataCaching()
+            lr_dc.execute_process(view_keys.LIVE_RESULTS_DICT_KEY)     
+            sm.remove_process_from_PIDfile(user, cmd_pattern)
+        except Exception as inst:
+            logging.info('Unable to produce live results: %s' % str(inst))
+        finally:
+            sm.remove_process_from_PIDfile(user, cmd_pattern)            
+    else:
+        
+        logging.info('Process for "run_cache_live_results" is already running.')
+        
     return 0
 
 """
