@@ -908,6 +908,8 @@ class SummaryReportingLoader(DataLoader):
             self._query_name_ = 'report_LP_metrics'
         elif cmp(FDH._QTYPE_BANNER_LP_, query_type) == 0:
             self._query_name_ = 'report_bannerLP_metrics'
+        elif cmp(FDH._QTYPE_DONATIONS_, query_type) == 0:
+            self._query_name_ = 'report_donation_metrics'
         elif cmp(FDH._QTYPE_TOTAL_, query_type) == 0:
             self._query_name_ = 'report_total_metrics'
     
@@ -948,8 +950,17 @@ class SummaryReportingLoader(DataLoader):
         
         min_views, one_step, country = self.process_kwargs(kwargs)
         
-        """ In the case that we look at one step banners the results for one step and two step pipeline totals are combined"""
-        if self.get_one_step_banners(start_time, end_time, campaign) or one_step:
+        """ In the case that we look at one step banners the results for one step and two step pipeline totals are combined """
+        if not(one_step):
+        
+            filename = projSet.__sql_home__+ self._query_name_ + '.sql'
+            sql_stmnt = Hlp.file_to_string(filename )
+            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views], country=country)        
+            
+            logging.info('Using query: ' + self._query_name_)
+            self._results_ = self.execute_SQL(sql_stmnt)
+
+        else:
             
             filename = projSet.__sql_home__+ self._query_name_ + '_1S.sql'
             sql_stmnt = Hlp.file_to_string(filename)
@@ -961,7 +972,7 @@ class SummaryReportingLoader(DataLoader):
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
             sql_stmnt = Hlp.file_to_string(filename)
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views], country=country)        
-
+            
             logging.info('Using query: ' + self._query_name_)
             results_2 = self.execute_SQL(sql_stmnt)
             
@@ -1016,15 +1027,7 @@ class SummaryReportingLoader(DataLoader):
                 results_1.extend(list(results_2))
             
                 self._results_ = results_1
-            
-        else:
-            filename = projSet.__sql_home__+ self._query_name_ + '.sql'
-            sql_stmnt = Hlp.file_to_string(filename )
-            sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views], country=country)        
-            
-            logging.info('Using query: ' + self._query_name_)
-            self._results_ = self.execute_SQL(sql_stmnt)
-            
+                        
                    
     """
         GET method for query results

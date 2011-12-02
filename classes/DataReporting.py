@@ -987,7 +987,7 @@ class ConfidenceReporting(DataReporting):
                 sampling_interval = kwargs['sampling_interval']        
 
         
-        derived_metrics = ['click_rate', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
+        derived_metrics = ['donations', 'click_rate', 'don_per_imp', 'amt_norm_per_imp', 'don_per_view', 'amt_norm_per_view']
         measured_metrics = ['impressions', 'views', 'donations', 'amount_normal']
         measured_metrics_counts = dict()
         derived_metrics_counts = dict()
@@ -1045,6 +1045,8 @@ class ConfidenceReporting(DataReporting):
                         
                     """
                     for index in range(num_samples_base):
+                        if metric == 'donations':
+                            derived_metrics_counts[metric][artifact_key].append(measured_metrics_counts['donations'][artifact_key][index])
                         if metric == 'click_rate':
                             impression_threshold = max([float(max(measured_metrics_counts['impressions'][artifact_key])) * 0.50, min_impression_threshold])
                             if measured_metrics_counts['impressions'][artifact_key][index] > impression_threshold:

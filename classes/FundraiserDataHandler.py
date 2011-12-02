@@ -15,6 +15,7 @@ __date__ = "May 8th, 2011"
 _QTYPE_BANNER_ = 'banner'
 _QTYPE_LP_ = 'lp'
 _QTYPE_BANNER_LP_ = 'bannerlp'
+_QTYPE_DONATIONS_ = 'donations'
 _QTYPE_CAMPAIGN_ = 'campaign'
 _QTYPE_TIME_ = 'minutely'
 _QTYPE_TOTAL_ = 'total'
@@ -24,6 +25,7 @@ _QTYPE_TOTAL_ = 'total'
 _TESTTYPE_BANNER_ = 'banner'
 _TESTTYPE_LP_ = 'lp'
 _TESTTYPE_BANNER_LP_ = 'bannerlp'
+_TESTTYPE_DONATIONS_ = 'donations'
 _TESTTYPE_VERBOSE_ = {'bannerlp' : 'Banner and Landing Page Test', 'banner' : 'Banner Test', 'lp' : 'Landing Page Test'}
 
 

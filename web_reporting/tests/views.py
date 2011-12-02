@@ -583,6 +583,23 @@ def generate_summary(request):
         else:
             measure_confidence = False
         
+        if 'one_step' in request.POST:
+            if cmp(request.POST['one_step'], 'yes') == 0:
+                use_one_step = True 
+            else:
+                use_one_step = False
+        else:
+            use_one_step = False
+            
+        if 'donations_only' in request.POST:
+            if cmp(request.POST['donations_only'], 'yes') == 0:
+                donations_only = True 
+            else:
+                donations_only = False
+        else:
+            donations_only = False
+
+            
         """ Convert timestamp format if necessary """
         
         if TP.is_timestamp(start_time, 2):
@@ -593,22 +610,18 @@ def generate_summary(request):
     
         """ =============================================== """
         
-        
-        """ 
-            Should a one-step query be used? 
-            ================================
-        """
-        lptl = DL.LandingPageTableLoader(db='db1008')        
-        use_one_step = lptl.is_one_step(start_time, end_time, 'C11')  # Assume it is a one step test if there are no impressions for this campaign in the landing page table
-            
-                     
         """ 
             GENERATE A REPORT SUMMARY TABLE
             ===============================
         """
-        srl = DL.SummaryReportingLoader(query_type=FDH._TESTTYPE_BANNER_LP_)
+        
+        if donations_only:
+            srl = DL.SummaryReportingLoader(query_type=FDH._TESTTYPE_DONATIONS_)
+        else:
+            srl = DL.SummaryReportingLoader(query_type=FDH._TESTTYPE_BANNER_LP_)
+            
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1, country=country)            
-    
+        
         column_names = srl.get_column_names()
         summary_results = srl.get_results()
         
@@ -688,8 +701,6 @@ def generate_summary(request):
         return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))
 
     except Exception as inst:
-        
-        print inst
         
         if cmp(err_msg, '') == 0:
             err_msg = 'Could not generate campaign tabular results.'

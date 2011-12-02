@@ -214,7 +214,14 @@ def format_query(query_name, sql_stmnt, args, **kwargs):
         interval = args[3]
         
         sql_stmnt = str(sql_stmnt % ('%', '%', '%',  '%', interval, interval, start_time, end_time))
+
+    elif cmp(query_name, 'report_donation_metrics') == 0:
+        start_time = args[0]
+        end_time = args[1]
+        campaign = args[2]
         
+        sql_stmnt = str(sql_stmnt % (start_time, end_time, campaign, country, start_time, end_time, campaign, country))
+
     else:
         return 'no such table\n'
 
@@ -248,7 +255,7 @@ def get_key_index(query_name):
     elif query_name == 'report_banner_metrics' or query_name == 'report_LP_metrics' or query_name == 'report_bannerLP_metrics' or query_name == 'report_total_metrics' \
     or query_name == 'report_banner_metrics_1S' or query_name == 'report_LP_metrics_1S' or query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_total_metrics_1S':
         return 0
-    elif query_name == 'report_bannerLP_metrics' or query_name == 'report_bannerLP_metrics_1S':
+    elif query_name == 'report_bannerLP_metrics' or query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_donation_metrics':
         return [0, 1, 2]
     else:
         return 1
@@ -258,7 +265,7 @@ def get_key_index(query_name):
 """
 def get_key_label(query_name, row):
     
-    if cmp(query_name,'report_bannerLP_metrics') == 0 or cmp(query_name,'report_bannerLP_metrics_1S') == 0:
+    if cmp(query_name,'report_bannerLP_metrics') == 0 or cmp(query_name,'report_bannerLP_metrics_1S') == 0 or cmp(query_name,'report_donation_metrics') == 0:
         return row[0] + '-' + row[1] + '-' + row[2]
     
     elif cmp(query_name,'report_campaign_bannerlps') == 0:
@@ -456,7 +463,23 @@ def get_metric_index(query_name, metric_name):
             return 6
         elif metric_name == 'amount':
             return 7
-            
+    
+    elif query_name == 'report_donation_metrics':
+        
+        if metric_name == 'utm_campaign':
+            return 0
+        elif metric_name == 'banner':
+            return 1
+        elif metric_name == 'landing_page':
+            return 2
+        elif metric_name == 'donations':
+            return 3
+        elif metric_name == 'amount':
+            return 4
+        elif metric_name == 'amount_normal':
+            return 5
+        
+        
     else:
         return 'no such table'
 
