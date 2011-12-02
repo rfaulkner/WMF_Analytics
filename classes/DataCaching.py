@@ -77,8 +77,7 @@ class Fundraiser_Totals_DataCaching(DataCaching):
     """
     def execute_process(self, key, **kwargs):
         
-        logging.info('Commencing caching of fundraiser totals data at:  %s' % self.CACHING_HOME)
-        self.clear_cached_data(key)
+        logging.info('Commencing caching of fundraiser totals data at:  %s' % self.CACHING_HOME)        
                 
         end_time = TP.timestamp_from_obj(datetime.datetime.utcnow(), 1, 3)
         
@@ -123,7 +122,7 @@ class Fundraiser_Totals_DataCaching(DataCaching):
         times, counts = lttdl.run_fundrasing_totals(end_time, metric_name=metrics, metric_type=metric_types, groups=groups, group_metric=group_metrics, include_other=include_others, \
                                         include_total=include_totals, hours_back=hours_back, weight_name=weights, time_unit=time_unit)
         dict_param = dict()
-
+        
         for country in countries:
             
             key_2011 = '2011 ' +  country
@@ -146,6 +145,7 @@ class Fundraiser_Totals_DataCaching(DataCaching):
             
             dict_param[country] = Hlp.combine_data_lists(data)
         
+        self.clear_cached_data(key)
         self.cache_data(dict_param, key)
         
         logging.info('Caching complete.')
@@ -178,7 +178,6 @@ class LTT_DataCaching(DataCaching):
     def execute_process(self, key, **kwargs):
         
         logging.info('Commencing caching of long term trends data at:  %s' % self.CACHING_HOME)
-        self.clear_cached_data(key)
         
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, \
                                                           hours=-self.VIEW_DURATION_HRS, resolution=1)
@@ -240,12 +239,12 @@ class LTT_DataCaching(DataCaching):
                                             groups=groups[index], group_metric=group_metrics[index], include_other=include_others[index], \
                                             include_total=include_totals[index], hours_back=hours_back[index], weight_name=weights[index], \
                                             time_unit=time_unit[index])
-                        
+            
             times = TP.normalize_timestamps(times, False, time_unit[index])
-
+            
             dr._counts_ = counts
             dr._times_ = times
-                        
+      
             empty_data = [0] * len(times[times.keys()[0]])
             data.append(dr.get_data_lists([''], empty_data))
             
@@ -253,6 +252,7 @@ class LTT_DataCaching(DataCaching):
         dict_param['interval'] = self.VIEW_DURATION_HRS    
         dict_param['end_time'] = TP.timestamp_convert_format(end_time,1,2)
         
+        self.clear_cached_data(key)
         self.cache_data(dict_param, key)
         
         logging.info('Caching complete.')
@@ -286,7 +286,6 @@ class LiveResults_DataCaching(DataCaching):
         
         logging.info('Commencing caching of live results data at:  %s' % self.CACHING_HOME)
         shelve_key = key
-        self.clear_cached_data(shelve_key)
         
         """ Find the earliest and latest page views for a given campaign  """
         lptl = DL.LandingPageTableLoader(db='storage3')
@@ -396,6 +395,7 @@ class LiveResults_DataCaching(DataCaching):
         dict_param['ir_banner_times'] = ir_banner._times_
         dict_param['ir_lp_times'] = ir_lp._times_
         
+        self.clear_cached_data(shelve_key)
         self.cache_data(dict_param, shelve_key)
         
         logging.info('Caching complete.')

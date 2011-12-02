@@ -129,10 +129,10 @@ def normalize_timestamps(time_lists, count_back, time_unit):
             hr = date_obj.hour
             mte = date_obj.minute
             
-            if time_unit == 0:
-                elem = (date_obj - start_date_obj).seconds / (60 * 60 * 24)     # Time difference in days
-            elif time_unit == 1:
-                elem = (date_obj - start_date_obj).seconds / (60 * 60)          # Time difference in hours
+            if time_unit == 0:                
+                elem = (date_obj - start_date_obj).days + (date_obj - start_date_obj).seconds / (60 * 60 * 24)     # Time difference in days
+            elif time_unit == 1:                
+                elem = (date_obj - start_date_obj).days * 24 + (date_obj - start_date_obj).seconds / (60 * 60)          # Time difference in hours
             elif time_unit == 2:
                 elem = (day - start_day) * 24 * 60 + (hr - start_hr) * 60 + (mte - start_mte)
             elif time_unit == 3:
