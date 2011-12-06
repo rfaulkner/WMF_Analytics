@@ -32,6 +32,9 @@ __date__ = "November 28th, 2010"
 
 import classes.TimestampProcessor as TP
 import classes.FundraiserDataHandler as FDH
+import config.settings as projSet
+import classes.Helper as Hlp
+
 import datetime, re
 
 def format_query(query_name, sql_stmnt, args, **kwargs):
@@ -222,6 +225,18 @@ def format_query(query_name, sql_stmnt, args, **kwargs):
         
         sql_stmnt = str(sql_stmnt % (start_time, end_time, campaign, country, start_time, end_time, campaign, country))
 
+    elif cmp(query_name, 'report_total_donations') == 0:
+        start_time = args[0]
+        end_time = args[1]
+        campaign = args[2]
+        
+        """ Recursively construct the sub-query """
+        sub_query_name = 'report_donation_metrics'
+        sub_query_sql = Hlp.file_to_string(projSet.__sql_home__ + sub_query_name + '.sql')
+        sub_query_sql = format_query(sub_query_name, sub_query_sql, [start_time, end_time, campaign], country=country)        
+
+        sql_stmnt = str(sql_stmnt % sub_query_sql)
+
     else:
         return 'no such table\n'
 
@@ -257,6 +272,8 @@ def get_key_index(query_name):
         return 0
     elif query_name == 'report_bannerLP_metrics' or query_name == 'report_bannerLP_metrics_1S' or query_name == 'report_donation_metrics':
         return [0, 1, 2]
+    elif query_name == 'report_total_donations':
+        return 0
     else:
         return 1
 
@@ -479,6 +496,16 @@ def get_metric_index(query_name, metric_name):
         elif metric_name == 'amount_normal':
             return 5
         
+    elif query_name == 'report_total_donations':
+        
+        if metric_name == 'campaign':
+            return 0
+        elif metric_name == 'donations':
+            return 1
+        elif metric_name == 'amount':
+            return 2
+        elif metric_name == 'amount_normal':
+            return 3
         
     else:
         return 'no such table'

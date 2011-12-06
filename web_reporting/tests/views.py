@@ -662,15 +662,21 @@ def generate_summary(request):
             
             html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True)    
         
-        """ Generate totals """
-        srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
+        """ Generate totals only if it's a non-donation-only query """
+        
+        if donations_only:
+            srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_DONATIONS_)
+        else:
+            srl = DL.SummaryReportingLoader(query_type=FDH._QTYPE_TOTAL_)
+            
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1, country=country)
         
         total_summary_results = srl.get_results()
+
         if not(total_summary_results):
             total_summary_results = '<p>No data available for %s.' % utm_campaign
-            
-        html_table = html_table + '<div class="spacer"></div><div class="spacer"></div>' + DR.DataReporting()._write_html_table(total_summary_results, srl.get_column_names(), use_standard_metric_names=True)
+        else:
+            html_table = html_table + '<div class="spacer"></div><div class="spacer"></div>' + DR.DataReporting()._write_html_table(total_summary_results, srl.get_column_names(), use_standard_metric_names=True)
         
         metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
         conf_legend_table = DR.ConfidenceReporting(query_type='bannerlp', hyp_test='TTest').get_confidence_legend_table()

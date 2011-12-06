@@ -912,7 +912,9 @@ class SummaryReportingLoader(DataLoader):
             self._query_name_ = 'report_donation_metrics'
         elif cmp(FDH._QTYPE_TOTAL_, query_type) == 0:
             self._query_name_ = 'report_total_metrics'
-    
+        elif cmp(FDH._QTYPE_TOTAL_DONATIONS_, query_type) == 0:
+            self._query_name_ = 'report_total_donations'
+        
     """
         PROCESS OPTIONAL KWARGS
         
@@ -952,9 +954,9 @@ class SummaryReportingLoader(DataLoader):
         
         """ In the case that we look at one step banners the results for one step and two step pipeline totals are combined """
         if not(one_step):
-        
+            
             filename = projSet.__sql_home__+ self._query_name_ + '.sql'
-            sql_stmnt = Hlp.file_to_string(filename )
+            sql_stmnt = Hlp.file_to_string(filename)
             sql_stmnt = QD.format_query(self._query_name_, sql_stmnt, [start_time, end_time, campaign, min_views], country=country)        
             
             logging.info('Using query: ' + self._query_name_)

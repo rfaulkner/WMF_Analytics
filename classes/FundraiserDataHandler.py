@@ -19,6 +19,7 @@ _QTYPE_DONATIONS_ = 'donations'
 _QTYPE_CAMPAIGN_ = 'campaign'
 _QTYPE_TIME_ = 'minutely'
 _QTYPE_TOTAL_ = 'total'
+_QTYPE_TOTAL_DONATIONS_ = 'totaldonations'
 
 
 """ Test Types """
