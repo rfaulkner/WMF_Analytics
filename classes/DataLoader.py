@@ -1555,7 +1555,7 @@ class CampaignReportingLoader(DataLoader):
         
         CIVI_DONATE_UTM_SOURCE_DELIMETER = '~'
         ONESTEP_PATERN = '^cc[0-9][0-9]$'
-        LP_NAME_FIELDS = ['Lp-layout-','appeal-template-','Appeal-','form-template-','Form-countryspecific-']
+        LP_NAME_FIELDS = ['Lp-layout-','Appeal-template-','Appeal-','Form-template-','Form-countryspecific-']
         # LP_NAME_FIELDS = ['','','','','']
         
         """ 
@@ -1580,7 +1580,7 @@ class CampaignReportingLoader(DataLoader):
         filename = projSet.__sql_home__+ query_name + '.sql'
         
         lp_link_str_donate = 'https://donate.wikimedia.org/wiki/Special:FundraiserLandingPage?uselang=%s&' + \
-        'country=%s&template=%s&appeal-template=%s&appeal=%s&form-template=%s&form-countryspecific=%s'
+        'country=%s&template=%s&Appeal-template=%s&appeal=%s&Form-template=%s&Form-countryspecific=%s'
         
         lp_link_str_foundation = 'http://wikimediafoundation.org/wiki/%s/%s/%s'
         
