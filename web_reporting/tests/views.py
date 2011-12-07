@@ -690,19 +690,13 @@ def generate_summary(request):
         """
         
         ccl = DL.CiviCRMLoader()
-        pm_data_banner, pm_data_lp  = ccl.get_payment_methods(utm_campaign, start_time, end_time)
+        pm_data_counts, pm_data_conversions  = ccl.get_payment_methods(utm_campaign, start_time, end_time, country=country)
+
+        html_table_pm_counts = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_counts, ['Payment Method', 'Conversions', 'Portion of Donations'], 'Landing Page')
+        html_table_pm_conversions = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_conversions, ['Payment Method', 'Conversion Rate'], 'Landing Page')
         
-        pm_data_banner_mapped = list()
-        pm_data_lp_mapped = list()
-        
-        ccl.map_autoviv_to_list(pm_data_banner, pm_data_banner_mapped, [])
-        ccl.map_autoviv_to_list(pm_data_lp, pm_data_lp_mapped, [])        
-        
-        html_table_pm_banner = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_banner_mapped, ['Payment Method', 'Portion of Donations'], 'Banner')
-        html_table_pm_lp = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_lp_mapped, ['Payment Method', 'Portion of Donations'], 'Landing Page')
-        
-        html_table = html_table + '<div class="spacer"></div><h4><u>Payment Methods Breakdown:</u></h4><div class="spacer"></div>' + html_table_pm_banner + '<div class="spacer"></div>' + \
-            html_table_pm_lp + '<div class="spacer"></div><div class="spacer"></div>'
+        html_table = html_table + '<div class="spacer"></div><h4><u>Payment Methods Breakdown:</u></h4><div class="spacer"></div>' + html_table_pm_counts + \
+        '<div class="spacer"></div><div class="spacer"></div>' + html_table_pm_conversions + '<div class="spacer"></div><div class="spacer"></div>'
         
         return render_to_response('tests/table_summary.html', {'html_table' : html_table, 'utm_campaign' : utm_campaign}, context_instance=RequestContext(request))
 
@@ -712,7 +706,6 @@ def generate_summary(request):
             err_msg = 'Could not generate campaign tabular results.'
         
         return index(request, err_msg=err_msg)
-        # return render_to_response('tests/index.html', {'err_msg' : err_msg}, context_instance=RequestContext(request))
     
 """
     Inserts a comment into an existing report

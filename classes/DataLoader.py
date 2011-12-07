@@ -800,7 +800,7 @@ class LongTermTrendsLoader(DataLoader):
         
         Assumes:
          
-            1) 
+            1) Chronological time lists (timestamps)
     """    
     def parse_results(self, results, times, counts, groups, group_counts, weight_counts, weight_name, include_other, metric_name, metric_type, group_metric):
         
@@ -2416,61 +2416,92 @@ class CiviCRMLoader(TableLoader):
         @return nested dict storing portions for each method
         
     """
-    def get_payment_methods(self, campaign, start_timestamp, end_timestamp):        
+    def get_payment_methods(self, campaign, start_timestamp, end_timestamp, **kwargs):        
         
+        """ Define the exisiting payment methods """
+        payment_methods_dict = { 'pp' : 'Paypal', 'cc' : 'Credit Card', 'rpp' : 'Recurring', 'wm' : 'Web Money', 'rtbt' : 'Real Time Bank Transfer', 'bt' : 'Bank Transfer', \
+                                'mb' : 'Money Bookers', 'dd' : 'Direct Debit'}
+                
         """ Escape parameters """
         campaign = MySQLdb._mysql.escape_string(str(campaign))
         start_timestamp = MySQLdb._mysql.escape_string(str(start_timestamp))
         end_timestamp = MySQLdb._mysql.escape_string(str(end_timestamp))
         
-        sql_banner =  "select " + \
-                "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',1) as banner, substring_index(utm_source, '.', -1) as payment_method, count(*) as counts " + \
-                "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
-                "where receive_date >= '%s' and receive_date < '%s' and utm_campaign = '%s' " % (start_timestamp, end_timestamp, campaign) + \
-                "group by 1,2 order by 1,2"
+        if 'country' in kwargs:
+            country = MySQLdb._mysql.escape_string(str(kwargs['country']))
+        else:
+            country = '.*'
         
-        sql_lp =  "select " + \
+        """ 
+            Conversion must be independent of country as the country data is recorded at the point 
+        """
+        sql_conversion = 'select  ' + \
+                "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, substring_index(utm_source, '.', -1) as payment_method, " + \
+                "sum(if(not(isnull(contribution_tracking.contribution_id)), 1, 0)) / count(*) as conversion " + \
+                "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
+                "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s'" % (start_timestamp, end_timestamp, campaign) + \
+                "group by 1,2 order by 1,2"
+
+        """
+            Processes counts as it relates to payment methods
+        """
+        sql_counts =  "select " + \
                 "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, substring_index(utm_source, '.', -1) as payment_method, count(*) as counts " + \
                 "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
-                "where receive_date >= '%s' and receive_date < '%s' and utm_campaign = '%s' " % (start_timestamp, end_timestamp, campaign) + \
+                "left join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
+                "left join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
+                "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s' and iso_code = '%s'" % (start_timestamp, end_timestamp, campaign, country) + \
                 "group by 1,2 order by 1,2"
-        
-        results_banner = self.execute_SQL(sql_banner)
-        results_lp = self.execute_SQL(sql_lp)
-        
-        banner_payment_methods = Hlp.AutoVivification()
-        for row in results_banner:
-            if cmp(row[1], 'pp') == 0:
-                banner_payment_methods[row[0]]['Paypal'] = int(row[2])
-            elif cmp(row[1], 'cc') == 0:
-                banner_payment_methods[row[0]]['Credit Card'] = int(row[2])
-            elif cmp(row[1], 'rpp') == 0:
-                banner_payment_methods[row[0]]['Recurring'] = int(row[2])
-                
-        lp_payment_methods = Hlp.AutoVivification()
-        for row in results_lp:
-            if cmp(row[1], 'pp') == 0:
-                lp_payment_methods[row[0]]['Paypal'] = int(row[2])
-            elif cmp(row[1], 'cc') == 0:
-                lp_payment_methods[row[0]]['Credit Card'] = int(row[2])
-            elif cmp(row[1], 'rpp') == 0:
-                lp_payment_methods[row[0]]['Recurring'] = int(row[2])
-                
-        for banner in banner_payment_methods:
-            total = 0
-            for payment_method in banner_payment_methods[banner]:
-                total = total + banner_payment_methods[banner][payment_method]
-            for payment_method in banner_payment_methods[banner]:
-                banner_payment_methods[banner][payment_method] = '%5.2f' % (float(banner_payment_methods[banner][payment_method]) / float(total) * 100.0)
 
-        for lp in lp_payment_methods:
+    
+        results_conversion = self.execute_SQL(sql_conversion)
+        results_counts = self.execute_SQL(sql_counts)
+        
+        conversion_index = 2
+        count_index = 2
+        
+        payment_method_conversions = Hlp.AutoVivification()
+        for row in results_conversion:
+            try:
+                pm_verbose = payment_methods_dict[str(row[1])]
+                conversion = '%5.2f' % (float(row[conversion_index]) * 100.0)
+                payment_method_conversions[row[0]][pm_verbose] = [conversion]
+            except:
+                logging.error('Could not process payment method: "%s"' % str(row[1]))
+                pass        
+        
+        payment_method_counts = Hlp.AutoVivification()
+        for row in results_counts:
+            try:
+                pm_verbose = payment_methods_dict[str(row[1])]
+                payment_method_counts[row[0]][pm_verbose] = [str(int(row[count_index]))]
+            except:
+                logging.error('Could not process payment method: "%s"' % str(row[1]))
+                pass
+        
+        for artifact in payment_method_counts:
             total = 0
-            for payment_method in lp_payment_methods[lp]:
-                total = total + lp_payment_methods[lp][payment_method]
-            for payment_method in lp_payment_methods[lp]:
-                lp_payment_methods[lp][payment_method] = '%5.2f' % (float(lp_payment_methods[lp][payment_method]) / float(total) * 100.0)
-                                
-        return banner_payment_methods, lp_payment_methods
+            for payment_method in payment_method_counts[artifact]:
+                total = total + int(payment_method_counts[artifact][payment_method][0])
+            for payment_method in payment_method_counts[artifact]:
+                payment_method_counts[artifact][payment_method].append('%5.2f' % (float(payment_method_counts[artifact][payment_method][0]) / float(total) * 100.0))
+
+        """ Flatten dictionaries into lists """
+        payment_method_counts_list = list()
+        for artifact in payment_method_counts:
+            for pm in payment_method_counts[artifact]:
+                new_elem = [artifact, pm]
+                new_elem.extend(payment_method_counts[artifact][pm])
+                payment_method_counts_list.append(new_elem)
+        
+        payment_method_conversions_list = list()
+        for artifact in payment_method_conversions:
+            for pm in payment_method_conversions[artifact]:
+                new_elem = [artifact, pm]
+                new_elem.extend(payment_method_conversions[artifact][pm])
+                payment_method_conversions_list.append(new_elem)
+        
+        return payment_method_counts_list, payment_method_conversions_list
 
 
     """
