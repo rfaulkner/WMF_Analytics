@@ -188,7 +188,7 @@ class LTT_DataCaching(DataCaching):
         countries = countries[1:6]
         
         """ set the metrics to plot """
-        lttdl = DL.LongTermTrendsLoader(db='db1025')
+        lttdl = DL.LongTermTrendsLoader(db='storage3')
                 
         """ Dictionary object storing lists of regexes - each expression must pass for a label to persist """
         # country_groups = {'US': ['(US)'], 'CA': ['(CA)'], 'JP': ['(JP)'], 'IN': ['(IN)'], 'NL': ['(NL)']}
@@ -288,13 +288,13 @@ class LiveResults_DataCaching(DataCaching):
         shelve_key = key
         
         """ Find the earliest and latest page views for a given campaign  """
-        lptl = DL.LandingPageTableLoader(db='storage3')
+        lptl = DL.LandingPageTableLoader(db='db1025')
             
         query_name = 'report_summary_results_country.sql'
         query_name_1S = 'report_summary_results_country_1S.sql'                    
         campaign_regexp_filter = '^C_|^C11_'
                 
-        dl = DL.DataLoader(db='storage3')
+        dl = DL.DataLoader(db='db1025')
         end_time, start_time = TP.timestamps_for_interval(datetime.datetime.utcnow(), 1, hours=-self.DURATION_HRS)
         
         """ Should a one-step query be used? """        
@@ -312,7 +312,7 @@ class LiveResults_DataCaching(DataCaching):
         latest_timestamp = TP.timestamp_from_obj(latest_timestamp, 2, 3)
         latest_timestamp_flat = TP.timestamp_convert_format(latest_timestamp, 2, 1)
     
-        ret = DR.ConfidenceReporting(query_type='', hyp_test='', db='storage3').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
+        ret = DR.ConfidenceReporting(query_type='', hyp_test='', db='db1025').get_confidence_on_time_range(start_time, end_time, campaign_regexp_filter, one_step=use_one_step)
         measured_metrics_counts = ret[1]
         
         """ Prepare Summary results """
@@ -360,9 +360,9 @@ class LiveResults_DataCaching(DataCaching):
         
         sampling_interval = 5 # 5 minute sampling interval for donation plots
         
-        ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False, db='storage3')
-        ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False, db='storage3')
-        ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False, db='storage3')
+        ir_cmpgn = DR.IntervalReporting(query_type=FDH._QTYPE_CAMPAIGN_ + FDH._QTYPE_TIME_, generate_plot=False, db='db1025')
+        ir_banner = DR.IntervalReporting(query_type=FDH._QTYPE_BANNER_ + FDH._QTYPE_TIME_, generate_plot=False, db='db1025')
+        ir_lp = DR.IntervalReporting(query_type=FDH._QTYPE_LP_ + FDH._QTYPE_TIME_, generate_plot=False, db='db1025')
             
         """ Execute queries """        
         ir_cmpgn.run(start_time, end_time, sampling_interval, 'donations', '',{})
