@@ -35,17 +35,47 @@ import classes.FundraiserDataHandler as FDH
 import config.settings as projSet
 import classes.Helper as Hlp
 
-import datetime, re
+import datetime, re, MySQLdb, logging, sys
 
+""" CONFIGURE THE LOGGER """
+LOGGING_STREAM = sys.stderr
+logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctime)s %(levelname)-8s %(message)s', datefmt='%b-%d %H:%M:%S')
+
+"""
+    Process kwyword args for format sting
+"""
+def process_kwargs(kwargs):
+    
+    country = '.{2}'
+    min_donation = 0
+    
+    for key in kwargs:
+        if key == 'country':
+            if cmp(kwargs['country'], '') == 0:
+                country = '.{2}'
+            else:
+                try:
+                    country = MySQLdb._mysql.escape_string(kwargs['country'].strip())
+                except:
+                    logging.error('QueryData:process_kwargs -- Could not process country for "%s" ' % str(kwargs['country']).strip())
+                    country = '.{2}'
+        
+        elif key == 'min_donation':
+            try:                
+                min_donation = int(MySQLdb._mysql.escape_string(str(kwargs['min_donation']).strip())) # ensure that it is an integer
+                min_donation = min_donation.__str__() # recast as string
+            except:
+                logging.error('QueryData:process_kwargs -- Could not process minimum donation for "%s" ' % str(kwargs['min_donation']).strip())
+                min_donation = 0
+
+    return country, min_donation
+
+"""
+    Format a saved query to be executed
+"""
 def format_query(query_name, sql_stmnt, args, **kwargs):
     
-    if 'country' in kwargs:
-        if cmp(kwargs['country'], '') == 0:
-            country = '.{2}'
-        else:
-            country = kwargs['country']
-    else:
-        country = '.{2}'
+    country, min_donation = process_kwargs(kwargs)
     
     if cmp(query_name, 'report_campaign_ecomm') == 0:
         start_time = args[0]
@@ -236,6 +266,13 @@ def format_query(query_name, sql_stmnt, args, **kwargs):
         sub_query_sql = format_query(sub_query_name, sub_query_sql, [start_time, end_time, campaign], country=country)        
 
         sql_stmnt = str(sql_stmnt % sub_query_sql)
+
+    elif cmp(query_name, 'report_daily_totals_by_country') == 0:
+        start_time = args[0]
+        end_time = args[1]
+        
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', start_time, end_time, country, min_donation))
+
 
     else:
         return 'no such table\n'
@@ -505,6 +542,13 @@ def get_metric_index(query_name, metric_name):
         elif metric_name == 'amount':
             return 2
         elif metric_name == 'amount_normal':
+            return 3
+
+    elif query_name == 'report_daily_totals_by_country':
+        
+        if metric_name == 'donations':
+            return 2
+        elif metric_name == 'amount':
             return 3
         
     else:

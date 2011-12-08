@@ -49,7 +49,7 @@ logging.basicConfig(level=logging.DEBUG, stream=LOGGING_STREAM, format='%(asctim
 standard_metric_names = {'imp' : 'Bi', 'impressions' : 'Bi', 'views' : 'LPi', 'don_per_imp' : 'D / Bi', 'don_per_view' : 'D / LPi', 'amt_per_imp' : 'A / Bi', 'amt_per_view' : 'A / LPi', \
                          'amt_norm_per_imp' : 'An / Bi', 'amt_norm_per_view' : 'An / LPi', 'click_rate' : 'LPi / Bi', 'avg_donation' : 'AVG A', 'avg_donation_norm' : 'AVG An', \
                          'campaign' : 'Campaign', 'utm_campaign' : 'Campaign', 'utm_source' : 'B', 'banner' : 'B', 'landing_page' : 'LP', 'donations' : 'D', 'clicks' : 'Clk', 'amount' : 'A', \
-                         'amount_normal' : 'An', 'country' : 'Country'}
+                         'amount_normal' : 'An', 'country' : 'Country', 'dt_day' : 'Day'}
 
 
 """

@@ -38,6 +38,7 @@ import classes.DataReporting as DR
 import classes.DataLoader as DL
 import classes.DataCaching as DC
 import classes.TimestampProcessor as TP
+import classes.QueryData as QD
 import classes.FundraiserDataHandler as FDH
 import config.settings as projSet
 import data.web_reporting_view_keys as view_keys
@@ -311,7 +312,7 @@ def impression_list(request):
     The first query gets all of the banners and correspoding views on the corresponding campaign.  The second query gets impression counts for each banner
       
 """
-def json_out(request, utm_campaign):    
+def json_out(request, utm_campaign):
     
     utm_campaign = MySQLdb._mysql.escape_string(str(utm_campaign))
                                  
@@ -367,3 +368,72 @@ def json_out(request, utm_campaign):
     json = json[:-2] + '});'
         
     return render_to_response('live_results/json_out.html', {'html' : json}, context_instance=RequestContext(request))
+
+
+"""
+    Generates results for 
+"""
+def daily_totals(request):    
+
+    err_msg = ''
+    
+    start_day_ts = TP.timestamp_from_obj(datetime.datetime.utcnow() + datetime.timedelta(days=-1), 1, 0)
+    end_day_ts = TP.timestamp_from_obj(datetime.datetime.utcnow(), 1, 0)
+    country = '.{2}'
+    min_donation = 0
+    
+    """
+        PROCESS POST
+    """
+    
+    if 'start_day_ts' in request.POST:
+        if cmp(request.POST['start_day_ts'], '') != 0:
+            start_day_ts = MySQLdb._mysql.escape_string(request.POST['start_day_ts'].strip())
+            format = TP.getTimestampFormat(start_day_ts)
+            
+            if format == 2:
+                start_day_ts = TP.timestamp_convert_format(start_day_ts, 2, 1)
+                # start_day_ts = start_day_ts[:8] + '000000'
+            elif format == -1:
+                err_msg = err_msg + 'Start timestamp is formatted incorrectly\n'
+
+    if 'end_day_ts' in request.POST:
+        if cmp(request.POST['end_day_ts'], '') != 0:
+            end_day_ts = MySQLdb._mysql.escape_string(request.POST['end_day_ts'].strip())
+            format = TP.getTimestampFormat(start_day_ts)
+            
+            if format == 2:
+                end_day_ts = TP.timestamp_convert_format(end_day_ts, 2, 1)
+                # end_day_ts = end_day_ts[:8] + '000000'
+            elif format == -1:
+                err_msg = err_msg + 'End timestamp is formatted incorrectly\n'
+            
+    if 'country' in request.POST:
+        if cmp(request.POST['country'], '') != 0:
+            country = MySQLdb._mysql.escape_string(request.POST['country'])
+
+    if 'min_donation' in request.POST:
+        if cmp(request.POST['min_donation'], '') != 0:
+            try:                
+                min_donation = int(MySQLdb._mysql.escape_string(request.POST['min_donation'].strip()))
+            except:
+                logging.error('live_results/daily_totals -- Could not process minimum donation for "%s" ' % request.POST['min_donation'].strip())
+                min_donation = 0
+    
+    """
+        === END POST ===
+    """
+    
+    query_name = 'report_daily_totals_by_country'
+    filename = projSet.__sql_home__+ query_name + '.sql'
+    sql_stmnt = Hlp.file_to_string(filename)
+    sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_day_ts, end_day_ts], country=country, min_donation=min_donation)
+    
+    dl = DL.DataLoader()    
+    results = dl.execute_SQL(sql_stmnt)
+    html_table = DR.DataReporting()._write_html_table(results, dl.get_column_names(), use_standard_metric_names=True)
+    
+    return render_to_response('live_results/daily_totals.html', \
+                              {'html_table' : html_table, 'start_time' : TP.timestamp_convert_format(start_day_ts, 1, 2), 'end_time' : TP.timestamp_convert_format(end_day_ts, 1, 2)}, \
+                              context_instance=RequestContext(request))
+

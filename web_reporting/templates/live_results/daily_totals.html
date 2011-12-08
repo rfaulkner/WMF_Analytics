@@ -1,0 +1,61 @@
+
+{% extends "base.html" %}
+{% block content %}
+
+<h1><u>Daily Totals by Country</u></h1>
+<div class="spacer"></div>
+<h3>Donations measured from {{ start_time }} to {{ end_time }}.</h3><br>
+
+<div class="spacer"></div>
+
+{% if err_msg != '' %}
+	<span style="color:red">{{err_msg}}</span>
+	<div class="spacer"></div>
+{% endif %}
+
+<div id="stylized" class="myform">
+<form action="/live_stats/daily_totals" method="post">
+{% csrf_token %}
+<h1>Select a range to display country donation totals:</h1>
+
+<div class="spacer"></div>
+
+<label for="start_day_ts">Start Timestamp:
+<span class="small">Format: yyyymmddhhiiss.</span>		
+</label>
+<input type="text" name="start_day_ts" />
+
+<label for="end_day_ts">End Timestamp:
+<span class="small">Format: yyyymmddhhiiss.</span>
+</label>
+<input type="text" name="end_day_ts" />
+
+<label>Country
+<span class="small">Filter by ISO Code (e.g. US, GB, CA, DE, JP, etc...).</span>
+</label>
+<input type="text" name="iso_filter" />
+
+<label for="min_donation">Minimum # of Donations:
+</label>
+<input type="text" name="min_donation" />
+<div class="spacer"></div>
+
+<button type="submit">Submit</button>
+</form>
+</div>
+
+<div class="spacer"></div>
+<div class="spacer"></div>
+
+<!-- Table listing all impressions run -->
+
+<center>{{ html_table|safe }}</center>
+
+<div class="spacer"></div>
+
+<u>Go to:</u>
+<br><br>
+<a href="/">Home</a>
+<br>
+
+{% endblock %}
