@@ -2419,7 +2419,7 @@ class CiviCRMLoader(TableLoader):
     def get_payment_methods(self, campaign, start_timestamp, end_timestamp, **kwargs):        
         
         """ Define the exisiting payment methods """
-        payment_methods_dict = { 'pp' : 'Paypal', 'cc' : 'Credit Card', 'rpp' : 'Recurring', 'wm' : 'Web Money', 'rtbt' : 'Real Time Bank Transfer', 'bt' : 'Bank Transfer', \
+        payment_methods_dict = { 'pp' : 'Paypal', 'cc' : 'Credit Card', 'rpp' : 'Recurring Paypal', 'rcc' : 'Recurring Credit Card', 'wm' : 'Web Money', 'rtbt' : 'Real Time Bank Transfer', 'bt' : 'Bank Transfer', \
                                 'mb' : 'Money Bookers', 'dd' : 'Direct Debit'}
                 
         """ Escape parameters """

@@ -397,16 +397,11 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     logging.info('============================\n')
         
     ccl = DL.CiviCRMLoader()
-    pm_data_banner, pm_data_lp  = ccl.get_payment_methods(campaign, start_time, end_time)
     
-    pm_data_banner_mapped = list()
-    pm_data_lp_mapped = list()
-    ccl.map_autoviv_to_list(pm_data_banner, pm_data_banner_mapped, [])
-    ccl.map_autoviv_to_list(pm_data_lp, pm_data_lp_mapped, [])
-    
-    html_table_pm_banner = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_banner_mapped, ['Payment Method', 'Portion of Donations'], 'Banner')
-    html_table_pm_lp = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_lp_mapped, ['Payment Method', 'Portion of Donations'], 'Landing Page')
-    
+    pm_data_counts, pm_data_conversions  = ccl.get_payment_methods(campaign, start_time, end_time, country=country)
+
+    html_table_pm_counts = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_counts, ['Payment Method', 'Portion of Donations (%)'], 'Landing Page')
+    html_table_pm_conversions = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_conversions, ['Payment Method', 'Visits', 'Conversions', 'Conversion Rate (%)'], 'Landing Page')
     
     
     """ 
@@ -533,7 +528,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     html_table = html_table + '<br><br>' + DR.DataReporting()._write_html_table(srl.get_results(), srl.get_column_names(), use_standard_metric_names=True)
         
 
-    return [measured_metric, winner, loser, percent_increase, confidence, html_table_pm_banner, html_table_pm_lp, html_language, html_table]
+    return [measured_metric, winner, loser, percent_increase, confidence, html_table_pm_counts, html_table_pm_conversions, html_language, html_table]
 
 
 """
