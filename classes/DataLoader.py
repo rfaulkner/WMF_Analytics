@@ -2436,7 +2436,8 @@ class CiviCRMLoader(TableLoader):
             Conversion must be independent of country as the country data is recorded at the point 
         """
         sql_conversion = 'select  ' + \
-                "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, substring_index(utm_source, '.', -1) as payment_method, " + \
+                "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, substring_index(utm_source, '.', -1) as payment_method, count(*) as hits, " + \
+                "sum(if(not(isnull(contribution_tracking.contribution_id)), 1, 0)) as conversions, " + \
                 "sum(if(not(isnull(contribution_tracking.contribution_id)), 1, 0)) / count(*) as conversion " + \
                 "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
                 "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s'" % (start_timestamp, end_timestamp, campaign) + \
@@ -2457,15 +2458,22 @@ class CiviCRMLoader(TableLoader):
         results_conversion = self.execute_SQL(sql_conversion)
         results_counts = self.execute_SQL(sql_counts)
         
-        conversion_index = 2
+        hits_index = 2
+        conversion_index = 3
+        conversion_rate_index = 4
+        
         count_index = 2
         
         payment_method_conversions = Hlp.AutoVivification()
         for row in results_conversion:
             try:
                 pm_verbose = payment_methods_dict[str(row[1])]
-                conversion = '%5.2f' % (float(row[conversion_index]) * 100.0)
-                payment_method_conversions[row[0]][pm_verbose] = [conversion]
+                
+                conversion_rate = '%5.2f' % (float(row[conversion_rate_index]) * 100.0)
+                hits = '%s' % str(int(row[hits_index]))
+                conversions = '%s' % str(int(row[conversion_index]))
+                
+                payment_method_conversions[row[0]][pm_verbose] = [hits, conversions, conversion_rate]
             except:
                 logging.error('Could not process payment method: "%s"' % str(row[1]))
                 pass        
@@ -2475,16 +2483,19 @@ class CiviCRMLoader(TableLoader):
             try:
                 pm_verbose = payment_methods_dict[str(row[1])]
                 payment_method_counts[row[0]][pm_verbose] = [str(int(row[count_index]))]
+                # payment_method_counts[row[0]][pm_verbose] = [str(int(row[count_index]))]
             except:
                 logging.error('Could not process payment method: "%s"' % str(row[1]))
                 pass
         
         for artifact in payment_method_counts:
             total = 0
+            # Find the total
             for payment_method in payment_method_counts[artifact]:
                 total = total + int(payment_method_counts[artifact][payment_method][0])
+            # compute the portions
             for payment_method in payment_method_counts[artifact]:
-                payment_method_counts[artifact][payment_method].append('%5.2f' % (float(payment_method_counts[artifact][payment_method][0]) / float(total) * 100.0))
+                payment_method_counts[artifact][payment_method] = ['%5.2f' % (float(payment_method_counts[artifact][payment_method][0]) / float(total) * 100.0)]
 
         """ Flatten dictionaries into lists """
         payment_method_counts_list = list()
