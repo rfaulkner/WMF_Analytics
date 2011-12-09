@@ -48,6 +48,7 @@ def process_kwargs(kwargs):
     
     country = '.{2}'
     min_donation = 0
+    order_str = ''
     
     for key in kwargs:
         if key == 'country':
@@ -58,7 +59,6 @@ def process_kwargs(kwargs):
                     country = MySQLdb._mysql.escape_string(kwargs['country'].strip())
                 except:
                     logging.error('QueryData:process_kwargs -- Could not process country for "%s" ' % str(kwargs['country']).strip())
-                    country = '.{2}'
         
         elif key == 'min_donation':
             try:                
@@ -66,16 +66,21 @@ def process_kwargs(kwargs):
                 min_donation = min_donation.__str__() # recast as string
             except:
                 logging.error('QueryData:process_kwargs -- Could not process minimum donation for "%s" ' % str(kwargs['min_donation']).strip())
-                min_donation = 0
-
-    return country, min_donation
+        
+        elif key == 'order_str':
+            try:
+                order_str = MySQLdb._mysql.escape_string(kwargs['order_str'])
+            except:
+                logging.error('QueryData:process_kwargs -- Could not process order string for "%s" ' % str(str(kwargs['order_str'])))
+                
+    return country, min_donation, order_str
 
 """
     Format a saved query to be executed
 """
 def format_query(query_name, sql_stmnt, args, **kwargs):
     
-    country, min_donation = process_kwargs(kwargs)
+    country, min_donation, order_str = process_kwargs(kwargs)
     
     if cmp(query_name, 'report_campaign_ecomm') == 0:
         start_time = args[0]
@@ -271,7 +276,7 @@ def format_query(query_name, sql_stmnt, args, **kwargs):
         start_time = args[0]
         end_time = args[1]
         
-        sql_stmnt = str(sql_stmnt % ('%', '%', '%', start_time, end_time, country, min_donation))
+        sql_stmnt = str(sql_stmnt % ('%', '%', '%', start_time, end_time, country, min_donation, order_str))
 
 
     else:

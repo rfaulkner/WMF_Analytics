@@ -24,4 +24,5 @@ where receive_date >= '%s' and receive_date < '%s' and iso_code regexp '%s'
 
 group by 1,2
 having count(*) >= %s
-order by 1 desc,3 desc 
+%s
+ 

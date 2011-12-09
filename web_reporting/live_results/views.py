@@ -381,6 +381,7 @@ def daily_totals(request):
     end_day_ts = TP.timestamp_from_obj(datetime.datetime.utcnow(), 1, 0)
     country = '.{2}'
     min_donation = 0
+    order_str = 'order by 1 desc,3 desc'
     
     """
         PROCESS POST
@@ -420,6 +421,12 @@ def daily_totals(request):
                 logging.error('live_results/daily_totals -- Could not process minimum donation for "%s" ' % request.POST['min_donation'].strip())
                 min_donation = 0
     
+    if 'order_metric' in request.POST:
+        if cmp(request.POST['order_metric'], 'Date') == 0:
+            order_str = 'order by 1 desc,3 desc'
+        elif cmp(request.POST['order_metric'], 'Country') == 0:
+            order_str = 'order by 2 asc,1 desc'
+            
     """
         === END POST ===
     """
@@ -427,7 +434,7 @@ def daily_totals(request):
     query_name = 'report_daily_totals_by_country'
     filename = projSet.__sql_home__+ query_name + '.sql'
     sql_stmnt = Hlp.file_to_string(filename)
-    sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_day_ts, end_day_ts], country=country, min_donation=min_donation)
+    sql_stmnt = QD.format_query(query_name, sql_stmnt, [start_day_ts, end_day_ts], country=country, min_donation=min_donation, order_str=order_str)
     
     dl = DL.DataLoader()    
     results = dl.execute_SQL(sql_stmnt)
