@@ -18,5 +18,6 @@ urlpatterns = patterns('',
     (r'^live_stats/', include(projSet.__web_app_module__ + '.live_results.urls')),
     (r'^live_lps/', include(projSet.__web_app_module__ + '.live_lps.urls')),
     (r'^LML/', include(projSet.__web_app_module__ + '.LML.urls')),
+    (r'^json_reporting/', include(projSet.__web_app_module__ + '.json_reporting.urls')),
     (r'^admin/', include(admin.site.urls)),
 )
