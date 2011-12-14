@@ -2428,7 +2428,10 @@ class CiviCRMLoader(TableLoader):
         end_timestamp = MySQLdb._mysql.escape_string(str(end_timestamp))
         
         if 'country' in kwargs:
-            country = MySQLdb._mysql.escape_string(str(kwargs['country']))
+            if cmp(str(kwargs['country']), '') == 0:
+                country = '.*'
+            else:
+                country = MySQLdb._mysql.escape_string(str(kwargs['country']))
         else:
             country = '.*'
         
@@ -2438,9 +2441,11 @@ class CiviCRMLoader(TableLoader):
         sql_conversion = 'select  ' + \
                 "SUBSTRING_index(substring_index(utm_source, '.', 2),'.',-1) as landing_page, substring_index(utm_source, '.', -1) as payment_method, count(*) as hits, " + \
                 "sum(if(not(isnull(contribution_tracking.contribution_id)), 1, 0)) as conversions, " + \
-                "sum(if(not(isnull(contribution_tracking.contribution_id)), 1, 0)) / count(*) as conversion " + \
+                "sum(if(not(isnull(contribution_tracking.contribution_id)), 1, 0)) / count(*) as conversion, " + \
+                "sum(total_amount) as amount, " + \
+                "round(sum(if(total_amount > 25, 25, total_amount)),2) as amount_normal " + \
                 "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
-                "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s'" % (start_timestamp, end_timestamp, campaign) + \
+                "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s' " % (start_timestamp, end_timestamp, campaign) + \
                 "group by 1,2 order by 1,2"
 
         """
@@ -2451,7 +2456,7 @@ class CiviCRMLoader(TableLoader):
                 "from drupal.contribution_tracking left join civicrm.civicrm_contribution on contribution_tracking.contribution_id = civicrm.civicrm_contribution.id " + \
                 "left join civicrm.civicrm_address on civicrm.civicrm_contribution.contact_id = civicrm.civicrm_address.contact_id " + \
                 "left join civicrm.civicrm_country on civicrm.civicrm_address.country_id = civicrm.civicrm_country.id " + \
-                "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s' and iso_code = '%s'" % (start_timestamp, end_timestamp, campaign, country) + \
+                "where ts >= '%s' and ts < '%s' and utm_campaign regexp '%s' and iso_code regexp '%s'" % (start_timestamp, end_timestamp, campaign, country) + \
                 "group by 1,2 order by 1,2"
 
     
@@ -2461,6 +2466,8 @@ class CiviCRMLoader(TableLoader):
         hits_index = 2
         conversion_index = 3
         conversion_rate_index = 4
+        amount_index = 5
+        amount_normal_index = 6
         
         count_index = 2
         
@@ -2472,8 +2479,10 @@ class CiviCRMLoader(TableLoader):
                 conversion_rate = '%5.2f' % (float(row[conversion_rate_index]) * 100.0)
                 hits = '%s' % str(int(row[hits_index]))
                 conversions = '%s' % str(int(row[conversion_index]))
+                amount = '%.2f' % float(row[amount_index])
+                amount_normal = '%.2f' % float(row[amount_normal_index])
                 
-                payment_method_conversions[row[0]][pm_verbose] = [hits, conversions, conversion_rate]
+                payment_method_conversions[row[0]][pm_verbose] = [hits, conversions, conversion_rate, amount, amount_normal]
             except:
                 logging.error('Could not process payment method: "%s"' % str(row[1]))
                 pass        

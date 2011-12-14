@@ -401,7 +401,7 @@ def generate_reporting_objects(test_name, start_time, end_time, campaign, label_
     pm_data_counts, pm_data_conversions  = ccl.get_payment_methods(campaign, start_time, end_time, country=country)
 
     html_table_pm_counts = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_counts, ['Payment Method', 'Portion of Donations (%)'], 'Landing Page')
-    html_table_pm_conversions = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_conversions, ['Payment Method', 'Visits', 'Conversions', 'Conversion Rate (%)'], 'Landing Page')
+    html_table_pm_conversions = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_conversions, ['Payment Method', 'Visits', 'Conversions', 'Conversion Rate (%)', 'Amount', 'Amount 25'], 'Landing Page')
     
     
     """ 
@@ -688,7 +688,7 @@ def generate_summary(request):
         pm_data_counts, pm_data_conversions  = ccl.get_payment_methods(utm_campaign, start_time, end_time, country=country)
 
         html_table_pm_counts = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_counts, ['Payment Method', 'Portion of Donations (%)'], 'Landing Page')
-        html_table_pm_conversions = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_conversions, ['Payment Method', 'Visits', 'Conversions', 'Conversion Rate (%)'], 'Landing Page')
+        html_table_pm_conversions = DR.IntervalReporting().write_html_table_from_rowlists(pm_data_conversions, ['Payment Method', 'Visits', 'Conversions', 'Conversion Rate (%)', 'Amount', 'Amount 25'], 'Landing Page')
         
         html_table = html_table + '<div class="spacer"></div><h4><u>Payment Methods Breakdown:</u></h4><div class="spacer"></div>' + html_table_pm_counts + \
         '<div class="spacer"></div><div class="spacer"></div>' + html_table_pm_conversions + '<div class="spacer"></div><div class="spacer"></div>'
