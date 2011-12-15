@@ -619,43 +619,44 @@ def generate_summary(request):
         
         column_names = srl.get_column_names()
         summary_results = srl.get_results()
-        
+         
         if not(summary_results):
-            summary_results = '<p>No data available for %s.' % utm_campaign
+            html_table = '<h3>No artifact summary data available for %s.</h3>' % utm_campaign
+            
         else:
             summary_results_list = list()
             for row in summary_results:
                 summary_results_list.append(list(row))
             summary_results = summary_results_list
             
-        """ 
-            Format results to encode html table cell markup in results        
-        """
-        if measure_confidence:
-            
-            ret = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, utm_campaign, one_step=use_one_step, country=country) # first get color codes on confidence
-            conf_colour_code = ret[0]
-            
-            for row_index in range(len(summary_results)):
+            """ 
+                Format results to encode html table cell markup in results        
+            """
+            if measure_confidence:
                 
-                artifact_index = summary_results[row_index][0] + '-' + summary_results[row_index][1] + '-' + summary_results[row_index][2]
+                ret = DR.ConfidenceReporting(query_type='', hyp_test='').get_confidence_on_time_range(start_time, end_time, utm_campaign, one_step=use_one_step, country=country) # first get color codes on confidence
+                conf_colour_code = ret[0]
                 
-                for col_index in range(len(column_names)):
+                for row_index in range(len(summary_results)):
                     
-                    is_coloured_cell = False
-                    if column_names[col_index] in conf_colour_code.keys():
-                        if artifact_index in conf_colour_code[column_names[col_index]].keys():
-                            summary_results[row_index][col_index] = '<td style="background-color:' + conf_colour_code[column_names[col_index]][artifact_index] + ';">' + str(summary_results[row_index][col_index]) + '</td>'
-                            is_coloured_cell = True
-                            
-                    if not(is_coloured_cell):
-                        summary_results[row_index][col_index] = '<td>' + str(summary_results[row_index][col_index]) + '</td>'
-        
-            html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True, omit_cell_markup=True)
+                    artifact_index = summary_results[row_index][0] + '-' + summary_results[row_index][1] + '-' + summary_results[row_index][2]
+                    
+                    for col_index in range(len(column_names)):
+                        
+                        is_coloured_cell = False
+                        if column_names[col_index] in conf_colour_code.keys():
+                            if artifact_index in conf_colour_code[column_names[col_index]].keys():
+                                summary_results[row_index][col_index] = '<td style="background-color:' + conf_colour_code[column_names[col_index]][artifact_index] + ';">' + str(summary_results[row_index][col_index]) + '</td>'
+                                is_coloured_cell = True
+                                
+                        if not(is_coloured_cell):
+                            summary_results[row_index][col_index] = '<td>' + str(summary_results[row_index][col_index]) + '</td>'
             
-        else:
-            
-            html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True)    
+                html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True, omit_cell_markup=True)
+                
+            else:
+                
+                html_table = DR.DataReporting()._write_html_table(summary_results, column_names, use_standard_metric_names=True)    
         
         """ Generate totals only if it's a non-donation-only query """
         
@@ -667,10 +668,11 @@ def generate_summary(request):
         srl.run_query(start_time, end_time, utm_campaign, min_views=-1, country=country)
         
         total_summary_results = srl.get_results()
-
+        
         if not(total_summary_results):
-            total_summary_results = '<p>No data available for %s.' % utm_campaign
-        else:
+            html_table = html_table + '<div class="spacer"></div><div class="spacer"></div><h3>No data available for %s Totals.</h3>' % utm_campaign
+        
+        else: 
             html_table = html_table + '<div class="spacer"></div><div class="spacer"></div>' + DR.DataReporting()._write_html_table(total_summary_results, srl.get_column_names(), use_standard_metric_names=True)
         
         metric_legend_table = DR.DataReporting().get_standard_metrics_legend()
